@@ -27,7 +27,7 @@ app.use(
 
 app.get("/", (c) => {
   c.header("Content-Type", "text/plain");
-  return c.text("OK");
+  return c.text("OK from Agasta");
 });
 
 export default app;
