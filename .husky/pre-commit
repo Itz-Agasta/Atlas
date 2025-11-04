@@ -1,8 +1,11 @@
-bun test
-
 #!/bin/sh
 # Exit on any error
 set -e
+
+# Run tests if any test files exist
+if find . -name "*.test.*" -o -name "*_test_*" -o -name "*.spec.*" -o -name "*_spec_*" | grep -q .; then
+  bun test
+fi
 
 # Check if there are any staged files
 if [ -z "$(git diff --cached --name-only)" ]; then

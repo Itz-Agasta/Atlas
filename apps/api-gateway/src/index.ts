@@ -25,6 +25,9 @@ app.use(
   })
 );
 
-app.get("/", (c) => c.text("OK"));
+app.get("/", (c) => {
+  c.header("Content-Type", "text/plain");
+  return c.text("OK");
+});
 
 export default app;

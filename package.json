@@ -19,6 +19,7 @@
   },
   "scripts": {
     "check": "oxlint",
+    "fix": "ultracite fix",
     "prepare": "husky",
     "dev": "turbo dev",
     "build": "turbo build",
