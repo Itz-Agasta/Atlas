@@ -30,7 +30,7 @@ git stash push --quiet --keep-index --message "pre-commit-stash" || true
 STASHED=$?
 
 # Run formatter on the staged files
-bun x ultracite fix
+bun x ultracite fix $STAGED_FILES
 FORMAT_EXIT_CODE=$?
 
 # Restore working directory state
