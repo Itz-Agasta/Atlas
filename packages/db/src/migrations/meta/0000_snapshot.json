@@ -1,0 +1,769 @@
+{
+  "id": "16b41636-2da3-4f4d-a9df-e47dd804fea1",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.argo_float_metadata": {
+      "name": "argo_float_metadata",
+      "schema": "",
+      "columns": {
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "wmo_number": {
+          "name": "wmo_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "float_type": {
+          "name": "float_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deployment_date": {
+          "name": "deployment_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deployment_lat": {
+          "name": "deployment_lat",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deployment_lon": {
+          "name": "deployment_lon",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deployment_country": {
+          "name": "deployment_country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'ACTIVE'"
+        },
+        "battery_capacity": {
+          "name": "battery_capacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {
+        "argo_float_metadata_wmo_idx": {
+          "name": "argo_float_metadata_wmo_idx",
+          "columns": [
+            {
+              "expression": "wmo_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "argo_float_metadata_wmo_number_unique": {
+          "name": "argo_float_metadata_wmo_number_unique",
+          "nullsNotDistinct": false,
+          "columns": ["wmo_number"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.argo_float_positions": {
+      "name": "argo_float_positions",
+      "schema": "",
+      "columns": {
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "current_lat": {
+          "name": "current_lat",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_lon": {
+          "name": "current_lon",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_depth": {
+          "name": "current_depth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cycle_number": {
+          "name": "cycle_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_update": {
+          "name": "last_update",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_temp": {
+          "name": "last_temp",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_salinity": {
+          "name": "last_salinity",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "argo_float_positions_float_id_argo_float_metadata_float_id_fk": {
+          "name": "argo_float_positions_float_id_argo_float_metadata_float_id_fk",
+          "tableFrom": "argo_float_positions",
+          "tableTo": "argo_float_metadata",
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.argo_float_stats": {
+      "name": "argo_float_stats",
+      "schema": "",
+      "columns": {
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "avg_temp": {
+          "name": "avg_temp",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temp_min": {
+          "name": "temp_min",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temp_max": {
+          "name": "temp_max",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "depth_range_min": {
+          "name": "depth_range_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "depth_range_max": {
+          "name": "depth_range_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profile_count": {
+          "name": "profile_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "location_bounds_nmin": {
+          "name": "location_bounds_nmin",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_bounds_nmax": {
+          "name": "location_bounds_nmax",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_bounds_emin": {
+          "name": "location_bounds_emin",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_bounds_emax": {
+          "name": "location_bounds_emax",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recent_temp_trend": {
+          "name": "recent_temp_trend",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_updated": {
+          "name": "last_updated",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "argo_float_stats_float_id_argo_float_metadata_float_id_fk": {
+          "name": "argo_float_stats_float_id_argo_float_metadata_float_id_fk",
+          "tableFrom": "argo_float_stats",
+          "tableTo": "argo_float_metadata",
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.argo_positions_timeseries": {
+      "name": "argo_positions_timeseries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lat": {
+          "name": "lat",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lon": {
+          "name": "lon",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "time": {
+          "name": "time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cycle": {
+          "name": "cycle",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {
+        "positions_time_idx": {
+          "name": "positions_time_idx",
+          "columns": [
+            {
+              "expression": "float_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "positions_time_only_idx": {
+          "name": "positions_time_only_idx",
+          "columns": [
+            {
+              "expression": "time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "argo_positions_timeseries_float_id_argo_float_metadata_float_id_fk": {
+          "name": "argo_positions_timeseries_float_id_argo_float_metadata_float_id_fk",
+          "tableFrom": "argo_positions_timeseries",
+          "tableTo": "argo_float_metadata",
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.argo_profiles": {
+      "name": "argo_profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cycle": {
+          "name": "cycle",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile_time": {
+          "name": "profile_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "surface_lat": {
+          "name": "surface_lat",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "surface_lon": {
+          "name": "surface_lon",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_depth": {
+          "name": "max_depth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "measurements": {
+          "name": "measurements",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "quality_flag": {
+          "name": "quality_flag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'REAL_TIME'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {
+        "profiles_float_time_idx": {
+          "name": "profiles_float_time_idx",
+          "columns": [
+            {
+              "expression": "float_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "profile_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "profiles_time_idx": {
+          "name": "profiles_time_idx",
+          "columns": [
+            {
+              "expression": "profile_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "profiles_qc_idx": {
+          "name": "profiles_qc_idx",
+          "columns": [
+            {
+              "expression": "quality_flag",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "argo_profiles_float_id_argo_float_metadata_float_id_fk": {
+          "name": "argo_profiles_float_id_argo_float_metadata_float_id_fk",
+          "tableFrom": "argo_profiles",
+          "tableTo": "argo_float_metadata",
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.processing_log": {
+      "name": "processing_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operation": {
+          "name": "operation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_details": {
+          "name": "error_details",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processing_time_ms": {
+          "name": "processing_time_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {
+        "log_float_op_idx": {
+          "name": "log_float_op_idx",
+          "columns": [
+            {
+              "expression": "float_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "operation",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "log_time_idx": {
+          "name": "log_time_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sync_manifest": {
+      "name": "sync_manifest",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "file_name": {
+          "name": "file_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_size": {
+          "name": "file_size",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "remote_modified_time": {
+          "name": "remote_modified_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "local_modified_time": {
+          "name": "local_modified_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sync_status": {
+          "name": "sync_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'SYNCED'"
+        },
+        "local_path": {
+          "name": "local_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "s3_path": {
+          "name": "s3_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {
+        "manifest_float_file_idx": {
+          "name": "manifest_float_file_idx",
+          "columns": [
+            {
+              "expression": "float_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "file_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "manifest_status_idx": {
+          "name": "manifest_status_idx",
+          "columns": [
+            {
+              "expression": "sync_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
