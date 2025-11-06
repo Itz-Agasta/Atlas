@@ -49,6 +49,7 @@ CREATE TABLE "argo_positions_timeseries" (
 	"lon" real NOT NULL,
 	"time" timestamp NOT NULL,
 	"cycle" integer,
+	"location" geometry(point),
 	"created_at" timestamp DEFAULT NOW()
 );
 --> statement-breakpoint
@@ -60,6 +61,7 @@ CREATE TABLE "argo_profiles" (
 	"surface_lat" real,
 	"surface_lon" real,
 	"max_depth" integer,
+	"surface_location" geometry(point),
 	"measurements" jsonb DEFAULT '{}'::jsonb,
 	"quality_flag" text DEFAULT 'REAL_TIME',
 	"created_at" timestamp DEFAULT NOW()
@@ -97,9 +99,11 @@ ALTER TABLE "argo_profiles" ADD CONSTRAINT "argo_profiles_float_id_argo_float_me
 CREATE INDEX "argo_float_metadata_wmo_idx" ON "argo_float_metadata" USING btree ("wmo_number");--> statement-breakpoint
 CREATE INDEX "positions_time_idx" ON "argo_positions_timeseries" USING btree ("float_id","time");--> statement-breakpoint
 CREATE INDEX "positions_time_only_idx" ON "argo_positions_timeseries" USING btree ("time");--> statement-breakpoint
+CREATE INDEX "positions_spatial_idx" ON "argo_positions_timeseries" USING gist ("location");--> statement-breakpoint
 CREATE INDEX "profiles_float_time_idx" ON "argo_profiles" USING btree ("float_id","profile_time");--> statement-breakpoint
 CREATE INDEX "profiles_time_idx" ON "argo_profiles" USING btree ("profile_time");--> statement-breakpoint
 CREATE INDEX "profiles_qc_idx" ON "argo_profiles" USING btree ("quality_flag");--> statement-breakpoint
+CREATE INDEX "profiles_spatial_idx" ON "argo_profiles" USING gist ("surface_location");--> statement-breakpoint
 CREATE INDEX "log_float_op_idx" ON "processing_log" USING btree ("float_id","operation");--> statement-breakpoint
 CREATE INDEX "log_time_idx" ON "processing_log" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "manifest_float_file_idx" ON "sync_manifest" USING btree ("float_id","file_name");--> statement-breakpoint

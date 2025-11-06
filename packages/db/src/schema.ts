@@ -10,6 +10,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { geometry } from "drizzle-orm/pg-core/columns/postgis_extension/geometry";
 
 // [T1]: FLOAT METADATA (static, never changes)
 export const argo_float_metadata = pgTable(
@@ -17,12 +18,12 @@ export const argo_float_metadata = pgTable(
   {
     float_id: bigint("float_id", { mode: "number" }).primaryKey(),
     wmo_number: text("wmo_number").unique().notNull(),
-    float_type: text("float_type"), // APEX, PROVOR, etc
+    float_type: text("float_type"),
     deployment_date: timestamp("deployment_date"),
     deployment_lat: real("deployment_lat"),
     deployment_lon: real("deployment_lon"),
     deployment_country: text("deployment_country"),
-    status: text("status").default("ACTIVE"), // ACTIVE or INACTIVE
+    status: text("status").default("ACTIVE"),
     battery_capacity: integer("battery_capacity"),
     created_at: timestamp("created_at").default(sql`NOW()`),
     updated_at: timestamp("updated_at").default(sql`NOW()`),
@@ -59,11 +60,13 @@ export const argo_positions_timeseries = pgTable(
     lon: real("lon").notNull(),
     time: timestamp("time").notNull(),
     cycle: integer("cycle"),
+    location: geometry("location", { type: "point", srid: 4326 }), // ← ADDED
     created_at: timestamp("created_at").default(sql`NOW()`),
   },
   (table) => ({
     floatTimeidx: index("positions_time_idx").on(table.float_id, table.time),
     timeidx: index("positions_time_only_idx").on(table.time),
+    spatialIdx: index("positions_spatial_idx").using("gist", table.location), // ← ADDED
   })
 );
 
@@ -80,6 +83,10 @@ export const argo_profiles = pgTable(
     surface_lat: real("surface_lat"),
     surface_lon: real("surface_lon"),
     max_depth: integer("max_depth"),
+    surface_location: geometry("surface_location", {
+      type: "point",
+      srid: 4326,
+    }),
 
     // Store all measurements as JSONB for flexibility
     measurements: jsonb("measurements").default(sql`'{}'::jsonb`),
@@ -102,6 +109,10 @@ export const argo_profiles = pgTable(
     ),
     timeIdx: index("profiles_time_idx").on(table.profile_time),
     qcIdx: index("profiles_qc_idx").on(table.quality_flag),
+    spatialIdx: index("profiles_spatial_idx").using(
+      "gist",
+      table.surface_location
+    ),
   })
 );
 

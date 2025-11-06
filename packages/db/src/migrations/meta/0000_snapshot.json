@@ -1,5 +1,5 @@
 {
-  "id": "16b41636-2da3-4f4d-a9df-e47dd804fea1",
+  "id": "a2e80a5a-7d55-4434-ae71-89cf09984b6e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -101,7 +101,9 @@
         "argo_float_metadata_wmo_number_unique": {
           "name": "argo_float_metadata_wmo_number_unique",
           "nullsNotDistinct": false,
-          "columns": ["wmo_number"]
+          "columns": [
+            "wmo_number"
+          ]
         }
       },
       "policies": {},
@@ -174,8 +176,12 @@
           "name": "argo_float_positions_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_float_positions",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": ["float_id"],
-          "columnsTo": ["float_id"],
+          "columnsFrom": [
+            "float_id"
+          ],
+          "columnsTo": [
+            "float_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -283,8 +289,12 @@
           "name": "argo_float_stats_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_float_stats",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": ["float_id"],
-          "columnsTo": ["float_id"],
+          "columnsFrom": [
+            "float_id"
+          ],
+          "columnsTo": [
+            "float_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -335,6 +345,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "location": {
+          "name": "location",
+          "type": "geometry(point)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -379,6 +395,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "positions_spatial_idx": {
+          "name": "positions_spatial_idx",
+          "columns": [
+            {
+              "expression": "location",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -386,8 +417,12 @@
           "name": "argo_positions_timeseries_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_positions_timeseries",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": ["float_id"],
-          "columnsTo": ["float_id"],
+          "columnsFrom": [
+            "float_id"
+          ],
+          "columnsTo": [
+            "float_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -441,6 +476,12 @@
         "max_depth": {
           "name": "max_depth",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "surface_location": {
+          "name": "surface_location",
+          "type": "geometry(point)",
           "primaryKey": false,
           "notNull": false
         },
@@ -517,6 +558,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "profiles_spatial_idx": {
+          "name": "profiles_spatial_idx",
+          "columns": [
+            {
+              "expression": "surface_location",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -524,8 +580,12 @@
           "name": "argo_profiles_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_profiles",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": ["float_id"],
-          "columnsTo": ["float_id"],
+          "columnsFrom": [
+            "float_id"
+          ],
+          "columnsTo": [
+            "float_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
