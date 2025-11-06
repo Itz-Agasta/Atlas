@@ -4,6 +4,7 @@
     "ignoreUnknown": false,
     "includes": [
       "**",
+      "!packages/db/src/migrations/",
       "!**/.next",
       "!**/dist",
       "!**/.turbo",

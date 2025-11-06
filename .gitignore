@@ -51,3 +51,6 @@ temp
 
 #extras
 pvt/
+
+# Auto-generated migration files
+packages/db/src/migrations/
