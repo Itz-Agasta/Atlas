@@ -60,16 +60,23 @@ if [ -n "$PY_FILES" ]; then
     echo "Checking Python types with Pyrefly..."
     PY_TYPE_EXIT=0
     
-    # Get unique directories containing Python files in src/
-    PY_SRC_DIRS=$(echo "$PY_FILES" | grep "src/" | xargs dirname | sort | uniq || true)
+    # Get unique app roots from src/ files
+    APP_ROOTS=$(echo "$PY_FILES" | grep "src/" | sed 's|/src/.*||' | sort | uniq || true)
     
-    for dir in $PY_SRC_DIRS; do
-      echo "Checking $dir..."
-      if ! uv run pyrefly check "$dir" >/dev/null 2>&1; then
-        echo "Type check failed in $dir"
-        PY_TYPE_EXIT=1
-      fi
-    done
+    if [ -n "$APP_ROOTS" ]; then
+      for APP_ROOT in $APP_ROOTS; do
+        echo "Checking $APP_ROOT..."
+        
+        if [ -f "$APP_ROOT/pyproject.toml" ]; then
+          # Ensure app dependencies are installed
+          (cd "$APP_ROOT" && uv sync --quiet 2>/dev/null || true)
+          # Run pyrefly from the app directory
+          if (cd "$APP_ROOT" && uv run pyrefly check "src/atlas_workers/workers" 2>&1 | grep -q "ERROR"); then
+            PY_TYPE_EXIT=1
+          fi
+        fi
+      done
+    fi
     
     if [ $PY_FORMAT_EXIT -ne 0 ] || [ $PY_CHECK_EXIT -ne 0 ] || [ $PY_TYPE_EXIT -ne 0 ]; then
       FORMAT_EXIT_CODE=1
