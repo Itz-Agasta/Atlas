@@ -4,9 +4,6 @@ set -e
 
 echo "Running pre-commit hook..."
 
-# Skip tests for now since no test files exist
-echo "Skipping tests (no test files found)"
-
 # Check if there are any staged files
 if [ -z "$(git diff --cached --name-only)" ]; then
   echo "No staged files to format"
@@ -23,6 +20,10 @@ PARTIALLY_STAGED=$(git diff --name-only)
 # Filter out migration files from formatting
 STAGED_FILES=$(echo "$STAGED_FILES" | grep -v "packages/db/src/migrations/" || true)
 PARTIALLY_STAGED=$(echo "$PARTIALLY_STAGED" | grep -v "packages/db/src/migrations/" || true)
+
+# Filter out Python files from formatting
+STAGED_FILES=$(echo "$STAGED_FILES" | grep -v "\.py$" || true)
+PARTIALLY_STAGED=$(echo "$PARTIALLY_STAGED" | grep -v "\.py$" || true)
 
 # Stash unstaged changes to preserve working directory
 # --keep-index keeps staged changes in working tree

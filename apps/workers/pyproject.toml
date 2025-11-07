@@ -1,0 +1,39 @@
+[project]
+name = "atlas-workers"
+version = "0.1.0"
+description = "ARGO Float Data Processing Workers - FTP Sync & NetCDF Parser"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.25.0",
+    "xarray>=2023.12.0",
+    "netCDF4>=1.6.4",
+    "pandas>=2.1.0",
+    "pyarrow>=13.0.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "structlog>=23.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "pyrefly>=0.1.0",
+]
+aws = [
+    "boto3>=1.29.0",
+    "mangum>=0.17.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "pyrefly>=0.1.0",
+]
