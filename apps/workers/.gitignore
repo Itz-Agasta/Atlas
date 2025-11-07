@@ -177,5 +177,10 @@ pyrightconfig.json
 lambda-package/
 function.zip
 
+#Extra
+
+# Downloaded Argo data files (NetCDF, JSON, Parquet)
+data/
+
 # End of https://www.toptal.com/developers/gitignore/api/python
 

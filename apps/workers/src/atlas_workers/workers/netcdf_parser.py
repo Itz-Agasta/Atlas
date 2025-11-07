@@ -307,7 +307,7 @@ class NetCDFParserWorker:
         """Export profiles to JSON format.
 
         Args:
-            profiles: List of ProfileData objects
+            profiles: List of ProfileData objects or dictionaries
             output_path: Output file path
 
         Returns:
@@ -316,7 +316,14 @@ class NetCDFParserWorker:
         try:
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            data = [p.model_dump() for p in profiles]
+            # Handle both ProfileData objects and dictionaries
+            data = []
+            for p in profiles:
+                if hasattr(p, "model_dump"):
+                    data.append(p.model_dump())
+                else:
+                    data.append(p)
+
             with open(output_path, "w") as f:
                 json.dump(data, f, indent=2, default=str)
 
@@ -332,7 +339,7 @@ class NetCDFParserWorker:
         """Export profiles to Arrow format.
 
         Args:
-            profiles: List of ProfileData objects
+            profiles: List of ProfileData objects or dictionaries
             output_path: Output file path
 
         Returns:
@@ -343,16 +350,26 @@ class NetCDFParserWorker:
 
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
+            # Handle both ProfileData objects and dictionaries
+            def get_attr(p, attr):
+                if hasattr(p, attr):
+                    return getattr(p, attr)
+                elif isinstance(p, dict) and attr in p:
+                    return p[attr]
+                return None
+
             # Create Arrow table
             data = {
-                "float_id": [p.float_id for p in profiles],
-                "cycle_number": [p.cycle_number for p in profiles],
-                "profile_time": [p.profile_time for p in profiles],
-                "latitude": [p.latitude for p in profiles],
-                "longitude": [p.longitude for p in profiles],
-                "max_depth": [p.max_depth for p in profiles],
-                "quality_status": [p.quality_status for p in profiles],
-                "measurement_count": [len(p.measurements) for p in profiles],
+                "float_id": [get_attr(p, "float_id") for p in profiles],
+                "cycle_number": [get_attr(p, "cycle_number") for p in profiles],
+                "profile_time": [get_attr(p, "profile_time") for p in profiles],
+                "latitude": [get_attr(p, "latitude") for p in profiles],
+                "longitude": [get_attr(p, "longitude") for p in profiles],
+                "max_depth": [get_attr(p, "max_depth") for p in profiles],
+                "quality_status": [get_attr(p, "quality_status") for p in profiles],
+                "measurement_count": [
+                    len(get_attr(p, "measurements") or []) for p in profiles
+                ],
             }
 
             table = pa.table(data)
@@ -384,33 +401,3 @@ class NetCDFParserWorker:
     def dac(self) -> str:
         """Get DAC name."""
         return settings.ARGO_DAC
-
-
-async def main() -> None:
-    """Example usage of NetCDF Parser Worker."""
-    from ..utils import setup_logging
-
-    setup_logging()
-
-    worker = NetCDFParserWorker()
-
-    # Example: process a float directory
-    float_id = "2902224"
-    result = worker.process_directory(float_id)
-
-    print(f"\nParsing Result:\n{json.dumps(result, indent=2, default=str)}")
-
-    # Export sample profiles
-    if result.get("profiles"):
-        profiles = [
-            ProfileData(**p)
-            for p in result["profiles"][: settings.PROFILE_BATCH_LIMIT or 5]
-        ]
-        worker.export_to_json(profiles, Path("/tmp/sample_profiles.json"))
-        worker.export_to_arrow(profiles, Path("/tmp/sample_profiles.parquet"))
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())

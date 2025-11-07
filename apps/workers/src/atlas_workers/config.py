@@ -26,7 +26,12 @@ class Settings(BaseSettings):
 
     # Data Configuration
     ARGO_DAC: str = "incois"  # Data Assembly Center
-    LOCAL_CACHE_PATH: Path = Path("/tmp/argo_data")
+
+    # Local cache path for downloaded ARGO files
+    LOCAL_CACHE_PATH: Path = Path(
+        "./data/argo_cache"
+    )  # AWS LAMBDA: ""/tmp/argo_cache""
+
     ENABLE_INCREMENTAL_SYNC: bool = True
 
     # HTTP Configuration (for HTTPS fallback)
