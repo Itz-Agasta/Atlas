@@ -63,44 +63,45 @@ class NetCDFParserWorker:
             logger.info("Parsing NetCDF file", file=str(file_path))
 
             # Open NetCDF file
-            ds = xr.open_dataset(file_path)
-            profiles = []
+            with xr.open_dataset(file_path) as ds:
+                profiles = []
 
-            # Get dimensions
-            n_prof = ds.dims.get("N_PROF", 0)
-            if n_prof == 0:
-                logger.warning("No profiles found in file", file=str(file_path))
+                # Get dimensions
+                n_prof = ds.dims.get("N_PROF", 0)
+                if n_prof == 0:
+                    logger.warning("No profiles found in file", file=str(file_path))
+                    return profiles
+
+                # Extract float ID from filename or attributes
+                float_id = ds.attrs.get("title", "").split()[-1]
+                if not float_id or not float_id.isdigit():
+                    float_id = file_path.stem.split("_")[0]
+
+                logger.info("Found profiles", float_id=float_id, count=n_prof)
+
+                # Process each profile
+                for prof_idx in range(n_prof):
+                    try:
+                        profile = self._parse_single_profile(
+                            ds, prof_idx, float_id, file_path
+                        )
+                        if profile:
+                            profiles.append(profile)
+                    except Exception as e:
+                        logger.warning(
+                            "Error parsing profile cycle",
+                            float_id=float_id,
+                            cycle=prof_idx,
+                            error=str(e),
+                        )
+                        continue
+
+                logger.info(
+                    "File parsed successfully",
+                    file=str(file_path),
+                    profiles=len(profiles),
+                )
                 return profiles
-
-            # Extract float ID from filename or attributes
-            float_id = ds.attrs.get("title", "").split()[-1]
-            if not float_id or not float_id.isdigit():
-                float_id = file_path.stem.split("_")[0]
-
-            logger.info("Found profiles", float_id=float_id, count=n_prof)
-
-            # Process each profile
-            for prof_idx in range(n_prof):
-                try:
-                    profile = self._parse_single_profile(
-                        ds, prof_idx, float_id, file_path
-                    )
-                    if profile:
-                        profiles.append(profile)
-                except Exception as e:
-                    logger.warning(
-                        "Error parsing profile cycle",
-                        float_id=float_id,
-                        cycle=prof_idx,
-                        error=str(e),
-                    )
-                    continue
-
-            ds.close()
-            logger.info(
-                "File parsed successfully", file=str(file_path), profiles=len(profiles)
-            )
-            return profiles
 
         except Exception as e:
             logger.error(

@@ -177,30 +177,40 @@ MAX_WORKERS=4
 
 ### Data Models
 
-The parser returns `ProfileData` objects:
+The parser returns `ProfileData` objects with full Pydantic validation and serialization:
 
 ```python
-@dataclass
-class ProfileData:
-    float_id: str                      # WMO float ID
-    cycle_number: int                  # Profile cycle
-    profile_time: datetime             # Time of measurement
-    latitude: float                    # Surface latitude
-    longitude: float                   # Surface longitude
-    measurements: list[MeasurementProfile]  # Depth profiles
-    max_depth: float                   # Maximum depth reached
-    quality_status: str                # REAL_TIME or DELAYED
-    metadata: dict                     # Additional info
+from datetime import datetime
+from typing import Any, Optional
+from pydantic import BaseModel, Field
 
-@dataclass
-class MeasurementProfile:
-    depth: float                       # Pressure in meters
-    temperature: Optional[float]       # °C
-    salinity: Optional[float]          # PSU (Practical Salinity Units)
-    oxygen: Optional[float]            # µmol/kg (dissolved O2)
-    chlorophyll: Optional[float]       # mg/m³
-    qc_flags: Optional[dict]           # Quality control flags
+class ProfileData(BaseModel):
+    float_id: str = Field(..., description="WMO float ID")
+    cycle_number: int = Field(..., description="Profile cycle")
+    profile_time: datetime = Field(..., description="Time of measurement")
+    latitude: float = Field(..., description="Surface latitude")
+    longitude: float = Field(..., description="Surface longitude")
+    measurements: list[MeasurementProfile] = Field(
+        default_factory=list, description="Depth profiles"
+    )
+    max_depth: Optional[float] = Field(None, description="Maximum depth reached")
+    quality_status: Optional[str] = Field(
+        "REAL_TIME", description="REAL_TIME or DELAYED"
+    )
+    metadata: Optional[dict[str, Any]] = Field(None, description="Additional info")
+
+class MeasurementProfile(BaseModel):
+    depth: float = Field(..., description="Pressure in meters")
+    temperature: Optional[float] = Field(None, description="°C")
+    salinity: Optional[float] = Field(None, description="PSU (Practical Salinity Units)")
+    oxygen: Optional[float] = Field(None, description="µmol/kg (dissolved O2)")
+    chlorophyll: Optional[float] = Field(None, description="mg/m³")
+    qc_flags: Optional[dict[str, int]] = Field(
+        None, description="Quality control flags"
+    )
 ```
+
+These Pydantic models provide automatic validation, JSON serialization, and type safety.
 
 ### Output Examples
 

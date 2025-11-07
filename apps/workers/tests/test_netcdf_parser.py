@@ -44,7 +44,7 @@ def sample_netcdf_file(tmp_path):
 
 def test_parser_initialization(tmp_path):
     """Test parser initialization."""
-    worker = NetCDFParserWorker(cache_path=tmp_path)
+    worker = NetCDFParserWorker(cache_path=tmp_path, output_arrow=True)
     assert worker.cache_path == tmp_path
     assert worker.output_arrow is True
 
@@ -64,7 +64,7 @@ def test_parse_single_profile(parser_worker, sample_netcdf_file):
     assert profile.max_depth > 0
 
 
-def test_measurement_profile_stats(sample_netcdf_file):
+def test_measurement_profile_stats():
     """Test profile statistics calculation."""
     profile = ProfileData(
         float_id="test",
@@ -106,11 +106,10 @@ def test_export_to_json(parser_worker, tmp_path):
     assert output_file.exists()
 
 
-@pytest.mark.skipif(
-    not pytest.importorskip("pyarrow", minversion=None), reason="PyArrow not installed"
-)
 def test_export_to_arrow(parser_worker, tmp_path):
     """Test Arrow export."""
+    pytest.importorskip("pyarrow")
+
     profiles = [
         ProfileData(
             float_id="2902224",

@@ -40,7 +40,7 @@ def ftp_sync_handler(event: dict, context: Any) -> dict:
             "body": json.dumps(result, default=str),
         }
     except Exception as e:
-        logger.error("FTP sync failed", extra={"error": str(e)})
+        logger.exception("FTP sync failed", extra={"error": str(e)})
         return {
             "statusCode": 500,
             "body": json.dumps({"error": str(e)}),
@@ -75,7 +75,7 @@ def netcdf_parser_handler(event: dict, context: Any) -> dict:
             "body": json.dumps(result, default=str),
         }
     except Exception as e:
-        logger.error("NetCDF parsing failed", extra={"error": str(e)})
+        logger.exception("NetCDF parsing failed", extra={"error": str(e)})
         return {
             "statusCode": 500,
             "body": json.dumps({"error": str(e)}),

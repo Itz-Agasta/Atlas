@@ -1,7 +1,7 @@
 """Configuration settings for Atlas Workers."""
 
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,7 +10,11 @@ class Settings(BaseSettings):
     """Application settings."""
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+        env_parse_none_str="None",  # Allow "None" string in .env files to be parsed as Python None for Optional fields
     )
 
     # FTP Configuration
@@ -40,8 +44,8 @@ class Settings(BaseSettings):
     ARROW_COMPRESSION: str = "zstd"
 
     # Logging
-    LOG_LEVEL: str = "INFO"
-    LOG_FORMAT: str = "json"  # json or text
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    LOG_FORMAT: Literal["json", "text"] = "json"  # json or text
 
     # Environment
     ENVIRONMENT: str = "development"  # development, staging, production

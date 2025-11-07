@@ -52,7 +52,9 @@ deploy-aws:
 	@echo "Preparing Lambda package..."
 	mkdir -p lambda-package
 	cp -r src/atlas_workers lambda-package/
-	pip install -r requirements.txt -t lambda-package/ --quiet || true
+	uv export --no-dev -o /tmp/requirements.txt --quiet
+	pip install -r /tmp/requirements.txt -t lambda-package/ --quiet --disable-pip-version-check --no-warn-conflicts >/dev/null 2>&1
+	rm /tmp/requirements.txt
 	cd lambda-package && zip -r ../function.zip . && cd ..
 	@echo "✓ Lambda package created: function.zip"
 	@echo "Deploy with: aws lambda update-function-code --function-name argo-ftp-sync --zip-file fileb://function.zip"

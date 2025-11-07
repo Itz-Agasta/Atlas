@@ -11,11 +11,24 @@ from ..config import settings
 def setup_logging() -> None:
     """Configure structured logging with structlog."""
 
+    # Get logging level with validation
+    log_level_str = settings.LOG_LEVEL
+    try:
+        log_level = getattr(logging, log_level_str)
+        if not isinstance(log_level, int):
+            raise AttributeError(f"Invalid logging level: {log_level_str}")
+    except AttributeError:
+        # Fallback to INFO for invalid log levels
+        logging.getLogger(__name__).warning(
+            f"Invalid LOG_LEVEL '{log_level_str}', falling back to INFO"
+        )
+        log_level = logging.INFO
+
     # Configure standard logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
-        level=getattr(logging, settings.LOG_LEVEL),
+        level=log_level,
     )
 
     # Configure structlog
