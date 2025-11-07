@@ -92,14 +92,17 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 ### Framework-Specific Guidance
 
 **Next.js:**
+
 - Use Next.js `<Image>` component for images
 - Use `next/head` or App Router metadata API for head elements
 - Use Server Components for async data fetching instead of async Client Components
 
 **React 19+:**
+
 - Use ref as a prop instead of `React.forwardRef`
 
 **Solid/Svelte/Vue/Qwik:**
+
 - Use `class` and `for` attributes (not `className` or `htmlFor`)
 
 ---
@@ -110,6 +113,54 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 - Avoid done callbacks in async tests - use async/await instead
 - Don't use `.only` or `.skip` in committed code
 - Keep test suites reasonably flat - avoid excessive `describe` nesting
+
+## When Biome Can't Help
+
+Biome's linter will catch most issues automatically. Focus your attention on:
+
+1. **Business logic correctness** - Biome can't validate your algorithms
+2. **Meaningful naming** - Use descriptive names for functions, variables, and types
+3. **Architecture decisions** - Component structure, data flow, and API design
+4. **Edge cases** - Handle boundary conditions and error states
+5. **User experience** - Accessibility, performance, and usability considerations
+6. **Documentation** - Add comments for complex logic, but prefer self-documenting code
+
+---
+
+Most formatting and common issues are automatically fixed by Biome. Run `npx ultracite fix` before committing to ensure compliance.
+
+---
+
+## Secret Management
+
+This project uses **Infisical** for secure secret management and environment variable handling.
+
+### Running Applications with Secrets
+
+Always use Infisical to inject secrets into your application environment:
+
+```bash
+# General syntax
+infisical run --env=<environment> --path=<project-path> -- [your command]
+
+# Examples:
+# Development environment
+infisical run --env=dev -- bun run dev
+infisical run --env=dev --path=/apps/workers -- uv run python -m src.atlas_workers.workers.netcdf_parser
+
+# Production environment
+infisical run --env=prod --path=/apps/backend -- flask run
+
+```
+
+### Environment Configuration
+
+- Use `--env=dev` for development
+- Use `--env=prod` for production
+- Specify the correct `--path` to match your project's Infisical configuration
+- Never commit secrets or `.env` files with sensitive data
+
+---
 
 ## When Biome Can't Help
 

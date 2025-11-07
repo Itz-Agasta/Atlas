@@ -104,7 +104,7 @@ class NetCDFParserWorker:
                 return profiles
 
         except Exception as e:
-            logger.error(
+            logger.exception(
                 "Failed to parse NetCDF file", file=str(file_path), error=str(e)
             )
             return None
@@ -272,7 +272,9 @@ class NetCDFParserWorker:
                 else:
                     stats["errors"] += 1
             except Exception as e:
-                logger.error("Error processing file", file=str(nc_file), error=str(e))
+                logger.exception(
+                    "Error processing file", file=str(nc_file), error=str(e)
+                )
                 stats["errors"] += 1
 
         logger.info("Directory processing complete", stats=stats)
@@ -300,7 +302,7 @@ class NetCDFParserWorker:
             )
             return True
         except Exception as e:
-            logger.error("Export failed", error=str(e))
+            logger.exception("Export failed", error=str(e))
             return False
 
     def export_to_arrow(self, profiles: list[ProfileData], output_path: Path) -> bool:
@@ -352,7 +354,7 @@ class NetCDFParserWorker:
             logger.error("PyArrow not installed")
             return False
         except Exception as e:
-            logger.error("Arrow export failed", error=str(e))
+            logger.exception("Arrow export failed", error=str(e))
             return False
 
     @property

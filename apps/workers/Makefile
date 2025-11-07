@@ -28,10 +28,9 @@ lint:
 
 format:
 	uv run ruff format src/ tests/
-	uv run black src/ tests/ || true
 
 type-check:
-	uv run mypy src/atlas_workers --ignore-missing-imports
+	uv run pyrefly check src/atlas_workers
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + || true
