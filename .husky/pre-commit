@@ -4,9 +4,6 @@ set -e
 
 echo "Running pre-commit hook..."
 
-# Skip tests for now since no test files exist
-echo "Skipping tests (no test files found)"
-
 # Check if there are any staged files
 if [ -z "$(git diff --cached --name-only)" ]; then
   echo "No staged files to format"
@@ -29,9 +26,58 @@ PARTIALLY_STAGED=$(echo "$PARTIALLY_STAGED" | grep -v "packages/db/src/migration
 git stash push --quiet --keep-index --message "pre-commit-stash" || true
 STASHED=$?
 
-# Run formatter on the staged files
-bun x ultracite fix $STAGED_FILES
-FORMAT_EXIT_CODE=$?
+# Separate TypeScript and Python files
+TS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+PY_FILES=$(echo "$STAGED_FILES" | grep -E '\.py$' || true)
+
+FORMAT_EXIT_CODE=0
+
+# Run TypeScript formatter (Ultracite/Biome)
+if [ -n "$TS_FILES" ]; then
+  echo "Formatting TypeScript files with Ultracite..."
+  bun x ultracite fix $TS_FILES
+  TS_EXIT_CODE=$?
+  if [ $TS_EXIT_CODE -ne 0 ]; then
+    FORMAT_EXIT_CODE=$TS_EXIT_CODE
+  fi
+fi
+
+# Run Python formatter and linter (Ruff)
+if [ -n "$PY_FILES" ]; then
+  echo "Formatting Python files with Ruff..."
+  
+  # Check if uv is available
+  if command -v uv &> /dev/null; then
+    # Format Python files
+    uv run ruff format $PY_FILES
+    PY_FORMAT_EXIT=$?
+    
+    # Check Python files with Ruff linter and fix
+    uv run ruff check --fix $PY_FILES
+    PY_CHECK_EXIT=$?
+    
+    # Check Python files with Pyrefly for type safety
+    echo "Checking Python types with Pyrefly..."
+    PY_TYPE_EXIT=0
+    
+    # Get unique directories containing Python files in src/
+    PY_SRC_DIRS=$(echo "$PY_FILES" | grep "src/" | xargs dirname | sort | uniq || true)
+    
+    for dir in $PY_SRC_DIRS; do
+      echo "Checking $dir..."
+      if ! uv run pyrefly check "$dir" >/dev/null 2>&1; then
+        echo "Type check failed in $dir"
+        PY_TYPE_EXIT=1
+      fi
+    done
+    
+    if [ $PY_FORMAT_EXIT -ne 0 ] || [ $PY_CHECK_EXIT -ne 0 ] || [ $PY_TYPE_EXIT -ne 0 ]; then
+      FORMAT_EXIT_CODE=1
+    fi
+  else
+    echo "Warning: uv not found. Skipping Python checks."
+  fi
+fi
 
 # Restore working directory state
 if [ $STASHED -eq 0 ]; then
