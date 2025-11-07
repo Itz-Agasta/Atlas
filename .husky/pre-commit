@@ -71,8 +71,13 @@ if [ -n "$PY_FILES" ]; then
           # Ensure app dependencies are installed
           (cd "$APP_ROOT" && uv sync --quiet 2>/dev/null || true)
           # Run pyrefly from the app directory
-          if (cd "$APP_ROOT" && uv run pyrefly check "src/atlas_workers/workers" 2>&1 | grep -q "ERROR"); then
+          PYREFLY_OUTPUT=$(cd "$APP_ROOT" && uv run pyrefly check "src/atlas_workers/workers" 2>&1)
+          if echo "$PYREFLY_OUTPUT" | grep -q "ERROR"; then
+            echo "Type check failed in $APP_ROOT:"
+            echo "$PYREFLY_OUTPUT"
             PY_TYPE_EXIT=1
+          else
+            echo "✓ Type check passed for $APP_ROOT"
           fi
         fi
       done
