@@ -131,6 +131,38 @@ Most formatting and common issues are automatically fixed by Biome. Run `npx ult
 
 ---
 
+## Python Code Standards
+
+For Python files, this project uses **Ruff** for fast linting and formatting, and **Pyrefly** for type checking.
+
+### Quick Reference (Python)
+
+- **Format and lint code**: `uv run ruff check --fix`
+- **Type check**: `uv run pyrefly`
+- **Format code only**: `uv run ruff format`
+
+### Python Best Practices
+
+- Use type hints for all function parameters and return values
+- Use `pathlib.Path` instead of string paths
+- Prefer `Optional[T]` for nullable values; avoid `None` as default without type hints
+- Use f-strings for string formatting
+- Keep functions focused and under 50 lines when possible
+- Use meaningful variable names; avoid single-letter variables except in loops
+- Handle exceptions explicitly - don't use bare `except`
+- Use logging instead of print statements for production code
+- Follow PEP 8 conventions for naming and spacing
+
+### Testing & Quality
+
+- Write docstrings for all public functions and classes
+- Use type hints to prevent runtime errors
+- Keep test functions under 30 lines
+- Use fixtures and parameterization in pytest
+- Aim for >80% code coverage on critical paths
+
+---
+
 ## Secret Management
 
 This project uses **Infisical** for secure secret management and environment variable handling.

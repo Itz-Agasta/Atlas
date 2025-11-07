@@ -24,9 +24,10 @@ async def test_sync_worker_initialization(tmp_path):
 async def test_parse_profile_index(sync_worker):
     """Test parsing profile index."""
     sample_index = """# Test Index
-dac/incois/2902224/2902224_prof.nc | 2025-11-06 |
-dac/incois/2902224/profiles/R2902224_001.nc | 2025-11-05 |
-dac/incois/2902225/2902225_prof.nc | 2025-11-06 |
+# This is a header comment
+incois/2902224/2902224_prof.nc,2025-11-06,0.0,72.0,Indian Ocean,profiler,incois,2025-11-06
+incois/2902224/profiles/R2902224_001.nc,2025-11-05,0.0,72.0,Indian Ocean,profiler,incois,2025-11-05
+incois/2902225/2902225_prof.nc,2025-11-06,-5.0,75.0,Indian Ocean,profiler,incois,2025-11-06
 """
 
     # Set DAC to 'incois' for matching
