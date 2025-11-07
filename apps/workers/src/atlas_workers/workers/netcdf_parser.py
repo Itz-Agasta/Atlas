@@ -167,12 +167,20 @@ class NetCDFParserWorker:
         n_levels = ds.dims.get("N_LEVELS", 0)
 
         for level_idx in range(n_levels):
+            # Check PRES value first - skip if fill/sentinel/non-finite
+            pres_val = None
+            if "PRES" in ds:
+                try:
+                    pres_val = ds["PRES"].values[prof_idx][level_idx]
+                    if np.isnan(pres_val) or pres_val >= 99999:
+                        continue  # Skip this level
+                except (IndexError, TypeError):
+                    continue  # Skip this level
+            else:
+                pres_val = level_idx * 100  # Fallback depth
+
             measurement = MeasurementProfile(
-                depth=float(
-                    self._safe_get(ds["PRES"], "values", [[]])[prof_idx][level_idx]
-                    if "PRES" in ds
-                    else level_idx * 100
-                ),
+                depth=float(pres_val),
                 temperature=self._get_measurement_value(
                     ds, "TEMP", prof_idx, level_idx
                 ),
@@ -182,6 +190,19 @@ class NetCDFParserWorker:
                     ds, "CHLA", prof_idx, level_idx
                 ),
             )
+
+            # Skip level if all sensor readings are missing/NaN
+            if all(
+                val is None
+                for val in [
+                    measurement.temperature,
+                    measurement.salinity,
+                    measurement.oxygen,
+                    measurement.chlorophyll,
+                ]
+            ):
+                continue
+
             measurements.append(measurement)
 
         # Determine quality status
@@ -197,7 +218,9 @@ class NetCDFParserWorker:
             latitude=float(latitude),
             longitude=float(longitude),
             measurements=measurements,
-            max_depth=float(max([m.depth for m in measurements], default=0)),
+            max_depth=max([m.depth for m in measurements], default=None)
+            if measurements
+            else None,
             quality_status=quality_status,
             metadata={
                 "source_file": file_path.name,
