@@ -8,6 +8,20 @@
       "when": 1762452481313,
       "tag": "0000_youthful_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762870585824,
+      "tag": "0001_colorful_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762876308509,
+      "tag": "0002_blushing_frank_castle",
+      "breakpoints": true
     }
   ]
 }

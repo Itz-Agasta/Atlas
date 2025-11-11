@@ -9,6 +9,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 import { geometry } from "drizzle-orm/pg-core/columns/postgis_extension/geometry";
 
@@ -113,6 +114,11 @@ export const argo_profiles = pgTable(
       "gist",
       table.surface_location
     ),
+    // Unique constraint to prevent duplicate profiles for same float+cycle
+    floatCycleUnique: unique("profiles_float_cycle_unique").on(
+      table.float_id,
+      table.cycle
+    ),
   })
 );
 
@@ -183,6 +189,76 @@ export const sync_manifest = pgTable(
   })
 );
 
+// [T3]: PROFILE MEASUREMENTS (normalized vertical profile data)
+// Replaces flat JSONB storage with structured rows for better query performance
+export const argo_profile_measurements = pgTable(
+  "argo_profile_measurements",
+  {
+    id: serial("id").primaryKey(),
+    profile_id: integer("profile_id")
+      .notNull()
+      .references(() => argo_profiles.id, { onDelete: "cascade" }),
+    depth: real("depth").notNull(), // Pressure in dBar
+    temperature: real("temperature"),
+    salinity: real("salinity"),
+    oxygen: real("oxygen"),
+    chlorophyll: real("chlorophyll"),
+
+    // Quality control flags for each parameter (0=good, 1=probably_good, 2=probably_bad, 3=bad)
+    qc_temp: integer("qc_temp"),
+    qc_salinity: integer("qc_salinity"),
+    qc_oxygen: integer("qc_oxygen"),
+    qc_chlorophyll: integer("qc_chlorophyll"),
+
+    created_at: timestamp("created_at").default(sql`NOW()`),
+  },
+  (table) => ({
+    profileDepthIdx: index("profile_measurements_profile_depth_idx").on(
+      table.profile_id,
+      table.depth
+    ),
+    depthIdx: index("profile_measurements_depth_idx").on(table.depth),
+    tempIdx: index("profile_measurements_temp_idx").on(table.temperature),
+  })
+);
+
+// [T3]: FLOAT SENSORS & CALIBRATION (sensor configuration)
+// Tracks instrument specifications and pre-deployment calibration
+export const argo_float_sensors = pgTable(
+  "argo_float_sensors",
+  {
+    id: serial("id").primaryKey(),
+    float_id: bigint("float_id", { mode: "number" })
+      .notNull()
+      .references(() => argo_float_metadata.float_id, { onDelete: "cascade" }),
+    sensor_type: text("sensor_type").notNull(), // "TEMPERATURE", "CONDUCTIVITY", "OXYGEN", "CHLOROPHYLL"
+    sensor_maker: text("sensor_maker"), // "SeaBird", "RBRconcerto", etc.
+    sensor_model: text("sensor_model"), // "SBE 41.04"
+    sensor_serial_no: text("sensor_serial_no"), // Unique hardware ID
+    parameter_name: text("parameter_name"), // "TEMP", "PSAL", "DOXY", "CHLA"
+
+    // Pre-deployment calibration details
+    calibration_data: jsonb("calibration_data"), // {equation: "TEMP = a0 + a1*x + ...", coefficients: {...}}
+    calibration_date: timestamp("calibration_date"),
+    calibration_comment: text("calibration_comment"),
+
+    // Measurement units and accuracy
+    units: text("units"), // "Degrees C", "PSU", "μmol/kg", "mg/m³"
+    accuracy: real("accuracy"), // ±0.002°C, ±0.003 PSU, etc.
+    resolution: real("resolution"), // Sensor precision
+
+    created_at: timestamp("created_at").default(sql`NOW()`),
+    updated_at: timestamp("updated_at").default(sql`NOW()`),
+  },
+  (table) => ({
+    floatSensorIdx: index("float_sensors_float_sensor_idx").on(
+      table.float_id,
+      table.sensor_type
+    ),
+    parameterIdx: index("float_sensors_parameter_idx").on(table.parameter_name),
+  })
+);
+
 export default {
   argo_float_metadata,
   argo_float_positions,
@@ -191,4 +267,6 @@ export default {
   argo_float_stats,
   processing_log,
   sync_manifest,
+  argo_profile_measurements,
+  argo_float_sensors,
 };
