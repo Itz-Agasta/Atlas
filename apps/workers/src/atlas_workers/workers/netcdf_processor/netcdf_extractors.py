@@ -185,7 +185,18 @@ def get_float_id(ds: xr.Dataset, file_path: Any) -> str:
 
     # Fallback to filename parsing
     try:
-        return str(file_path).split("_")[0]
+        # Extract filename from path and parse float ID
+        # Expected format: D2902226_001.nc or 2902226_prof.nc
+        from pathlib import Path
+
+        filename = Path(file_path).name
+        # Remove prefix letter if present (e.g., D2902226 -> 2902226)
+        parts = filename.split("_")[0]
+        # Strip non-digits from start
+        float_id_str = "".join(c for c in parts if c.isdigit())
+        if float_id_str:
+            return float_id_str
+        return "unknown"
     except (IndexError, AttributeError):
         return "unknown"
 
