@@ -1,4 +1,4 @@
-.PHONY: help install test lint format type-check clean dev run-ftp run-parser deploy-aws
+.PHONY: help install test lint format type-check clean dev run-single run-batch deploy-aws
 
 help:
 	@echo "ARGO Workers - Makefile Commands"
@@ -10,8 +10,8 @@ help:
 	@echo "  make format           Format code"
 	@echo "  make type-check       Run type checking"
 	@echo "  make clean            Clean build artifacts"
-	@echo "  make run-ftp          Run FTP sync worker"
-	@echo "  make run-parser       Run NetCDF parser worker"
+	@echo "  make run-single       Run ARGO loader (single float)"
+	@echo "  make run-batch        Run ARGO loader (batch mode)"
 	@echo "  make deploy-aws       Deploy to AWS Lambda"
 
 install:
@@ -41,11 +41,15 @@ clean:
 	rm -rf .coverage || true
 	rm -rf dist/ build/ *.egg-info/ || true
 
-run-ftp:
-	uv run python -m src.atlas_workers.workers.ftp_sync
+run-single:
+	@echo "Running ARGO loader (single float: $(FLOAT_ID))..."
+	infisical run --env=dev -- uv run python -m src.atlas_workers.main \
+		--float-id $(FLOAT_ID)
 
-run-parser:
-	uv run python -m src.atlas_workers.workers.netcdf_parser
+run-batch:
+	@echo "Running ARGO loader (batch mode)..."
+	infisical run --env=dev -- uv run python -m src.atlas_workers.main \
+		--batch
 
 deploy-aws:
 	@echo "Preparing Lambda package..."

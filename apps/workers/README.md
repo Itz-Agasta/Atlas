@@ -1,10 +1,18 @@
 # ARGO Data Processing Workers
 
-This package contains Python workers for processing oceanographic ARGO float data from the `data-argo.ifremer.fr` repository. It's designed to be deployed as AWS Lambda functions.
+This package contains Python workers for processing oceanographic ARGO float data from the `data-argo.ifremer.fr` repository. It provides both individual worker components and a unified main application for end-to-end ARGO data processing. The package is designed to be deployed as AWS Lambda functions.
 
 ## Architecture Overview
 
-The package consists of two main workers in the data pipeline:
+The package provides a unified ARGO data processing pipeline that combines multiple worker components into a cohesive system. The main application orchestrates the entire workflow from data download to database upload.
+
+Key components:
+
+- **FTP Sync**: Downloads ARGO data from IFREMER repository
+- **NetCDF Processing**: Parses and extracts data from NetCDF files
+- **Database Operations**: Handles data upload and storage
+- **Main Application**: Orchestrates the complete processing pipeline
+
 ![workers arch](../../docs/imgs/workers.png)
 
 ## Package Structure
@@ -13,6 +21,14 @@ The package consists of two main workers in the data pipeline:
 src/atlas_workers/
 ├── __init__.py              # Package exports
 ├── config.py                # Configuration management (Pydantic Settings)
+├── main.py                  # Main application entry point
+├── operations.py            # Core processing operations
+├── lambda_handler.py        # AWS Lambda handler
+├── lambda_handlers.py       # Additional Lambda handlers
+├── db/
+│   ├── __init__.py
+│   ├── connector.py         # Database connection management
+│   └── operations.py        # Database operations
 ├── models/
 │   ├── argo.py              # Data models (FloatMetadata, ProfileData)
 │   └── __init__.py
@@ -20,14 +36,9 @@ src/atlas_workers/
 │   ├── logging.py           # Structured logging setup
 │   └── __init__.py
 └── workers/
-    ├── ftp_sync.py          # Worker #1: Download ARGO data
-    ├── netcdf_parser.py     # Worker #2: Parse NetCDF files
+    ├── ftp_sync.py/         # FTP sync worker
+    ├── netcdf_processor/    # NetCDF processing workers
     └── __init__.py
-
-tests/
-├── conftest.py              # Pytest configuration
-├── test_ftp_sync.py         # FTP worker tests
-└── test_netcdf_parser.py    # Parser worker tests
 ```
 
 ## Worker #1: FTP Sync
@@ -42,39 +53,15 @@ Downloads ARGO float data from the IFREMER repository.
 - **HTTP Fallback**: Uses HTTPS when FTP unavailable
 - **Retry Logic**: Automatic retries on network failures
 
-### Usage
-
-```python
-import asyncio
-from atlas_workers.workers import FTPSyncWorker
-
-async def main():
-    worker = FTPSyncWorker(
-        ftp_server="data-argo.ifremer.fr",
-        dac="incois",
-        cache_path="/tmp/argo_data"
-    )
-
-    # Sync all floats
-    result = await worker.sync()
-    print(f"Downloaded: {result['files_downloaded']} files")
-
-    # Sync specific floats
-    result = await worker.sync(float_ids=["2902224", "2902225"])
-    print(f"Synced specific floats: {result['files_downloaded']} files")
-
-asyncio.run(main())
-```
-
 ### Command Line
 
 ```bash
 # Run worker directly
-python -m src.atlas_workers.workers.ftp_sync
+uv run python -m src.atlas_workers.workers.ftp_sync
 
 # With specific float IDs
 export FLOAT_IDS="2902224,2902225"
-python -m src.atlas_workers.workers.ftp_sync
+uv run python -m src.atlas_workers.workers.ftp_sync
 ```
 
 ### Configuration
@@ -122,48 +109,6 @@ Converts NetCDF ARGO files to structured data formats (Arrow/Parquet/JSON).
 - **Profile Statistics**: Calculates min/max/avg for each profile
 - **Quality Flags**: Preserves data quality indicators
 - **Batch Processing**: Process entire float directories
-
-### Usage
-
-```python
-from pathlib import Path
-from atlas_workers.workers import NetCDFParserWorker
-
-worker = NetCDFParserWorker(cache_path="/tmp/argo_data")
-
-# Parse single file
-profiles = worker.parse_profile_file(
-    Path("/tmp/argo_data/incois/2902224/R2902224_001.nc")
-)
-print(f"Parsed {len(profiles)} profiles")
-
-# Process entire float directory
-stats = worker.process_directory("2902224")
-print(f"Total profiles: {stats['profiles_parsed']}")
-
-# Export to different formats
-# JSON format
-worker.export_to_json(
-    profiles,
-    Path("/tmp/profiles.json")
-)
-
-# Arrow/Parquet format
-worker.export_to_arrow(
-    profiles,
-    Path("/tmp/profiles.parquet")
-)
-```
-
-### Command Line
-
-```bash
-# Run parser directly
-python -m src.atlas_workers.workers.netcdf_parser
-
-# Process specific float
-FLOAT_ID=2902224 python -m src.atlas_workers.workers.netcdf_parser
-```
 
 ### Configuration
 
@@ -312,6 +257,23 @@ LOG_FORMAT=json  # or 'text'
 ENVIRONMENT=development
 ```
 
+### Running the Worker
+
+Use the provided Makefile commands to run the ARGO data processing:
+
+```bash
+# Process a single ARGO float
+make run-single FLOAT_ID=2902224
+
+# Process multiple floats in batch mode
+make run-batch
+
+# View all available commands
+make help
+```
+
+**Note**: These commands automatically use `infisical` for secret management and run in the development environment.
+
 ## Testing
 
 Run the full test suite:
@@ -325,6 +287,12 @@ uv run pytest tests/test_ftp_sync.py::test_sync_worker_initialization -v
 
 # With coverage
 uv run pytest tests/ --cov=src/atlas_workers --cov-report=html
+```
+
+## Extras
+
+```python
+infisical run --env=dev -- uv run python -m src.atlas_workers.main --float-id 2902225 --skip-download
 ```
 
 ### Test Files

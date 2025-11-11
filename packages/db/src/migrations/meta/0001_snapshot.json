@@ -101,9 +101,7 @@
         "argo_float_metadata_wmo_number_unique": {
           "name": "argo_float_metadata_wmo_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "wmo_number"
-          ]
+          "columns": ["wmo_number"]
         }
       },
       "policies": {},
@@ -176,12 +174,8 @@
           "name": "argo_float_positions_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_float_positions",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": [
-            "float_id"
-          ],
-          "columnsTo": [
-            "float_id"
-          ],
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -332,12 +326,8 @@
           "name": "argo_float_sensors_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_float_sensors",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": [
-            "float_id"
-          ],
-          "columnsTo": [
-            "float_id"
-          ],
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -445,12 +435,8 @@
           "name": "argo_float_stats_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_float_stats",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": [
-            "float_id"
-          ],
-          "columnsTo": [
-            "float_id"
-          ],
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -573,12 +559,8 @@
           "name": "argo_positions_timeseries_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_positions_timeseries",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": [
-            "float_id"
-          ],
-          "columnsTo": [
-            "float_id"
-          ],
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -725,12 +707,8 @@
           "name": "argo_profile_measurements_profile_id_argo_profiles_id_fk",
           "tableFrom": "argo_profile_measurements",
           "tableTo": "argo_profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -888,12 +866,8 @@
           "name": "argo_profiles_float_id_argo_float_metadata_float_id_fk",
           "tableFrom": "argo_profiles",
           "tableTo": "argo_float_metadata",
-          "columnsFrom": [
-            "float_id"
-          ],
-          "columnsTo": [
-            "float_id"
-          ],
+          "columnsFrom": ["float_id"],
+          "columnsTo": ["float_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

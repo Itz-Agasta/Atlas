@@ -55,5 +55,8 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"  # development, staging, production
 
+    # Database Configuration
+    DATABASE_URL: Optional[str] = None
+
 
 settings = Settings()
