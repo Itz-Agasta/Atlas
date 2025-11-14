@@ -36,7 +36,7 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + || true
 	find . -type f -name "*.pyc" -delete || true
 	rm -rf .pytest_cache/ || true
-	rm -rf .mypy_cache/ || true
+	rm -rf .ruff_cache/ || true
 	rm -rf htmlcov/ || true
 	rm -rf .coverage || true
 	rm -rf dist/ build/ *.egg-info/ || true
