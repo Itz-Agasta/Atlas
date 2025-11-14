@@ -32,22 +32,16 @@ jobs:
           prune-cache: true
 
       - name: Install Python dev dependencies
-        run: |
-          (cd apps/workers && uv sync --group dev)
-          (cd apps/ml-services && uv sync --group dev) || echo "ML services has no dev dependencies yet"
+        run: uv sync --group dev
 
       # Check formatting
       - name: Ruff Format Check
-        run: |
-          (cd apps/workers && uv run ruff format --check --diff .)
-          (cd apps/ml-services && uv run ruff format --check --diff .) || echo "ML services format check skipped"
+        run: uv run ruff format --check --diff apps/
         continue-on-error: true
 
       # Check linting
       - name: Ruff Lint Check
-        run: |
-          (cd apps/workers && uv run ruff check --output-format=github .)
-          (cd apps/ml-services && uv run ruff check --output-format=github .) || echo "ML services lint check skipped"
+        run: uv run ruff check --output-format=github apps/
         continue-on-error: true
 
   # Type Check - Python Code (Pyrefly)
@@ -68,16 +62,14 @@ jobs:
             **/uv.lock
 
       - name: Install Python dev dependencies
-        run: |
-          (cd apps/workers && uv sync --group dev)
-          (cd apps/ml-services && uv sync --group dev) || echo "⚠️ ML services has no dev dependencies yet"
+        run: uv sync --group dev
 
       - name: Pyrefly Type Check - Workers
-        run: uv run pyrefly check apps/workers/src/
+        run: (cd apps/workers && uv sync --group dev && uv run pyrefly check src/)
         continue-on-error: true
 
       - name: Pyrefly Type Check - ML Services
-        run: uv run pyrefly check apps/ml-services/ 2>/dev/null || echo "ML Services type check skipped"
+        run: (cd apps/ml-services && uv sync --group dev && uv run pyrefly check .)
         continue-on-error: true
 
   # Lint and Format Check - TypeScript Code
