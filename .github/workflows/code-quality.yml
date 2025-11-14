@@ -36,14 +36,13 @@ jobs:
         run: |
           (cd apps/workers && uv sync --only-group dev && uv run ruff format --check --diff .)
           (cd apps/ml-services && uv sync --only-group dev && uv run ruff format --check --diff .)
-        continue-on-error: true
-
+      #  continue-on-error: true
       # Check linting
       - name: Ruff Lint Check
         run: |
           (cd apps/workers && uv sync --only-group dev && uv run ruff check --output-format=github .)
           (cd apps/ml-services && uv sync --only-group dev && uv run ruff check --output-format=github .)
-        continue-on-error: true
+      #  continue-on-error: true
 
   # Type Check - Python Code (Pyrefly)
   typecheck-python:
@@ -64,11 +63,11 @@ jobs:
 
       - name: Pyrefly Type Check - Workers
         run: (cd apps/workers && uv sync --only-group dev && uv run pyrefly check src/)
-        continue-on-error: true
+      #  continue-on-error: true
 
       - name: Pyrefly Type Check - ML Services
         run: (cd apps/ml-services && uv sync --only-group dev && uv run pyrefly check .)
-        continue-on-error: true
+      #  continue-on-error: true
 
   # Lint and Format Check - TypeScript Code
   lint-typescript:
