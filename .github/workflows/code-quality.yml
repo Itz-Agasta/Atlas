@@ -31,17 +31,18 @@ jobs:
             **/uv.lock
           prune-cache: true
 
-      - name: Install Python dev dependencies
-        run: uv sync --group dev
-
       # Check formatting
       - name: Ruff Format Check
-        run: uv run ruff format --check --diff apps/
+        run: |
+          (cd apps/workers && uv sync --group dev && uv run ruff format --check --diff .)
+          (cd apps/ml-services && uv sync --group dev && uv run ruff format --check --diff .)
         continue-on-error: true
 
       # Check linting
       - name: Ruff Lint Check
-        run: uv run ruff check --output-format=github apps/
+        run: |
+          (cd apps/workers && uv sync --group dev && uv run ruff check --output-format=github .)
+          (cd apps/ml-services && uv sync --group dev && uv run ruff check --output-format=github .)
         continue-on-error: true
 
   # Type Check - Python Code (Pyrefly)
@@ -60,9 +61,6 @@ jobs:
             **/requirements*.txt
             **/pyproject.toml
             **/uv.lock
-
-      - name: Install Python dev dependencies
-        run: uv sync --group dev
 
       - name: Pyrefly Type Check - Workers
         run: (cd apps/workers && uv sync --group dev && uv run pyrefly check src/)
