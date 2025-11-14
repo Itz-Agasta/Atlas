@@ -34,15 +34,15 @@ jobs:
       # Check formatting
       - name: Ruff Format Check
         run: |
-          (cd apps/workers && uv sync --group dev && uv run ruff format --check --diff .)
-          (cd apps/ml-services && uv sync --group dev && uv run ruff format --check --diff .)
+          (cd apps/workers && uv sync --only-group dev && uv run ruff format --check --diff .)
+          (cd apps/ml-services && uv sync --only-group dev && uv run ruff format --check --diff .)
         continue-on-error: true
 
       # Check linting
       - name: Ruff Lint Check
         run: |
-          (cd apps/workers && uv sync --group dev && uv run ruff check --output-format=github .)
-          (cd apps/ml-services && uv sync --group dev && uv run ruff check --output-format=github .)
+          (cd apps/workers && uv sync --only-group dev && uv run ruff check --output-format=github .)
+          (cd apps/ml-services && uv sync --only-group dev && uv run ruff check --output-format=github .)
         continue-on-error: true
 
   # Type Check - Python Code (Pyrefly)
@@ -63,11 +63,11 @@ jobs:
             **/uv.lock
 
       - name: Pyrefly Type Check - Workers
-        run: (cd apps/workers && uv sync --group dev && uv run pyrefly check src/)
+        run: (cd apps/workers && uv sync --only-group dev && uv run pyrefly check src/)
         continue-on-error: true
 
       - name: Pyrefly Type Check - ML Services
-        run: (cd apps/ml-services && uv sync --group dev && uv run pyrefly check .)
+        run: (cd apps/ml-services && uv sync --only-group dev && uv run pyrefly check .)
         continue-on-error: true
 
   # Lint and Format Check - TypeScript Code
@@ -86,12 +86,10 @@ jobs:
       # Biome check (linting and formatting)
       - name: Biome Check
         run: bun x @biomejs/biome check .
-        continue-on-error: true
 
       # Oxlint for additional checks
       - name: Oxlint Check
         run: bun x oxlint --deny-warnings 2>&1 | tee oxlint-output.txt
-        continue-on-error: true
 
       - name: Display Oxlint Results
         if: always()
@@ -116,7 +114,6 @@ jobs:
 
       - name: TypeScript Type Check
         run: bun run check-types
-        continue-on-error: true
 
   # Summary
   quality-check-summary:
