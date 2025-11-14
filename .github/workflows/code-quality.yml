@@ -15,7 +15,7 @@ env:
 jobs:
   # Lint and Format Check - Python Code
   lint-python:
-    name: 🐍 Python Lint & Format
+    name: Python Lint & Format
     runs-on: ubuntu-latest
 
     steps:
@@ -34,7 +34,7 @@ jobs:
       - name: Install Python dev dependencies
         run: |
           (cd apps/workers && uv sync --group dev)
-          (cd apps/ml-services && uv sync --group dev) || echo "⚠️ ML services has no dev dependencies yet"
+          (cd apps/ml-services && uv sync --group dev) || echo "ML services has no dev dependencies yet"
 
       # Check formatting
       - name: Ruff Format Check
@@ -48,7 +48,7 @@ jobs:
 
   # Type Check - Python Code (Pyrefly)
   typecheck-python:
-    name: 🐍 Python Type Check
+    name: Python Type Check
     runs-on: ubuntu-latest
 
     steps:
@@ -73,12 +73,12 @@ jobs:
         continue-on-error: true
 
       - name: Pyrefly Type Check - ML Services
-        run: uv run pyrefly check apps/ml-services/ 2>/dev/null || echo "⚠️ ML Services type check skipped"
+        run: uv run pyrefly check apps/ml-services/ 2>/dev/null || echo "ML Services type check skipped"
         continue-on-error: true
 
   # Lint and Format Check - TypeScript Code
   lint-typescript:
-    name: 📘 TypeScript Lint & Format
+    name: TypeScript Lint & Format
     runs-on: ubuntu-latest
 
     steps:
@@ -109,7 +109,7 @@ jobs:
 
   # Type Check - TypeScript Code
   typecheck-typescript:
-    name: 📘 TypeScript Type Check
+    name: TypeScript Type Check
     runs-on: ubuntu-latest
 
     steps:
@@ -139,10 +139,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🐍 Python Lint & Format | ${{ needs.lint-python.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🐍 Python Type Check | ${{ needs.typecheck-python.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📘 TypeScript Lint & Format | ${{ needs.lint-typescript.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📘 TypeScript Type Check | ${{ needs.typecheck-typescript.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Lint & Format | ${{ needs.lint-python.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Type Check | ${{ needs.typecheck-python.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript Lint & Format | ${{ needs.lint-typescript.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript Type Check | ${{ needs.typecheck-typescript.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           FAILED=0
