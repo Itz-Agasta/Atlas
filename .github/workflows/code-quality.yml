@@ -33,8 +33,8 @@ jobs:
 
       - name: Install Python dev dependencies
         run: |
-          cd apps/workers && uv sync --group dev
-          cd ../ml-services && uv sync --group dev 2>/dev/null || echo "ML services has no dev dependencies yet"
+          (cd apps/workers && uv sync --group dev)
+          (cd apps/ml-services && uv sync --group dev) || echo "⚠️ ML services has no dev dependencies yet"
 
       # Check formatting
       - name: Ruff Format Check
@@ -65,8 +65,8 @@ jobs:
 
       - name: Install Python dev dependencies
         run: |
-          cd apps/workers && uv sync --group dev
-          cd ../ml-services && uv sync --group dev 2>/dev/null || echo "ML services has no dev dependencies yet"
+          (cd apps/workers && uv sync --group dev)
+          (cd apps/ml-services && uv sync --group dev) || echo "⚠️ ML services has no dev dependencies yet"
 
       - name: Pyrefly Type Check - Workers
         run: uv run pyrefly check apps/workers/src/
@@ -89,19 +89,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # Biome format check
-      - name: Biome Format Check
-        run: bun x @biomejs/biome format --check .
-        continue-on-error: true
-
-      # Biome lint check
-      - name: Biome Lint Check
-        run: bun x @biomejs/biome lint --output-format=github .
+      # Biome check (linting and formatting)
+      - name: Biome Check
+        run: bun x @biomejs/biome check .
         continue-on-error: true
 
       # Oxlint for additional checks
       - name: Oxlint Check
-        run: bun x oxlint --deny-warnings 2>&1 | tee oxlint-output.txt || true
+        run: bun x oxlint --deny-warnings 2>&1 | tee oxlint-output.txt
         continue-on-error: true
 
       - name: Display Oxlint Results
@@ -161,8 +156,8 @@ jobs:
             echo "### 🔧 To fix issues locally:" >> $GITHUB_STEP_SUMMARY
             echo "**TypeScript/JavaScript:**" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "npm run fix              # Format & fix with ultracite" >> $GITHUB_STEP_SUMMARY
-            echo "npm run check-types     # Type check" >> $GITHUB_STEP_SUMMARY
+            echo "bun run fix              # Format & fix" >> $GITHUB_STEP_SUMMARY
+            echo "bun run check-types     # Type check" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Python:**" >> $GITHUB_STEP_SUMMARY
