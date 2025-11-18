@@ -29,7 +29,7 @@ def is_directory(
     except error_perm:
         return False
     except Exception as e:
-        logger.error(f"Unexpected error checking if '{name}' is a directory: {e}")
+        logger.exception(f"Unexpected error checking if '{name}' is a directory: {e}")
         return False
 
 
@@ -63,13 +63,13 @@ def list_directory(
                 else:
                     files.append(item)
             except Exception as e:
-                logger.warning(f"Error checking item '{item}' in '{path}': {e}")
+                logger.exception(f"Error checking item '{item}' in '{path}': {e}")
         return directories, files
     except error_perm as e:
         logger.warning(f"Permission error accessing {path}: {e}")
         return [], []
     except Exception as e:
-        logger.error(f"Error listing directory {path}: {e}")
+        logger.exception(f"Error listing directory {path}: {e}")
         return [], []
 
 
@@ -104,13 +104,13 @@ def list_files_with_extension(
                 elif item.endswith(extension):
                     files.append(item)
             except Exception as e:
-                logger.warning(f"Error checking item '{item}' in '{path}': {e}")
+                logger.exception(f"Error checking item '{item}' in '{path}': {e}")
         return directories, files
     except error_perm as e:
         logger.warning(f"Permission error accessing {path}: {e}")
         return [], []
     except Exception as e:
-        logger.error(f"Error listing directory {path}: {e}")
+        logger.exception(f"Error listing directory {path}: {e}")
         return [], []
 
 
@@ -138,7 +138,7 @@ def get_file_size(
         logger.warning(f"Permission error getting size for file '{filename}': {e}")
         return 0
     except Exception as e:
-        logger.warning(f"Error getting size for file '{filename}': {e}")
+        logger.exception(f"Error getting size for file '{filename}': {e}")
         return 0
 
 
@@ -160,9 +160,9 @@ def change_directory_safe(ftp: FTP, path: str) -> bool:
     except error_perm as e:
         logger.warning(f"Permission error changing to directory '{path}': {e}")
     except Exception as e:
-        logger.error(f"Error changing to directory '{path}': {e}")
+        logger.exception(f"Error changing to directory '{path}': {e}")
     try:
         ftp.cwd(current_dir)
     except Exception as inner_e:
-        logger.warning(f"Error returning to original directory '{current_dir}': {inner_e}")
+        logger.exception(f"Error returning to original directory '{current_dir}': {inner_e}")
     return False

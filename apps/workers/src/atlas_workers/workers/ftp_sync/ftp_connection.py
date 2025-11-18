@@ -63,7 +63,7 @@ class FTPConnection:
                 try:
                     ftp.quit()
                 except Exception as e:
-                    logger.warning(f"Error quitting FTP connection: {e}")
+                    logger.exception(f"Error quitting FTP connection: {e}")
                     ftp.close()
     
     def test_connection(self):
@@ -81,7 +81,7 @@ class FTPConnection:
                 logger.info("FTP connection test successful!")
                 return True
         except Exception as e:
-            logger.error(f"FTP connection test failed: {e}")
+            logger.exception(f"FTP connection test failed: {e}")
             return False
 
 

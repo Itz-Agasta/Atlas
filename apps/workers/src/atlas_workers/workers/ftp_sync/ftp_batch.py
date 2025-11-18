@@ -3,7 +3,7 @@
 import time
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Callable, Optional, Dict, Any
+from typing import List, Callable, Dict, Any
 
 from ...utils.logging import get_logger
 

@@ -113,7 +113,7 @@ class FTPScanner:
                         time.sleep(inter_dir_delay)
             
             except Exception as e:
-                logger.error(f"Error scanning directory {directory}: {e}")
+                logger.exception(f"Error scanning directory {directory}: {e}")
         
         return all_files
 

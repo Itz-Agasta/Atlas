@@ -71,7 +71,8 @@ class FTPDownloader:
                 remote_dir = '/'.join(remote_path.split('/')[:-1])
                 remote_file = remote_path.split('/')[-1]
 
-                ftp.cwd(remote_dir)
+                if remote_dir:
+                    ftp.cwd(remote_dir)
 
                 # Get file size
                 try:
