@@ -1,0 +1,232 @@
+import { createGroq } from "@ai-sdk/groq";
+import { createOpenAI } from "@ai-sdk/openai";
+import { generateText } from "ai";
+import type { RAGAgentResult } from "../agents/rag-agent";
+import type { SQLAgentResult } from "../agents/sql-agent";
+import { config } from "../config/config";
+import type { CitationData } from "../models/citation";
+import type { ScientificResponseData } from "../models/scientific-response";
+
+const openrouter = createOpenAI({
+  apiKey: config.openRouterApiKey,
+  baseURL: "https://openrouter.ai/api/v1",
+});
+
+const _groq = createGroq({
+  apiKey: config.groqApiKey,
+});
+
+// Constants
+const MAX_EXCERPT_LENGTH = 300;
+
+export type AgentResults = {
+  queryType: string;
+  originalQuery: string;
+  sqlResults?: SQLAgentResult;
+  ragResults?: RAGAgentResult;
+};
+
+/**
+ * Response Orchestrator
+ * Combines SQL and RAG results into comprehensive scientific response
+ */
+export async function responseOrchestrator(
+  results: AgentResults
+): Promise<ScientificResponseData> {
+  const startTime = Date.now();
+
+  try {
+    // Use massive context window model for orchestration
+    const { text, usage } = await generateText({
+      model: openrouter(config.models.orchestrator),
+      system: `You are an expert oceanographer and scientific writer specialized in Argo float data analysis.
+
+Your task is to generate a comprehensive, well-cited response combining:
+1. Quantitative analysis of Argo float data (if available)
+2. Supporting research from peer-reviewed literature (if available)
+3. Statistical rigor and uncertainty quantification
+4. Proper academic citations
+
+RESPONSE FORMAT:
+- Start with key findings from the data analysis
+- Provide statistical context (mean, std dev, ranges, trends)
+- Explain significance of the findings
+- Connect to relevant research literature with citations
+- Discuss limitations of the analysis
+- Suggest future research directions
+
+CITATION FORMAT:
+- Use [Author et al., Year] format in text
+- Be specific about which findings come from which papers
+- Only cite papers that are actually relevant to the query
+
+IMPORTANT:
+- Be precise and quantitative when data is available
+- Acknowledge uncertainties and limitations
+- Use scientific terminology appropriately
+- Keep response concise but comprehensive (200-500 words)
+- If no data or papers are available, state this clearly`,
+
+      prompt: formatAgentContext(results),
+      maxTokens: 2000,
+    });
+
+    const citations = extractCitations(results.ragResults);
+    const dataQuality = calculateDataQuality(results);
+
+    return {
+      response: text,
+      citations,
+      dataQuality,
+      queryType: results.queryType,
+      timestamp: new Date(),
+      tokensUsed: usage?.totalTokens,
+      processingTimeMs: Date.now() - startTime,
+    };
+  } catch (error) {
+    throw new Error(
+      `Orchestration failed: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
+
+function formatAgentContext(results: AgentResults): string {
+  let context = `ORIGINAL QUERY: ${results.originalQuery}\n\n`;
+  context += `QUERY TYPE: ${results.queryType}\n\n`;
+
+  context += formatSQLContext(results.sqlResults);
+  context += formatRAGContext(results.ragResults);
+  context += formatNoDataWarning(results);
+
+  return context;
+}
+
+function formatSQLContext(sqlResults?: SQLAgentResult): string {
+  if (!sqlResults) {
+    return "";
+  }
+
+  if (sqlResults.success && sqlResults.data) {
+    let context = "ARGO FLOAT DATA ANALYSIS:\n";
+    context += `SQL Query Executed:\n${sqlResults.sql}\n\n`;
+    context += `Results (${sqlResults.rowCount} rows):\n`;
+    context += JSON.stringify(sqlResults.data, null, 2);
+    context += "\n\n";
+    return context;
+  }
+
+  if (sqlResults.error) {
+    return `ARGO DATA ERROR: ${sqlResults.error}\n\n`;
+  }
+
+  return "";
+}
+
+/**
+ * Format RAG results context
+ */
+function formatRAGContext(ragResults?: RAGAgentResult): string {
+  if (!ragResults) {
+    return "";
+  }
+
+  if (ragResults.success && ragResults.papers) {
+    let context = "RELEVANT RESEARCH PAPERS:\n\n";
+    for (const [idx, paper] of ragResults.papers.entries()) {
+      context += formatPaperCitation(idx + 1, paper);
+    }
+    return context;
+  }
+
+  if (ragResults.error) {
+    return `LITERATURE SEARCH ERROR: ${ragResults.error}\n\n`;
+  }
+
+  return "";
+}
+
+function formatPaperCitation(
+  index: number,
+  paper: {
+    title: string;
+    authors: string[];
+    year: number;
+    journal?: string;
+    doi?: string;
+    url?: string;
+    score: number;
+    chunk: string;
+  }
+): string {
+  let citation = `${index}. "${paper.title}"\n`;
+  citation += `   Authors: ${paper.authors.join(", ")}\n`;
+  citation += `   Year: ${paper.year}`;
+  if (paper.journal) {
+    citation += `, Journal: ${paper.journal}`;
+  }
+  citation += "\n";
+  if (paper.doi) {
+    citation += `   DOI: ${paper.doi}\n`;
+  }
+  if (paper.url) {
+    citation += `   URL: ${paper.url}\n`;
+  }
+  citation += `   Relevance Score: ${paper.score.toFixed(2)}\n`;
+  citation += `   Relevant Excerpt: "${paper.chunk.substring(0, MAX_EXCERPT_LENGTH)}..."\n\n`;
+  return citation;
+}
+
+function formatNoDataWarning(results: AgentResults): string {
+  const hasNoSQL = !results.sqlResults?.success;
+  const hasNoRAG = !results.ragResults?.success;
+
+  if (hasNoSQL && hasNoRAG) {
+    return "Note: No data or literature was successfully retrieved. Provide a general response based on oceanographic knowledge.\n";
+  }
+
+  return "";
+}
+
+function extractCitations(ragResults?: RAGAgentResult): CitationData[] {
+  if (!ragResults?.papers) {
+    return [];
+  }
+
+  return ragResults.papers.map((paper) => ({
+    paperId: paper.paperId,
+    title: paper.title,
+    authors: paper.authors,
+    doi: paper.doi,
+    year: paper.year,
+    url: paper.url,
+    journal: paper.journal,
+    relevanceScore: paper.score,
+  }));
+}
+
+/**
+ * Calculate data quality metrics
+ */
+function calculateDataQuality(results: AgentResults) {
+  const floatsAnalyzed = results.sqlResults?.rowCount || 0;
+  const papersReferenced = results.ragResults?.papersFound || 0;
+  const sqlQueriesExecuted = results.sqlResults?.success ? 1 : 0;
+  const ragSearchesPerformed = results.ragResults?.success ? 1 : 0;
+
+  let averageCitationRelevance: number | undefined;
+  if (results.ragResults?.papers && results.ragResults.papers.length > 0) {
+    const totalScore = results.ragResults.papers.reduce(
+      (sum, paper) => sum + paper.score,
+      0
+    );
+    averageCitationRelevance = totalScore / results.ragResults.papers.length;
+  }
+
+  return {
+    floatsAnalyzed,
+    papersReferenced,
+    sqlQueriesExecuted,
+    ragSearchesPerformed,
+    averageCitationRelevance,
+  };
+}
