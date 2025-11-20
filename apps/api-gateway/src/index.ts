@@ -1,14 +1,16 @@
 import "dotenv/config";
 import { createContext } from "@atlas/api/context";
-import { appRouter } from "@atlas/api/routers/index";
 import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
+import logger from "./config/logger";
+import { appRouter } from "./routes/index";
+import { logServerReady, logStartupDiagnostics } from "./utils/startup";
 
 const app = new Hono();
 
-app.use(logger());
+logStartupDiagnostics();
+
 app.use(
   "/*",
   cors({
@@ -16,6 +18,8 @@ app.use(
     allowMethods: ["GET", "POST", "OPTIONS"],
   })
 );
+
+logger.info("Middleware configured: CORS, Logger");
 
 app.use(
   "/trpc/*",
@@ -25,9 +29,26 @@ app.use(
   })
 );
 
+logger.info("tRPC router mounted at /trpc");
+
 app.get("/", (c) => {
   c.header("Content-Type", "text/plain");
   return c.text("OK from Agasta");
 });
 
-export default app;
+app.get("/health", (c) =>
+  c.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+  })
+);
+
+const port = Number.parseInt(process.env.PORT || "3000", 10);
+
+export default {
+  port,
+  fetch: app.fetch,
+};
+
+logServerReady(port);

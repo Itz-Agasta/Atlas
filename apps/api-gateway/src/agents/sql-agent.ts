@@ -45,7 +45,7 @@ function validateSQL(sqlQuery: string): { isValid: boolean; cleaned: string } {
  * Text-to-SQL Agent
  * Converts natural language queries to SQL for Argo float data
  */
-export async function executeSQLAgent(
+export async function SQLAgent(
   params: SQLAgentParams
 ): Promise<SQLAgentResult> {
   const { query, floatId, timeRange, dryRun = false } = params;

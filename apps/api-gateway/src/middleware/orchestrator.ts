@@ -1,19 +1,13 @@
-import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
+import type { Citation, ScientificResponse } from "@atlas/api";
 import { generateText } from "ai";
 import type { RAGAgentResult } from "../agents/rag-agent";
 import type { SQLAgentResult } from "../agents/sql-agent";
 import { config } from "../config/config";
-import type { CitationData } from "../models/citation";
-import type { ScientificResponseData } from "../models/scientific-response";
 
 const openrouter = createOpenAI({
   apiKey: config.openRouterApiKey,
   baseURL: "https://openrouter.ai/api/v1",
-});
-
-const _groq = createGroq({
-  apiKey: config.groqApiKey,
 });
 
 // Constants
@@ -32,13 +26,12 @@ export type AgentResults = {
  */
 export async function responseOrchestrator(
   results: AgentResults
-): Promise<ScientificResponseData> {
+): Promise<ScientificResponse> {
   const startTime = Date.now();
 
   try {
-    // Use massive context window model for orchestration
     const { text, usage } = await generateText({
-      model: openrouter(config.models.orchestrator),
+      model: openrouter(config.models.orchestrator), // NOTE: Uses massive context window model for orchestration
       system: `You are an expert oceanographer and scientific writer specialized in Argo float data analysis.
 
 Your task is to generate a comprehensive, well-cited response combining:
@@ -68,7 +61,7 @@ IMPORTANT:
 - If no data or papers are available, state this clearly`,
 
       prompt: formatAgentContext(results),
-      maxTokens: 2000,
+      maxOutputTokens: 2000,
     });
 
     const citations = extractCitations(results.ragResults);
@@ -122,9 +115,6 @@ function formatSQLContext(sqlResults?: SQLAgentResult): string {
   return "";
 }
 
-/**
- * Format RAG results context
- */
 function formatRAGContext(ragResults?: RAGAgentResult): string {
   if (!ragResults) {
     return "";
@@ -183,11 +173,10 @@ function formatNoDataWarning(results: AgentResults): string {
   if (hasNoSQL && hasNoRAG) {
     return "Note: No data or literature was successfully retrieved. Provide a general response based on oceanographic knowledge.\n";
   }
-
   return "";
 }
 
-function extractCitations(ragResults?: RAGAgentResult): CitationData[] {
+function extractCitations(ragResults?: RAGAgentResult): Citation[] {
   if (!ragResults?.papers) {
     return [];
   }
@@ -204,9 +193,6 @@ function extractCitations(ragResults?: RAGAgentResult): CitationData[] {
   }));
 }
 
-/**
- * Calculate data quality metrics
- */
 function calculateDataQuality(results: AgentResults) {
   const floatsAnalyzed = results.sqlResults?.rowCount || 0;
   const papersReferenced = results.ragResults?.papersFound || 0;

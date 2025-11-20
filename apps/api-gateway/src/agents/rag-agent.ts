@@ -32,7 +32,7 @@ export type RAGAgentParams = {
  * RAG Agent for Research Paper Retrieval
  * Currently uses mock data - integrate with Qdrant for production
  */
-export async function executeRAGAgent(
+export async function RAGAgent(
   params: RAGAgentParams
 ): Promise<RAGAgentResult> {
   const { query, topK = DEFAULT_TOP_K, yearRange } = params;
