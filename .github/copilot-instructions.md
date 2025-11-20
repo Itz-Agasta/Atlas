@@ -107,6 +107,132 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 
 ---
 
+## tRPC + Zod Schema Organization
+
+This project uses **tRPC v11+** for type-safe APIs. Follow these patterns strictly to avoid duplicate schemas and maintain clarity.
+
+### Architecture Overview
+
+```
+packages/api/              ← Shared tRPC definitions
+├── src/
+│   ├── types.ts          ← TypeScript types ONLY (no Zod)
+│   ├── routers/
+│   │   └── agent.ts      ← Zod schemas + tRPC router (co-located)
+│   └── index.ts          ← tRPC instance + exports
+
+apps/api-gateway/         ← Server implementation
+├── src/
+│   ├── agents/           ← Business logic (can have internal Zod schemas)
+│   ├── routes/           ← Route handlers using @atlas/api routers
+│   └── index.ts          ← Hono server
+```
+
+### Rule 1: Co-locate Zod Schemas with tRPC Routers
+
+**DO:** Define Zod schemas in the same file as the router that uses them
+
+```typescript
+// ✅ packages/api/src/routers/agent.ts
+import { z } from "zod";
+import { publicProcedure, router } from "../index";
+
+// Schemas defined right here
+export const agentQueryInputSchema = z.object({
+  query: z.string().min(1),
+  floatId: z.number().optional(),
+});
+
+export const agentRouter = router({
+  query: publicProcedure
+    .input(agentQueryInputSchema)
+    .query(async ({ input }) => {
+      // ...
+    }),
+});
+
+// Export types for TypeScript
+export type AgentQueryInput = z.infer<typeof agentQueryInputSchema>;
+```
+
+**DON'T:** Create separate `schemas/` directories or barrel files
+
+```typescript
+// ❌ packages/api/src/schemas/agent.schema.ts
+export const agentQueryInputSchema = z.object({ ... });
+
+// ❌ packages/api/src/schemas/index.ts (barrel file)
+export * from "./agent.schema";
+```
+
+### Rule 2: Separate Runtime Schemas from TypeScript Types
+
+**`packages/api/src/types.ts`** should contain ONLY TypeScript types (no Zod):
+
+```typescript
+// ✅ types.ts - Pure TypeScript types
+export type Citation = {
+  paperId: string;
+  title: string;
+  authors: string[];
+};
+
+export type QueryType = "DATA_ANALYSIS" | "LITERATURE_REVIEW" | "HYBRID";
+```
+
+**DON'T:** Mix Zod runtime schemas with TypeScript types:
+
+```typescript
+// ❌ types.ts - Don't do this!
+import { z } from "zod";
+
+export const citationSchema = z.object({ ... }); // ← NO! This is runtime
+export type Citation = z.infer<typeof citationSchema>;
+```
+
+### Rule 3: Server-Only Schemas Stay in Server Code
+
+If a Zod schema is only used on the server (not in tRPC), keep it in `apps/api-gateway`:
+
+```typescript
+// ✅ apps/api-gateway/src/agents/classifier.ts
+import { z } from "zod";
+
+// Internal validation schema - not exposed via tRPC
+const queryTypeSchema = z.enum([
+  "DATA_ANALYSIS",
+  "LITERATURE_REVIEW",
+  "HYBRID",
+]);
+
+export async function classifyQuery(query: string) {
+  // Use schema internally
+  const result = queryTypeSchema.parse(type);
+  // ...
+}
+```
+
+### Rule 4: Import Schemas Correctly
+
+```typescript
+// ✅ Import schemas from routers, types from types.ts
+import type { Citation } from "@atlas/api"; // TypeScript type
+import { agentQueryInputSchema } from "@atlas/api/routers/agent"; // Zod schema
+
+// ❌ Don't import from non-existent schemas directory
+import { agentQueryInputSchema } from "@atlas/api/schemas/agent";
+```
+
+### Why This Matters
+
+1. **No Duplicates:** Schemas defined once, used everywhere
+2. **Tree-shaking:** Client bundles don't include server-only Zod schemas
+3. **Performance:** No barrel files = faster builds
+4. **Type Safety:** TypeScript types separate from runtime validation
+5. **Official Pattern:** Follows tRPC's recommended architecture
+
+---
+
 ## Testing
 
 - Write assertions inside `it()` or `test()` blocks

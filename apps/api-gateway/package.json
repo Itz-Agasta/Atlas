@@ -21,6 +21,7 @@
     "dotenv": "catalog:",
     "drizzle-orm": "^0.44.7",
     "hono": "catalog:",
+    "winston": "^3.18.3",
     "zod": "catalog:"
   },
   "devDependencies": {
