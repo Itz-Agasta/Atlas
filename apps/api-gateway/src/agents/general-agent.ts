@@ -46,7 +46,7 @@ RESPONSE GUIDELINES:
 
 Keep responses SHORT (2-3 sentences max for greetings, 4-5 for explanations). Be conversational and natural.`,
       prompt: query,
-      maxTokens: 200,
+      maxOutputTokens: 200,
     });
 
     return {

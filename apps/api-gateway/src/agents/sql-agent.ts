@@ -1,8 +1,6 @@
 import { createGroq } from "@ai-sdk/groq";
 import { db } from "@atlas/db";
-import { generateText, tool } from "ai";
-import { sql as drizzleSql } from "drizzle-orm";
-import { z } from "zod";
+import { generateText } from "ai";
 import { config } from "../config/config";
 
 const groq = createGroq({
@@ -16,6 +14,16 @@ export type SQLAgentResult = {
   rowCount?: number;
   error?: string;
   executionTimeMs?: number;
+};
+
+export type SQLAgentParams = {
+  query: string;
+  floatId?: number;
+  timeRange?: {
+    start?: string;
+    end?: string;
+  };
+  dryRun?: boolean; // To generates SQL without executing it
 };
 
 /**
@@ -37,38 +45,17 @@ function validateSQL(sqlQuery: string): { isValid: boolean; cleaned: string } {
  * Text-to-SQL Agent
  * Converts natural language queries to SQL for Argo float data
  */
-export const sqlAgent = tool({
-  description: "Generate and execute SQL queries for Argo float data",
-  parameters: z.object({
-    query: z.string().describe("The research question to convert to SQL"),
-    floatId: z
-      .number()
-      .optional()
-      .describe("Specific float WMO number to filter"),
-    timeRange: z
-      .object({
-        start: z.string().optional().describe("Start date in ISO format"),
-        end: z.string().optional().describe("End date in ISO format"),
-      })
-      .optional(),
-    dryRun: z
-      .boolean()
-      .default(false)
-      .describe("Only generate SQL without executing"),
-  }),
-  execute: async ({
-    query,
-    floatId,
-    timeRange,
-    dryRun,
-  }): Promise<SQLAgentResult> => {
-    const startTime = Date.now();
+export async function executeSQLAgent(
+  params: SQLAgentParams
+): Promise<SQLAgentResult> {
+  const { query, floatId, timeRange, dryRun = false } = params;
+  const startTime = Date.now();
 
-    try {
-      // Generate SQL query using LLM
-      const { text: sqlQuery } = await generateText({
-        model: groq(config.models.sqlAgent),
-        system: `You are an expert SQL writer for oceanographic Argo float data in PostgreSQL with PostGIS.
+  try {
+    // Generate SQL query using LLM
+    const { text: sqlQuery } = await generateText({
+      model: groq(config.models.sqlAgent),
+      system: `You are an expert SQL writer for oceanographic Argo float data in PostgreSQL with PostGIS.
 
 DATABASE SCHEMA:
 
@@ -221,64 +208,52 @@ A: SELECT
    LIMIT 100;
 
 Generate ONLY the SQL query without any markdown formatting, explanations, or comments.`,
-        prompt: `Generate PostgreSQL query for: ${query}
+      prompt: `Generate PostgreSQL query for: ${query}
 ${floatId ? `\nFilter for float_id: ${floatId}` : ""}
 ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "now"}` : ""}`,
-        maxTokens: 500,
-      });
+      maxOutputTokens: 500,
+    });
 
-      const { isValid, cleaned: cleanedSQL } = validateSQL(sqlQuery);
+    const { isValid, cleaned: cleanedSQL } = validateSQL(sqlQuery);
 
-      if (!isValid) {
-        return {
-          success: false,
-          error: "Generated SQL must be a SELECT or WITH statement",
-          sql: cleanedSQL,
-        };
-      }
+    if (!isValid) {
+      return {
+        success: false,
+        error: "Generated SQL must be a SELECT or WITH statement",
+        sql: cleanedSQL,
+      };
+    }
 
-      // If dry run, return SQL without executing
-      if (dryRun) {
-        return {
-          success: true,
-          sql: cleanedSQL,
-          data: [],
-          rowCount: 0,
-          executionTimeMs: Date.now() - startTime,
-        };
-      }
-
-      // Execute the SQL query
-      const result = await db.execute(drizzleSql.raw(cleanedSQL));
-      const executionTimeMs = Date.now() - startTime;
-
-      const resultsArray = Array.isArray(result) ? result : [result];
-
+    // If dry run, return SQL without executing
+    if (dryRun) {
       return {
         success: true,
         sql: cleanedSQL,
-        data: resultsArray,
-        rowCount: resultsArray.length,
-        executionTimeMs,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown SQL execution error",
+        data: [],
+        rowCount: 0,
         executionTimeMs: Date.now() - startTime,
       };
     }
-  },
-});
 
-export function executeSQLAgent(params: {
-  query: string;
-  floatId?: number;
-  timeRange?: { start?: string; end?: string };
-  dryRun?: boolean;
-}): Promise<SQLAgentResult> {
-  return sqlAgent.execute(params);
+    // Execute the SQL query using the database's raw query execution
+    const result = await db.execute(cleanedSQL);
+    const executionTimeMs = Date.now() - startTime;
+
+    const resultsArray = Array.isArray(result) ? result : [result];
+
+    return {
+      success: true,
+      sql: cleanedSQL,
+      data: resultsArray,
+      rowCount: resultsArray.length,
+      executionTimeMs,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Unknown SQL execution error",
+      executionTimeMs: Date.now() - startTime,
+    };
+  }
 }

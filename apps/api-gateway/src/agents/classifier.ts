@@ -1,31 +1,34 @@
 import { createGroq } from "@ai-sdk/groq";
-import { generateText, tool } from "ai";
+import type { QueryClassification } from "@atlas/api";
+import { generateText } from "ai";
 import { z } from "zod";
 import { config } from "../config/config";
-import {
-  type QueryClassificationResult,
-  QueryType,
-} from "../models/query-types";
 
 const groq = createGroq({
   apiKey: config.groqApiKey,
 });
 
+// used internally for validation
+const queryTypeSchema = z.enum([
+  "DATA_ANALYSIS",
+  "LITERATURE_REVIEW",
+  "HYBRID",
+  "METHODOLOGICAL",
+  "FORECASTING",
+  "GENERAL",
+]);
+
 /**
  * Query Classifier Agent
  * Determines the type of oceanographic query and routes to appropriate agents
  */
-export const classifyQuery = tool({
-  description:
-    "Classify oceanographic research queries into appropriate categories",
-  parameters: z.object({
-    query: z.string().min(10).describe("The research question to classify"),
-  }),
-  execute: async ({ query }): Promise<QueryClassificationResult> => {
-    try {
-      const { text } = await generateText({
-        model: groq(config.models.classifier),
-        system: `You are an expert oceanography research assistant specializing in Argo float data analysis.
+export async function classifyQueryDirect(
+  query: string
+): Promise<QueryClassification> {
+  try {
+    const { text } = await generateText({
+      model: groq(config.models.classifier),
+      system: `You are an expert oceanography research assistant specializing in Argo float data analysis.
 
 Classify queries into ONE of these categories:
 
@@ -59,38 +62,31 @@ Classify queries into ONE of these categories:
              "what's your name?", "tell me about yourself"
 
 Respond with ONLY the category name (e.g., "DATA_ANALYSIS") without any additional text.`,
-        prompt: `Classify this query: "${query}"`,
-        maxTokens: 50,
-      });
+      prompt: `Classify this query: "${query}"`,
+      maxOutputTokens: 50,
+    });
 
-      const queryType = text.trim() as z.infer<typeof QueryType>;
+    const queryType = text.trim() as z.infer<typeof queryTypeSchema>;
 
-      // Validate the classification
-      const validTypes = QueryType.options;
-      if (!validTypes.includes(queryType as unknown as never)) {
-        // Default to HYBRID if classification is uncertain
-        return {
-          queryType: "HYBRID",
-          confidence: 0.5,
-          reasoning: "Classification uncertain, defaulting to HYBRID approach",
-        };
-      }
-
+    // Validate the classification
+    const validTypes = queryTypeSchema.options;
+    if (!validTypes.includes(queryType as never)) {
+      // Default to HYBRID if classification is uncertain
       return {
-        queryType,
-        confidence: 0.95,
-        reasoning: `Query classified as ${queryType}`,
+        queryType: "HYBRID",
+        confidence: 0.5,
+        reasoning: "Classification uncertain, defaulting to HYBRID approach",
       };
-    } catch (error) {
-      throw new Error(
-        `Failed to classify query: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
     }
-  },
-});
 
-export function classifyQueryDirect(
-  query: string
-): Promise<QueryClassificationResult> {
-  return classifyQuery.execute({ query });
+    return {
+      queryType,
+      confidence: 0.95, // TODO: Implement a voting/ensemble strategy to get the real confidence
+      reasoning: `Query classified as ${queryType}`,
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to classify query: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
 }
