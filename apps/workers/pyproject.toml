@@ -28,4 +28,5 @@ dev = [
 [dependency-groups]
 dev = [
     "ruff>=0.14.4",
+    "pyrefly>=0.1.0",
 ]

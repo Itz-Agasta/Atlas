@@ -10,13 +10,19 @@
     "start": "bun run dist/index.js"
   },
   "dependencies": {
-    "hono": "catalog:",
-    "@trpc/server": "catalog:",
-    "@hono/trpc-server": "^0.4.0",
-    "dotenv": "catalog:",
-    "zod": "catalog:",
+    "@ai-sdk/groq": "^2.0.29",
+    "@ai-sdk/openai": "^2.0.68",
     "@atlas/api": "workspace:*",
-    "@atlas/db": "workspace:*"
+    "@atlas/db": "workspace:*",
+    "@hono/trpc-server": "^0.4.0",
+    "@trpc/server": "catalog:",
+    "ai": "^5.0.94",
+    "date-fns": "^4.1.0",
+    "dotenv": "catalog:",
+    "drizzle-orm": "^0.44.7",
+    "hono": "catalog:",
+    "winston": "^3.18.3",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",

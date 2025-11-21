@@ -1,0 +1,159 @@
+name: Format & Lint Check (CI)
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # Lint and Format Check - Python Code
+  lint-python:
+    name: Python Lint & Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.3.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            **/requirements*.txt
+            **/pyproject.toml
+            **/uv.lock
+          prune-cache: true
+
+      # Check formatting
+      - name: Ruff Format Check
+        run: |
+          (cd apps/workers && uv sync --only-group dev && uv run ruff format --check --diff .)
+          (cd apps/ml-services && uv sync --only-group dev && uv run ruff format --check --diff .)
+      #  continue-on-error: true
+      # Check linting
+      - name: Ruff Lint Check
+        run: |
+          (cd apps/workers && uv sync --only-group dev && uv run ruff check --output-format=github .)
+          (cd apps/ml-services && uv sync --only-group dev && uv run ruff check --output-format=github .)
+      #  continue-on-error: true
+
+  # Type Check - Python Code (Pyrefly)
+  typecheck-python:
+    name: Python Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.3.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            **/requirements*.txt
+            **/pyproject.toml
+            **/uv.lock
+
+      - name: Pyrefly Type Check - Workers
+        run: (cd apps/workers && uv sync --only-group dev && uv run pyrefly check src/)
+      #  continue-on-error: true
+
+      - name: Pyrefly Type Check - ML Services
+        run: (cd apps/ml-services && uv sync --only-group dev && uv run pyrefly check .)
+      #  continue-on-error: true
+
+  # Lint and Format Check - TypeScript Code
+  lint-typescript:
+    name: TypeScript Lint & Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.3.0
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Biome check (linting and formatting)
+      - name: Biome Check
+        run: bun x @biomejs/biome check .
+
+      # Oxlint for additional checks
+      - name: Oxlint Check
+        run: bun x oxlint --deny-warnings 2>&1 | tee oxlint-output.txt
+
+      - name: Display Oxlint Results
+        if: always()
+        run: |
+          if [ -s oxlint-output.txt ]; then
+            echo "### Oxlint Results" >> $GITHUB_STEP_SUMMARY
+            cat oxlint-output.txt >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Type Check - TypeScript Code
+  typecheck-typescript:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.3.0
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: TypeScript Type Check
+        run: bun run check-types
+
+  # Summary
+  quality-check-summary:
+    name: Quality Checks Summary
+    runs-on: ubuntu-latest
+    needs:
+      [lint-python, typecheck-python, lint-typescript, typecheck-typescript]
+    if: always()
+
+    steps:
+      - name: Check Status
+        run: |
+          echo "## Code Quality Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Lint & Format | ${{ needs.lint-python.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python Type Check | ${{ needs.typecheck-python.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript Lint & Format | ${{ needs.lint-typescript.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript Type Check | ${{ needs.typecheck-typescript.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          FAILED=0
+          [ "${{ needs.lint-python.result }}" != "success" ] && [ "${{ needs.lint-python.result }}" != "skipped" ] && FAILED=1
+          [ "${{ needs.typecheck-python.result }}" != "success" ] && [ "${{ needs.typecheck-python.result }}" != "skipped" ] && FAILED=1
+          [ "${{ needs.lint-typescript.result }}" != "success" ] && [ "${{ needs.lint-typescript.result }}" != "skipped" ] && FAILED=1
+          [ "${{ needs.typecheck-typescript.result }}" != "success" ] && [ "${{ needs.typecheck-typescript.result }}" != "skipped" ] && FAILED=1
+
+          if [ $FAILED -eq 1 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### To fix issues locally:" >> $GITHUB_STEP_SUMMARY
+            echo "**TypeScript/JavaScript:**" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "bun run fix              # Format & fix" >> $GITHUB_STEP_SUMMARY
+            echo "bun run check-types     # Type check" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Python:**" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "uv run ruff check --fix # Lint & auto-fix" >> $GITHUB_STEP_SUMMARY
+            echo "uv run ruff format      # Format" >> $GITHUB_STEP_SUMMARY
+            echo "uv run pyrefly check src/      # Type check" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi

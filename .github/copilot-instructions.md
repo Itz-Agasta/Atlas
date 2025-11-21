@@ -107,6 +107,144 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 
 ---
 
+## tRPC + Zod Schema Organization
+
+This project uses **tRPC v11+** for type-safe APIs. Follow these patterns strictly to avoid duplicate schemas and maintain clarity.
+
+### Architecture Overview
+
+```
+packages/api/              ← Shared schemas and types
+├── src/
+│   ├── types.ts          ← TypeScript types ONLY (no Zod)
+│   ├── schemas/
+│   │   └── agent.ts      ← ✅ Zod schemas + inferred types
+│   └── index.ts          ← tRPC instance + exports
+
+apps/api-gateway/         ← Server implementation
+├── src/
+│   ├── agents/           ← Business logic (can have internal Zod schemas)
+│   ├── routes/           ← Route handlers using @atlas/api schemas
+│   └── index.ts          ← Hono server
+```
+
+### Rule 1: Separate Zod Schemas from Router Implementations
+
+**DO:** Define Zod schemas in dedicated `packages/api/src/schemas/` directory
+
+```typescript
+// ✅ packages/api/src/schemas/agent.ts
+import { z } from "zod";
+
+// Schemas defined in dedicated file
+export const agentQueryInputSchema = z.object({
+  query: z.string().min(1),
+  floatId: z.number().optional(),
+});
+
+// Export inferred types
+export type AgentQueryInput = z.infer<typeof agentQueryInputSchema>;
+```
+
+**DON'T:** Co-locate schemas with router implementations in shared package
+
+```typescript
+// ❌ packages/api/src/routers/agent.ts (old pattern)
+export const agentRouter = router({
+  query: publicProcedure
+    .input(agentQueryInputSchema)
+    .mutation(() => undefined as never), // Stub!
+});
+```
+
+### Rule 2: Implement Routers in Server Apps
+
+**DO:** Import schemas and implement routers in `apps/api-gateway`
+
+```typescript
+// ✅ apps/api-gateway/src/routes/v1/agent.ts
+import { publicProcedure, router } from "@atlas/api";
+import { agentQueryInputSchema } from "@atlas/api/schemas/agent";
+
+export const agentRouter = router({
+  query: publicProcedure
+    .input(agentQueryInputSchema)
+    .mutation(async ({ input }) => {
+      // Actual implementation
+      return await processQuery(input);
+    }),
+});
+```
+
+### Rule 3: Separate Runtime Schemas from TypeScript Types
+
+**`packages/api/src/types.ts`** should contain ONLY TypeScript types (no Zod):
+
+```typescript
+// ✅ types.ts - Pure TypeScript types
+export type Citation = {
+  paperId: string;
+  title: string;
+  authors: string[];
+};
+
+export type QueryType = "DATA_ANALYSIS" | "LITERATURE_REVIEW" | "HYBRID";
+```
+
+**DON'T:** Mix Zod runtime schemas with TypeScript types:
+
+```typescript
+// ❌ types.ts - Don't do this!
+import { z } from "zod";
+
+export const citationSchema = z.object({ ... }); // ← NO! This is runtime
+export type Citation = z.infer<typeof citationSchema>;
+```
+
+### Rule 4: Server-Only Schemas Stay in Server Code
+
+If a Zod schema is only used on the server (not in tRPC), keep it in `apps/api-gateway`:
+
+```typescript
+// ✅ apps/api-gateway/src/agents/classifier.ts
+import { z } from "zod";
+
+// Internal validation schema - not exposed via tRPC
+const queryTypeSchema = z.enum([
+  "DATA_ANALYSIS",
+  "LITERATURE_REVIEW",
+  "HYBRID",
+]);
+
+export async function classifyQuery(query: string) {
+  // Use schema internally
+  const result = queryTypeSchema.parse(type);
+  // ...
+}
+```
+
+### Rule 5: Import Schemas Correctly
+
+```typescript
+// ✅ Import schemas from schemas directory, types from types.ts
+import type { Citation } from "@atlas/api"; // TypeScript type
+import { agentQueryInputSchema } from "@atlas/api/schemas/agent"; // Zod schema
+
+// ❌ Don't import from old router paths
+import { agentQueryInputSchema } from "@atlas/api/routers/agent";
+```
+
+### Why This Matters
+
+1. **No Duplicates:** Schemas defined once, used everywhere
+2. **Tree-shaking:** Client bundles don't include server-only Zod schemas
+3. **Performance:** No barrel files = faster builds
+4. **Type Safety:** TypeScript types separate from runtime validation
+5. **T3 Convention:** Matches `create-t3-turbo` and official examples
+6. **No Confusion:** No stub routers that return `undefined as never`
+
+---
+
 ## Testing
 
 - Write assertions inside `it()` or `test()` blocks
