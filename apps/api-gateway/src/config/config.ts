@@ -15,7 +15,7 @@ export const config = {
 
   databaseUrl: process.env.DATABASE_URL || "",
 
-  isDev: process.env.NODE_ENV !== "development",
+  isDev: process.env.BUN_ENV !== "production",
 };
 
 // TODO: Later we will have 2 separate files under config. env.ts and config.ts

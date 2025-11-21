@@ -41,10 +41,10 @@ Traditional REST APIs require:
 tRPC provides **end-to-end type safety** from server to client:
 
 ```typescript
-// Server: packages/api/src/routers/agent.ts
+// Server: apps/api-gateway/src/routes/v1/agent.ts
 export const agentRouter = router({
   query: publicProcedure
-    .input(z.object({ query: z.string() }))
+    .input(agentQueryInputSchema)
     .query(async ({ input }) => {
       return { answer: "Hello", citations: [] };
     }),
@@ -77,7 +77,8 @@ const result = await trpc.agent.query({ query: "test" });
 │  │   packages/  │      │    apps/     │      │  apps/   │ │
 │  │     api      │─────▶│ api-gateway  │      │   web    │ │
 │  │              │      │   (Server)   │◀────▶│ (Client) │ │
-│  │  tRPC Defs   │      │  Hono + tRPC │      │ Next.js  │ │
+│  │  Schemas +   │      │  Hono + tRPC │      │ Next.js  │ │
+│  │   Types      │      │              │      │          │ │
 │  └──────────────┘      └──────────────┘      └──────────┘ │
 │         │                      │                           │
 │         │                      │                           │
@@ -95,7 +96,7 @@ const result = await trpc.agent.query({ query: "test" });
 
 | Package            | Purpose                  | Key Files                        | Dependencies                      |
 | ------------------ | ------------------------ | -------------------------------- | --------------------------------- |
-| `packages/api`     | Shared tRPC definitions  | `routers/`, `types.ts`           | `zod`, `@trpc/server`             |
+| `packages/api`     | Shared schemas & types   | `schemas/`, `types.ts`           | `zod`, `@trpc/server`             |
 | `packages/db`      | Database schema & client | `schema.ts`, `index.ts`          | `drizzle-orm`, `postgres`         |
 | `apps/api-gateway` | Server implementation    | `agents/`, `routes/`, `index.ts` | `@atlas/api`, `@atlas/db`, `hono` |
 | `apps/web`         | Next.js client           | `app/`, `components/`            | `@atlas/api`, `@trpc/client`      |
@@ -106,7 +107,7 @@ const result = await trpc.agent.query({ query: "test" });
 
 ### The Three Types of Code
 
-Atlas separates concerns into three layers:
+Atlas separates concerns into three layers following T3/tRPC monorepo best practices:
 
 #### 1. **TypeScript Types** (`packages/api/src/types.ts`)
 
@@ -132,43 +133,88 @@ export type QueryType = "DATA_ANALYSIS" | "LITERATURE_REVIEW" | "HYBRID";
 - ✅ ONLY TypeScript type definitions
 - ✅ Can be imported by both client and server
 
-#### 2. **tRPC Schemas** (`packages/api/src/routers/*.ts`)
+#### 2. **tRPC Schemas** (`packages/api/src/schemas/agent.ts`)
 
-**Purpose:** Runtime validation for tRPC endpoints
+**Purpose:** Runtime validation schemas shared between client and server
 
 ```typescript
-// ✅ Co-located with router definition
+// ✅ Dedicated schemas file for shared validation
 import { z } from "zod";
-import { publicProcedure, router } from "../index";
 
-// Schema definition
+// Schema definitions
 export const agentQueryInputSchema = z.object({
   query: z.string().min(1, "Query cannot be empty"),
   floatId: z.number().optional(),
+  includeRag: z.boolean().default(true),
+  includeSql: z.boolean().default(true),
+  timeRange: z
+    .object({
+      start: z.string().optional(),
+      end: z.string().optional(),
+    })
+    .optional(),
 });
 
-// Router using the schema
-export const agentRouter = router({
-  query: publicProcedure
-    .input(agentQueryInputSchema)
-    .query(async ({ input }) => {
-      // input is typed as { query: string; floatId?: number }
-    }),
-});
-
-// Export TypeScript type for use elsewhere
+// Export inferred types for TypeScript
 export type AgentQueryInput = z.infer<typeof agentQueryInputSchema>;
+export type TestSQLInput = z.infer<typeof testSQLInputSchema>;
+export type ClassifyInput = z.infer<typeof classifyInputSchema>;
 ```
 
 **Rules:**
 
-- ✅ Define schemas in the SAME file as the router
+- ✅ Define schemas in dedicated `schemas/` directory
 - ✅ Export both schemas and inferred types
 - ✅ Use `.describe()` for API documentation
-- ❌ NO separate `schemas/` directory
-- ❌ NO barrel files (`index.ts` re-exporting schemas)
+- ✅ Import schemas in router implementations
+- ❌ NO router implementations in shared package
 
-#### 3. **Server-Only Schemas** (`apps/api-gateway/src/agents/*.ts`)
+#### 3. **Router Implementations** (`apps/api-gateway/src/routes/v1/agent.ts`)
+
+**Purpose:** Actual tRPC router implementations with business logic
+
+```typescript
+// ✅ Import schemas from shared package, implement routers in server app
+import { publicProcedure, router } from "@atlas/api";
+import {
+  agentQueryInputSchema,
+  testSQLInputSchema,
+  classifyInputSchema,
+} from "@atlas/api/schemas/agent";
+
+export const agentRouter = router({
+  query: publicProcedure
+    .input(agentQueryInputSchema)
+    .mutation(async ({ input }) => {
+      // Actual implementation with business logic
+      const result = await processQuery(input);
+      return result;
+    }),
+
+  testSQL: publicProcedure
+    .input(testSQLInputSchema)
+    .query(async ({ input }) => {
+      // Implementation here
+    }),
+
+  classify: publicProcedure
+    .input(classifyInputSchema)
+    .query(async ({ input }) => {
+      // Implementation here
+    }),
+});
+
+export type AgentRouter = typeof agentRouter;
+```
+
+**Rules:**
+
+- ✅ Keep in `apps/api-gateway` (server-only)
+- ✅ Import schemas from `@atlas/api/schemas/*`
+- ✅ Contain actual business logic and implementations
+- ✅ Export router type for client inference
+
+#### 4. **Server-Only Schemas** (`apps/api-gateway/src/agents/*.ts`)
 
 **Purpose:** Internal validation not exposed via tRPC
 
@@ -200,10 +246,9 @@ export async function classifyQuery(query: string) {
 ```
 packages/api/src/
 ├── types.ts                    ← Pure TypeScript types
-├── routers/
-│   ├── agent.ts               ← Zod schemas + tRPC router
-│   └── index.ts               ← Router aggregation
-└── index.ts                   ← tRPC exports
+├── schemas/
+│   └── agent.ts               ← Zod schemas + inferred types
+└── index.ts                   ← tRPC setup exports
 
 apps/api-gateway/src/
 ├── agents/
@@ -212,20 +257,24 @@ apps/api-gateway/src/
 │   └── rag-agent.ts
 ├── routes/
 │   └── v1/
-│       └── agent.ts           ← Route handlers using @atlas/api
+│       └── agent.ts           ← ✅ Router implementations using shared schemas
 └── index.ts                   ← Hono server
 ```
 
 ### Import Patterns
 
 ```typescript
-// ✅ Correct imports
+// ✅ Correct imports (new pattern)
 import type { Citation, QueryType } from "@atlas/api"; // Types
-import { agentQueryInputSchema } from "@atlas/api/routers/agent"; // Schemas
+import {
+  agentQueryInputSchema,
+  type AgentQueryInput,
+} from "@atlas/api/schemas/agent"; // Schemas + types
 import { db } from "@atlas/db"; // Database client
+import { router, publicProcedure } from "@atlas/api"; // tRPC setup
 
-// ❌ Wrong imports
-import { agentQueryInputSchema } from "@atlas/api/schemas/agent"; // NO! Doesn't exist
+// ❌ Wrong imports (old pattern)
+import { agentQueryInputSchema } from "@atlas/api/routers/agent"; // NO! Moved to schemas/
 import { Citation } from "@atlas/api/routers/agent"; // NO! Use types.ts
 ```
 
@@ -236,10 +285,10 @@ import { Citation } from "@atlas/api/routers/agent"; // NO! Use types.ts
 ### Package Dependencies
 
 ```
-apps/web          → @atlas/api (types + tRPC client)
-apps/api-gateway  → @atlas/api (routers + types)
+apps/web          → @atlas/api (types + schemas + tRPC client)
+apps/api-gateway  → @atlas/api (schemas + types + tRPC setup)
                   → @atlas/db (database access)
-packages/api      → (no internal dependencies)
+packages/api      → (no internal dependencies - pure types/schemas)
 packages/db       → (no internal dependencies)
 ```
 
@@ -253,7 +302,7 @@ When you import from `@atlas/api`, TypeScript resolves it based on `package.json
   "name": "@atlas/api",
   "exports": {
     ".": "./src/index.ts",
-    "./routers/*": "./src/routers/*.ts",
+    "./schemas/*": "./src/schemas/*.ts",
     "./types": "./src/types.ts"
   }
 }
@@ -263,7 +312,10 @@ This allows clean imports:
 
 ```typescript
 import { router, publicProcedure } from "@atlas/api";
-import { agentQueryInputSchema } from "@atlas/api/routers/agent";
+import {
+  agentQueryInputSchema,
+  type AgentQueryInput,
+} from "@atlas/api/schemas/agent";
 import type { Citation } from "@atlas/api";
 ```
 
@@ -327,15 +379,13 @@ cat packages/api/package.json | grep exports
 
 ### 2. **Duplicate Schema Definitions**
 
-**Cause:** Schemas defined in both `routers/` and `schemas/` directories.
+**Cause:** Schemas defined in both `schemas/` and `routers/` directories (old pattern).
 
 **Solution:**
 
 ```bash
-# Remove schemas directory
-rm -rf packages/api/src/schemas/
-
-# Keep schemas only in routers/
+# This has been fixed - schemas are now only in packages/api/src/schemas/
+# If you find duplicates, remove them from routers/
 ```
 
 ### 3. **tRPC Type Errors After Refactor**
@@ -355,27 +405,45 @@ bun run build
 bun run dev
 ```
 
+### 4. **Import Errors for Schemas**
+
+**Cause:** Importing schemas from old router paths.
+
+**Solution:**
+
+```typescript
+// ✅ New import pattern
+import { agentQueryInputSchema } from "@atlas/api/schemas/agent";
+
+// ❌ Old import pattern (doesn't work anymore)
+import { agentQueryInputSchema } from "@atlas/api/routers/agent";
+```
+
 ---
 
 ## Best Practices Summary
 
 ### ✅ DO
 
-- Co-locate Zod schemas with tRPC routers
+- Keep schemas in dedicated `packages/api/src/schemas/` directory
+- Keep router implementations in `apps/api-gateway/src/routes/`
 - Keep `types.ts` for TypeScript types only
 - Use environment variables for secrets
 - Build packages before deploying
 - Use HTTP-based database drivers for serverless
-- Export both schemas and inferred types from routers
+- Export both schemas and inferred types from schemas
+- Import schemas from `@atlas/api/schemas/*`
 
 ### ❌ DON'T
 
-- Create separate `schemas/` directories
-- Mix Zod schemas with TypeScript types
+- Co-locate schemas with router implementations in shared package
+- Create stub routers that return `undefined as never`
+- Mix Zod schemas with TypeScript types in `types.ts`
 - Use barrel files (`index.ts` re-exporting everything)
 - Hardcode secrets in code
 - Deploy without building dependencies first
 - Use native database drivers in Cloudflare Workers
+- Import schemas from `@atlas/api/routers/*` (old pattern)
 
 ---
 

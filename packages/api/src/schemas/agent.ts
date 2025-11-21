@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../index";
 
-// Input schemas co-located with router
+// Input schemas for agent operations
 export const agentQueryInputSchema = z.object({
   query: z
     .string()
@@ -44,23 +43,7 @@ export const classifyInputSchema = z.object({
   query: z.string().min(1, "Query cannot be empty"),
 });
 
-// Export types for use in other parts of the monorepo
+// Export inferred types for use across the monorepo
 export type AgentQueryInput = z.infer<typeof agentQueryInputSchema>;
 export type TestSQLInput = z.infer<typeof testSQLInputSchema>;
 export type ClassifyInput = z.infer<typeof classifyInputSchema>;
-
-export const agentRouter = router({
-  query: publicProcedure
-    .input(agentQueryInputSchema)
-    .mutation(() => undefined as never),
-
-  testSQL: publicProcedure
-    .input(testSQLInputSchema)
-    .query(() => undefined as never),
-
-  classify: publicProcedure
-    .input(classifyInputSchema)
-    .query(() => undefined as never),
-});
-
-export type AgentRouter = typeof agentRouter;

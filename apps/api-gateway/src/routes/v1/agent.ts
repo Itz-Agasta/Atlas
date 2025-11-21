@@ -3,7 +3,7 @@ import {
   agentQueryInputSchema,
   classifyInputSchema,
   testSQLInputSchema,
-} from "@atlas/api/routers/agent";
+} from "@atlas/api/schemas/agent";
 import { classifyQueryDirect } from "../../agents/classifier";
 import { executeGeneralAgent } from "../../agents/general-agent";
 import { RAGAgent, type RAGAgentResult } from "../../agents/rag-agent";
@@ -13,18 +13,14 @@ import { responseOrchestrator } from "../../middleware/orchestrator";
 /**
  * Execute SQL agent with error handling
  */
-async function executeSQLAgent(
-  query: string,
-  floatId?: number,
-  timeRange?: { start?: string; end?: string }
-): Promise<SQLAgentResult> {
+async function executeSQLAgent(params: {
+  query: string;
+  floatId?: number;
+  timeRange?: { start?: string; end?: string };
+  dryRun?: boolean;
+}): Promise<SQLAgentResult> {
   try {
-    return await SQLAgent({
-      query,
-      floatId,
-      timeRange,
-      dryRun: false,
-    });
+    return await SQLAgent(params);
   } catch (error) {
     return {
       success: false,
@@ -115,7 +111,7 @@ export const agentRouter = router({
         // Step 3: Execute agents in parallel
         const [sqlResults, ragResults] = await Promise.all([
           shouldExecuteSQL
-            ? executeSQLAgent(query, floatId, timeRange)
+            ? executeSQLAgent({ query, floatId, timeRange })
             : Promise.resolve(undefined),
           shouldExecuteRAG
             ? executeRAGAgent(query, yearRange)

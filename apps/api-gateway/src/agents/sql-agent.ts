@@ -10,7 +10,7 @@ const groq = createGroq({
 export type SQLAgentResult = {
   success: boolean;
   sql?: string;
-  data?: unknown[];
+  data?: Record<string, unknown>[];
   rowCount?: number;
   error?: string;
   executionTimeMs?: number;
@@ -27,18 +27,38 @@ export type SQLAgentParams = {
 };
 
 /**
- * Validate that generated SQL is a safe SELECT or WITH statement
+ * Validate that generated SQL to keep agent read‑only
+ * This guards against multi‑statement execution even if the LLM goes off‑spec.
  */
+const TRAILING_SEMICOLONS_REGEX = /;+\s*$/;
+const DISALLOWED_KEYWORDS_REGEX =
+  /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|BEGIN|COMMIT|ROLLBACK)\b/;
+
 function validateSQL(sqlQuery: string): { isValid: boolean; cleaned: string } {
   const cleanedSQL = sqlQuery
     .trim()
     .replace(/^```sql\n?|```$/g, "")
     .trim();
 
-  const upperSQL = cleanedSQL.toUpperCase();
-  const isValid = upperSQL.startsWith("SELECT") || upperSQL.startsWith("WITH");
+  // Remove trailing semicolons so we only ever execute a single statement
+  const withoutTrailingSemicolons = cleanedSQL.replace(
+    TRAILING_SEMICOLONS_REGEX,
+    ""
+  );
 
-  return { isValid, cleaned: cleanedSQL };
+  const upperSQL = withoutTrailingSemicolons.toUpperCase();
+  const startsWithSelectOrWith =
+    upperSQL.startsWith("SELECT") || upperSQL.startsWith("WITH");
+
+  // Any remaining semicolon implies an extra statement
+  const hasExtraSemicolon = upperSQL.includes(";");
+
+  const hasDisallowedKeyword = DISALLOWED_KEYWORDS_REGEX.test(upperSQL);
+
+  const isValid =
+    startsWithSelectOrWith && !hasExtraSemicolon && !hasDisallowedKeyword;
+
+  return { isValid, cleaned: withoutTrailingSemicolons };
 }
 
 /**
@@ -236,16 +256,17 @@ ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "no
     }
 
     // Execute the SQL query using the database's raw query execution
-    const result = await db.execute(cleanedSQL);
+    const result = (await db.execute(cleanedSQL)) as {
+      rows: Record<string, unknown>[];
+      rowCount?: number;
+    };
     const executionTimeMs = Date.now() - startTime;
-
-    const resultsArray = Array.isArray(result) ? result : [result];
 
     return {
       success: true,
       sql: cleanedSQL,
-      data: resultsArray,
-      rowCount: resultsArray.length,
+      data: result.rows,
+      rowCount: result.rowCount ?? result.rows.length,
       executionTimeMs,
     };
   } catch (error) {

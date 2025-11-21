@@ -114,58 +114,69 @@ This project uses **tRPC v11+** for type-safe APIs. Follow these patterns strict
 ### Architecture Overview
 
 ```
-packages/api/              ← Shared tRPC definitions
+packages/api/              ← Shared schemas and types
 ├── src/
 │   ├── types.ts          ← TypeScript types ONLY (no Zod)
-│   ├── routers/
-│   │   └── agent.ts      ← Zod schemas + tRPC router (co-located)
+│   ├── schemas/
+│   │   └── agent.ts      ← ✅ Zod schemas + inferred types
 │   └── index.ts          ← tRPC instance + exports
 
 apps/api-gateway/         ← Server implementation
 ├── src/
 │   ├── agents/           ← Business logic (can have internal Zod schemas)
-│   ├── routes/           ← Route handlers using @atlas/api routers
+│   ├── routes/           ← Route handlers using @atlas/api schemas
 │   └── index.ts          ← Hono server
 ```
 
-### Rule 1: Co-locate Zod Schemas with tRPC Routers
+### Rule 1: Separate Zod Schemas from Router Implementations
 
-**DO:** Define Zod schemas in the same file as the router that uses them
+**DO:** Define Zod schemas in dedicated `packages/api/src/schemas/` directory
 
 ```typescript
-// ✅ packages/api/src/routers/agent.ts
+// ✅ packages/api/src/schemas/agent.ts
 import { z } from "zod";
-import { publicProcedure, router } from "../index";
 
-// Schemas defined right here
+// Schemas defined in dedicated file
 export const agentQueryInputSchema = z.object({
   query: z.string().min(1),
   floatId: z.number().optional(),
 });
 
-export const agentRouter = router({
-  query: publicProcedure
-    .input(agentQueryInputSchema)
-    .query(async ({ input }) => {
-      // ...
-    }),
-});
-
-// Export types for TypeScript
+// Export inferred types
 export type AgentQueryInput = z.infer<typeof agentQueryInputSchema>;
 ```
 
-**DON'T:** Create separate `schemas/` directories or barrel files
+**DON'T:** Co-locate schemas with router implementations in shared package
 
 ```typescript
-// ❌ packages/api/src/schemas/agent.schema.ts
-export const agentQueryInputSchema = z.object({ ... });
-
-// ❌ packages/api/src/schemas/index.ts (barrel file)
-export * from "./agent.schema";
+// ❌ packages/api/src/routers/agent.ts (old pattern)
+export const agentRouter = router({
+  query: publicProcedure
+    .input(agentQueryInputSchema)
+    .mutation(() => undefined as never), // Stub!
+});
 ```
 
-### Rule 2: Separate Runtime Schemas from TypeScript Types
+### Rule 2: Implement Routers in Server Apps
+
+**DO:** Import schemas and implement routers in `apps/api-gateway`
+
+```typescript
+// ✅ apps/api-gateway/src/routes/v1/agent.ts
+import { publicProcedure, router } from "@atlas/api";
+import { agentQueryInputSchema } from "@atlas/api/schemas/agent";
+
+export const agentRouter = router({
+  query: publicProcedure
+    .input(agentQueryInputSchema)
+    .mutation(async ({ input }) => {
+      // Actual implementation
+      return await processQuery(input);
+    }),
+});
+```
+
+### Rule 3: Separate Runtime Schemas from TypeScript Types
 
 **`packages/api/src/types.ts`** should contain ONLY TypeScript types (no Zod):
 
@@ -190,7 +201,7 @@ export const citationSchema = z.object({ ... }); // ← NO! This is runtime
 export type Citation = z.infer<typeof citationSchema>;
 ```
 
-### Rule 3: Server-Only Schemas Stay in Server Code
+### Rule 4: Server-Only Schemas Stay in Server Code
 
 If a Zod schema is only used on the server (not in tRPC), keep it in `apps/api-gateway`:
 
@@ -212,15 +223,15 @@ export async function classifyQuery(query: string) {
 }
 ```
 
-### Rule 4: Import Schemas Correctly
+### Rule 5: Import Schemas Correctly
 
 ```typescript
-// ✅ Import schemas from routers, types from types.ts
+// ✅ Import schemas from schemas directory, types from types.ts
 import type { Citation } from "@atlas/api"; // TypeScript type
-import { agentQueryInputSchema } from "@atlas/api/routers/agent"; // Zod schema
+import { agentQueryInputSchema } from "@atlas/api/schemas/agent"; // Zod schema
 
-// ❌ Don't import from non-existent schemas directory
-import { agentQueryInputSchema } from "@atlas/api/schemas/agent";
+// ❌ Don't import from old router paths
+import { agentQueryInputSchema } from "@atlas/api/routers/agent";
 ```
 
 ### Why This Matters
@@ -229,7 +240,8 @@ import { agentQueryInputSchema } from "@atlas/api/schemas/agent";
 2. **Tree-shaking:** Client bundles don't include server-only Zod schemas
 3. **Performance:** No barrel files = faster builds
 4. **Type Safety:** TypeScript types separate from runtime validation
-5. **Official Pattern:** Follows tRPC's recommended architecture
+5. **T3 Convention:** Matches `create-t3-turbo` and official examples
+6. **No Confusion:** No stub routers that return `undefined as never`
 
 ---
 
