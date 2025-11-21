@@ -1,4 +1,4 @@
-import config from "../config/config";
+import { config } from "../config/config";
 import logger from "../config/logger";
 
 export function logStartupDiagnostics(): void {
@@ -55,11 +55,4 @@ export function logStartupDiagnostics(): void {
     bunEnv: process.env.BUN_ENV || "development",
     logLevel: logger.level,
   });
-}
-
-export function logServerReady(port: number): void {
-  const SEPARATOR_LENGTH = 50;
-  logger.info("=".repeat(SEPARATOR_LENGTH));
-  logger.info(`Server ready on http://localhost:${port}`);
-  logger.info("=".repeat(SEPARATOR_LENGTH));
 }

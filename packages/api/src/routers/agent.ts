@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../../index";
+import { publicProcedure, router } from "../index";
 
 // Input schemas co-located with router
 export const agentQueryInputSchema = z.object({

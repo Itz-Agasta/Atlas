@@ -1,5 +1,5 @@
 import { publicProcedure, router } from "../index";
-import { agentRouter } from "./v1/agent";
+import { agentRouter } from "./agent";
 
 export const appRouter = router({
   healthCheck: publicProcedure.query(() => "OK"),

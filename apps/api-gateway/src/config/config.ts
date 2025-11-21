@@ -7,7 +7,7 @@ export const config = {
     classifier: "llama-3.3-70b-versatile", // 128k context (non-reasoning, multilingual)
     sqlAgent: "llama-3.3-70b-versatile",
     ragAgent: "llama-3.3-70b-versatile",
-    orchestrator: "openrouter/sherlock-think-alpha", // 1.8M context (reasoning)
+    orchestrator: "x-ai/grok-4.1-fast", // 2M context (reasoning)
   },
 
   qdrantUrl: process.env.QDRANT_URL || "http://localhost:6333",

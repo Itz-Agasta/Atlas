@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import logger from "./config/logger";
 import { appRouter } from "./routes/index";
-import { logServerReady, logStartupDiagnostics } from "./utils/startup";
+import { logStartupDiagnostics } from "./utils/startup";
 
 const app = new Hono();
 
@@ -50,5 +50,3 @@ export default {
   port,
   fetch: app.fetch,
 };
-
-logServerReady(port);
