@@ -13,7 +13,7 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ## Database Architecture
 
-![alt text](../../docs/imgs/pg_schema_v2.png)
+![alt text](../../docs/imgs/sql_db_arch_v1.6.png)
 
 ---
 
