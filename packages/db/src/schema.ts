@@ -4,6 +4,7 @@ import {
   index,
   integer,
   jsonb,
+  pgMaterializedView,
   pgTable,
   real,
   serial,
@@ -13,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { geometry } from "drizzle-orm/pg-core/columns/postgis_extension/geometry";
 
-// [T1]: FLOAT METADATA (static, never changes)
+// [T1]: FLOAT METADATA (static)
 export const argo_float_metadata = pgTable(
   "argo_float_metadata",
   {
@@ -49,29 +50,7 @@ export const argo_float_positions = pgTable("argo_float_positions", {
   updated_at: timestamp("updated_at").default(sql`NOW()`),
 });
 
-// [T2]: POSITION TIMESERIES (warm layer)
-export const argo_positions_timeseries = pgTable(
-  "argo_positions_timeseries",
-  {
-    id: serial("id").primaryKey(),
-    float_id: bigint("float_id", { mode: "number" })
-      .notNull()
-      .references(() => argo_float_metadata.float_id, { onDelete: "cascade" }),
-    lat: real("lat").notNull(),
-    lon: real("lon").notNull(),
-    time: timestamp("time").notNull(),
-    cycle: integer("cycle"),
-    location: geometry("location", { type: "point", srid: 4326 }), // ← ADDED
-    created_at: timestamp("created_at").default(sql`NOW()`),
-  },
-  (table) => ({
-    floatTimeidx: index("positions_time_idx").on(table.float_id, table.time),
-    timeidx: index("positions_time_only_idx").on(table.time),
-    spatialIdx: index("positions_spatial_idx").using("gist", table.location), // ← ADDED
-  })
-);
-
-// [T2]: PROFILE DATA (warm layer - 6 months)
+// [T2]: PROFILE DATA (core table with profiles + trajectory + measurements)
 export const argo_profiles = pgTable(
   "argo_profiles",
   {
@@ -114,6 +93,11 @@ export const argo_profiles = pgTable(
       "gist",
       table.surface_location
     ),
+    // GIN index for JSONB measurements - enables fast containment queries and array operations
+    measurementsGinIdx: index("profiles_measurements_gin_idx").using(
+      "gin",
+      table.measurements
+    ),
     // Unique constraint to prevent duplicate profiles for same float+cycle
     floatCycleUnique: unique("profiles_float_cycle_unique").on(
       table.float_id,
@@ -122,30 +106,7 @@ export const argo_profiles = pgTable(
   })
 );
 
-// STATISTICS (cached aggregates)
-export const argo_float_stats = pgTable("argo_float_stats", {
-  float_id: bigint("float_id", { mode: "number" })
-    .primaryKey()
-    .references(() => argo_float_metadata.float_id, { onDelete: "cascade" }),
-  avg_temp: real("avg_temp"),
-  temp_min: real("temp_min"),
-  temp_max: real("temp_max"),
-  depth_range_min: integer("depth_range_min"),
-  depth_range_max: integer("depth_range_max"),
-  profile_count: integer("profile_count").default(0),
-
-  // Bounding box: float's range in space
-  location_bounds_nmin: real("location_bounds_nmin"), // south boundary
-  location_bounds_nmax: real("location_bounds_nmax"), // north boundary
-  location_bounds_emin: real("location_bounds_emin"), // west boundary
-  location_bounds_emax: real("location_bounds_emax"), // east boundary
-
-  recent_temp_trend: real("recent_temp_trend"), // (now - 1 week ago)
-  last_updated: timestamp("last_updated"),
-  updated_at: timestamp("updated_at").default(sql`NOW()`),
-});
-
-// PROCESS LOGS (for debugging)
+// PROCESS LOGS (for debugging and monitoring)
 export const processing_log = pgTable(
   "processing_log",
   {
@@ -189,84 +150,104 @@ export const sync_manifest = pgTable(
   })
 );
 
-// [T3]: PROFILE MEASUREMENTS (normalized vertical profile data)
-// Replaces flat JSONB storage with structured rows for better query performance
-export const argo_profile_measurements = pgTable(
-  "argo_profile_measurements",
-  {
-    id: serial("id").primaryKey(),
-    profile_id: integer("profile_id")
-      .notNull()
-      .references(() => argo_profiles.id, { onDelete: "cascade" }),
-    depth: real("depth").notNull(), // Pressure in dBar
-    temperature: real("temperature"),
-    salinity: real("salinity"),
-    oxygen: real("oxygen"),
-    chlorophyll: real("chlorophyll"),
+// MATERIALIZED VIEW: Pre-computed measurements at standard depths
+// Enables fast dashboard queries without JSONB array expansion
+export const argo_measurements_summary = pgMaterializedView(
+  "argo_measurements_summary"
+).as((qb) =>
+  qb
+    .select({
+      profile_id: argo_profiles.id,
+      float_id: argo_profiles.float_id,
+      cycle: argo_profiles.cycle,
+      profile_time: argo_profiles.profile_time,
+      surface_lat: argo_profiles.surface_lat,
+      surface_lon: argo_profiles.surface_lon,
+      max_depth: argo_profiles.max_depth,
 
-    // Quality control flags for each parameter (0=good, 1=probably_good, 2=probably_bad, 3=bad)
-    qc_temp: integer("qc_temp"),
-    qc_salinity: integer("qc_salinity"),
-    qc_oxygen: integer("qc_oxygen"),
-    qc_chlorophyll: integer("qc_chlorophyll"),
+      // Extract surface temperature (0-10m)
+      surface_temp: sql<number | null>`(
+        SELECT (elem->>'temperature')::REAL 
+        FROM jsonb_array_elements(${argo_profiles.measurements}) elem 
+        WHERE (elem->>'depth')::REAL BETWEEN 0 AND 10 
+        ORDER BY (elem->>'depth')::REAL ASC 
+        LIMIT 1
+      )`.as("surface_temp"),
 
-    created_at: timestamp("created_at").default(sql`NOW()`),
-  },
-  (table) => ({
-    profileDepthIdx: index("profile_measurements_profile_depth_idx").on(
-      table.profile_id,
-      table.depth
-    ),
-    depthIdx: index("profile_measurements_depth_idx").on(table.depth),
-    tempIdx: index("profile_measurements_temp_idx").on(table.temperature),
-  })
-);
+      surface_salinity: sql<number | null>`(
+        SELECT (elem->>'salinity')::REAL 
+        FROM jsonb_array_elements(${argo_profiles.measurements}) elem 
+        WHERE (elem->>'depth')::REAL BETWEEN 0 AND 10 
+        ORDER BY (elem->>'depth')::REAL ASC 
+        LIMIT 1
+      )`.as("surface_salinity"),
 
-// [T3]: FLOAT SENSORS & CALIBRATION (sensor configuration)
-// Tracks instrument specifications and pre-deployment calibration
-export const argo_float_sensors = pgTable(
-  "argo_float_sensors",
-  {
-    id: serial("id").primaryKey(),
-    float_id: bigint("float_id", { mode: "number" })
-      .notNull()
-      .references(() => argo_float_metadata.float_id, { onDelete: "cascade" }),
-    sensor_type: text("sensor_type").notNull(), // "TEMPERATURE", "CONDUCTIVITY", "OXYGEN", "CHLOROPHYLL"
-    sensor_maker: text("sensor_maker"), // "SeaBird", "RBRconcerto", etc.
-    sensor_model: text("sensor_model"), // "SBE 41.04"
-    sensor_serial_no: text("sensor_serial_no"), // Unique hardware ID
-    parameter_name: text("parameter_name"), // "TEMP", "PSAL", "DOXY", "CHLA"
+      // Extract 100m depth
+      temp_100m: sql<number | null>`(
+        SELECT (elem->>'temperature')::REAL 
+        FROM jsonb_array_elements(${argo_profiles.measurements}) elem 
+        WHERE (elem->>'depth')::REAL BETWEEN 90 AND 110 
+        ORDER BY ABS((elem->>'depth')::REAL - 100) ASC 
+        LIMIT 1
+      )`.as("temp_100m"),
 
-    // Pre-deployment calibration details
-    calibration_data: jsonb("calibration_data"), // {equation: "TEMP = a0 + a1*x + ...", coefficients: {...}}
-    calibration_date: timestamp("calibration_date"),
-    calibration_comment: text("calibration_comment"),
+      salinity_100m: sql<number | null>`(
+        SELECT (elem->>'salinity')::REAL 
+        FROM jsonb_array_elements(${argo_profiles.measurements}) elem 
+        WHERE (elem->>'depth')::REAL BETWEEN 90 AND 110 
+        ORDER BY ABS((elem->>'depth')::REAL - 100) ASC 
+        LIMIT 1
+      )`.as("salinity_100m"),
 
-    // Measurement units and accuracy
-    units: text("units"), // "Degrees C", "PSU", "μmol/kg", "mg/m³"
-    accuracy: real("accuracy"), // ±0.002°C, ±0.003 PSU, etc.
-    resolution: real("resolution"), // Sensor precision
+      // Extract 500m depth
+      temp_500m: sql<number | null>`(
+        SELECT (elem->>'temperature')::REAL 
+        FROM jsonb_array_elements(${argo_profiles.measurements}) elem 
+        WHERE (elem->>'depth')::REAL BETWEEN 450 AND 550 
+        ORDER BY ABS((elem->>'depth')::REAL - 500) ASC 
+        LIMIT 1
+      )`.as("temp_500m"),
 
-    created_at: timestamp("created_at").default(sql`NOW()`),
-    updated_at: timestamp("updated_at").default(sql`NOW()`),
-  },
-  (table) => ({
-    floatSensorIdx: index("float_sensors_float_sensor_idx").on(
-      table.float_id,
-      table.sensor_type
-    ),
-    parameterIdx: index("float_sensors_parameter_idx").on(table.parameter_name),
-  })
+      salinity_500m: sql<number | null>`(
+        SELECT (elem->>'salinity')::REAL 
+        FROM jsonb_array_elements(${argo_profiles.measurements}) elem 
+        WHERE (elem->>'depth')::REAL BETWEEN 450 AND 550 
+        ORDER BY ABS((elem->>'depth')::REAL - 500) ASC 
+        LIMIT 1
+      )`.as("salinity_500m"),
+
+      // Extract 1000m depth
+      temp_1000m: sql<number | null>`(
+        SELECT (elem->>'temperature')::REAL 
+        FROM jsonb_array_elements(${argo_profiles.measurements}) elem 
+        WHERE (elem->>'depth')::REAL BETWEEN 950 AND 1050 
+        ORDER BY ABS((elem->>'depth')::REAL - 1000) ASC 
+        LIMIT 1
+      )`.as("temp_1000m"),
+
+      salinity_1000m: sql<number | null>`(
+        SELECT (elem->>'salinity')::REAL 
+        FROM jsonb_array_elements(${argo_profiles.measurements}) elem 
+        WHERE (elem->>'depth')::REAL BETWEEN 950 AND 1050 
+        ORDER BY ABS((elem->>'depth')::REAL - 1000) ASC 
+        LIMIT 1
+      )`.as("salinity_1000m"),
+
+      // Metadata
+      measurement_count:
+        sql<number>`jsonb_array_length(${argo_profiles.measurements})`.as(
+          "measurement_count"
+        ),
+      quality_flag: argo_profiles.quality_flag,
+    })
+    .from(argo_profiles)
 );
 
 export default {
   argo_float_metadata,
   argo_float_positions,
-  argo_positions_timeseries,
   argo_profiles,
-  argo_float_stats,
   processing_log,
   sync_manifest,
-  argo_profile_measurements,
-  argo_float_sensors,
+  argo_measurements_summary,
 };
