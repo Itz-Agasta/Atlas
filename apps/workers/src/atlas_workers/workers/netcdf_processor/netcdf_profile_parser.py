@@ -1,4 +1,6 @@
-"""Profile parsing utilities for NetCDF files."""
+"""Profile parsing utilities for NetCDF files.
+Converts raw NetCDF profile data into structured ProfileData objects
+"""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,7 +34,7 @@ def parse_measurements(ds: xr.Dataset, prof_idx: int) -> list[MeasurementProfile
         List of MeasurementProfile objects
     """
     measurements: list[MeasurementProfile] = []
-    n_levels = ds.dims.get("N_LEVELS", 0)
+    n_levels = ds.sizes.get("N_LEVELS", 0)
 
     for level_idx in range(n_levels):
         depth = extract_pressure_value(ds, prof_idx, level_idx, n_levels)

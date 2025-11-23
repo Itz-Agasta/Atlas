@@ -1,4 +1,6 @@
-"""NetCDF Parser Worker for converting ARGO data to Arrow format."""
+"""NetCDF Parser Worker for converting ARGO data to Json & Arrow format.
+Central coordinator that manages the entire conversion workflow
+"""
 
 from pathlib import Path
 from typing import Any, Optional
@@ -57,7 +59,7 @@ class NetCDFParserWorker:
                 profiles = []
 
                 # Get dimensions
-                n_prof = ds.dims.get("N_PROF", 0)
+                n_prof = ds.sizes.get("N_PROF", 0)
                 if n_prof == 0:
                     logger.warning("No profiles found in file", file=str(file_path))
                     return profiles
@@ -93,6 +95,7 @@ class NetCDFParserWorker:
 
     def process_directory(self, float_id: str) -> dict[str, Any]:
         """Process all NetCDF files for a float (profiles and aggregates).
+         (main entry point)
 
         Args:
             float_id: Float ID to process

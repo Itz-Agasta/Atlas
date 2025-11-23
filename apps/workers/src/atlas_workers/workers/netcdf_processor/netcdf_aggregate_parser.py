@@ -21,34 +21,107 @@ def parse_metadata_file(file_path: Path) -> Optional[dict[str, Any]]:
         Dictionary with metadata or None if parsing failed
     """
     try:
+        from datetime import UTC, datetime
+
         with xr.open_dataset(file_path) as ds:
-            metadata = {
+            metadata: dict[str, Any] = {
                 "file_name": file_path.name,
                 "attributes": dict(ds.attrs),
                 "variables": list(ds.variables.keys()),
-                "dimensions": dict(ds.dims),
+                "dimensions": dict(ds.sizes),
             }
 
-            # Extract important metadata variables
+            # Extract deployment information
+            if "LAUNCH_DATE" in ds.variables:
+                try:
+                    launch_date_val = ds["LAUNCH_DATE"].values
+                    # Handle numpy array of bytes or direct bytes
+                    if isinstance(launch_date_val, (bytes, np.ndarray)):
+                        if isinstance(launch_date_val, np.ndarray):
+                            launch_date_val = (
+                                launch_date_val.item()
+                            )  # Extract scalar from array
+                        if isinstance(launch_date_val, bytes):
+                            launch_date_str = launch_date_val.decode("utf-8").strip()
+                            # Format: YYYYMMDDHHMMSS
+                            if launch_date_str and len(launch_date_str) >= 8:
+                                metadata["launch_date"] = datetime.strptime(
+                                    launch_date_str[:14], "%Y%m%d%H%M%S"
+                                ).replace(tzinfo=UTC)
+                except (ValueError, AttributeError, UnicodeDecodeError) as e:
+                    logger.warning("Failed to parse LAUNCH_DATE", error=str(e))
+
+            if "LAUNCH_LATITUDE" in ds.variables:
+                try:
+                    lat = float(ds["LAUNCH_LATITUDE"].values)
+                    if not np.isnan(lat):
+                        metadata["launch_lat"] = lat
+                except (ValueError, TypeError):
+                    pass
+
+            if "LAUNCH_LONGITUDE" in ds.variables:
+                try:
+                    lon = float(ds["LAUNCH_LONGITUDE"].values)
+                    if not np.isnan(lon):
+                        metadata["launch_lon"] = lon
+                except (ValueError, TypeError):
+                    pass
+
+            if "PLATFORM_TYPE" in ds.variables:
+                try:
+                    platform_type_val = ds["PLATFORM_TYPE"].values
+                    # Handle numpy array of bytes or direct bytes
+                    if isinstance(platform_type_val, (bytes, np.ndarray)):
+                        if isinstance(platform_type_val, np.ndarray):
+                            platform_type_val = (
+                                platform_type_val.item()
+                            )  # Extract scalar
+                        if isinstance(platform_type_val, bytes):
+                            metadata["float_model"] = platform_type_val.decode(
+                                "utf-8"
+                            ).strip()
+                        elif isinstance(platform_type_val, str):
+                            metadata["float_model"] = platform_type_val.strip()
+                except (UnicodeDecodeError, AttributeError):
+                    pass
+
+            # Extract serial number
             if "FLOAT_SERIAL_NO" in ds.variables:
                 try:
-                    serial_no = ds["FLOAT_SERIAL_NO"].values[0]
-                    if hasattr(serial_no, "item"):
+                    serial_no = ds["FLOAT_SERIAL_NO"].values
+                    if isinstance(serial_no, bytes):
+                        metadata["float_serial_no"] = serial_no.decode("utf-8").strip()
+                    elif hasattr(serial_no, "item"):
                         serial_no = serial_no.item()
-                    metadata["float_serial_no"] = serial_no
-                except (IndexError, AttributeError):
+                        if isinstance(serial_no, bytes):
+                            metadata["float_serial_no"] = serial_no.decode(
+                                "utf-8"
+                            ).strip()
+                        else:
+                            metadata["float_serial_no"] = serial_no
+                except (IndexError, AttributeError, UnicodeDecodeError):
                     pass
 
-            if "FLOAT_WMO_ID" in ds.variables:
+            if "PLATFORM_NUMBER" in ds.variables:
                 try:
-                    wmo_id = ds["FLOAT_WMO_ID"].values[0]
-                    if hasattr(wmo_id, "item"):
-                        wmo_id = wmo_id.item()
-                    metadata["wmo_id"] = wmo_id
-                except (IndexError, AttributeError):
+                    platform_num = ds["PLATFORM_NUMBER"].values
+                    if isinstance(platform_num, bytes):
+                        metadata["wmo_id"] = platform_num.decode("utf-8").strip()
+                    elif hasattr(platform_num, "item"):
+                        platform_num = platform_num.item()
+                        if isinstance(platform_num, bytes):
+                            metadata["wmo_id"] = platform_num.decode("utf-8").strip()
+                        else:
+                            metadata["wmo_id"] = str(platform_num)
+                except (IndexError, AttributeError, UnicodeDecodeError):
                     pass
 
-            logger.info("Metadata file parsed", file=file_path.name)
+            logger.info(
+                "Metadata file parsed",
+                file=file_path.name,
+                has_launch_date="launch_date" in metadata,
+                has_position="launch_lat" in metadata and "launch_lon" in metadata,
+            )
             return metadata
 
     except Exception as e:
@@ -75,39 +148,72 @@ def parse_trajectory_file(file_path: Path) -> Optional[dict[str, Any]]:
             }
 
             # Extract trajectory information
-            n_meas = ds.dims.get("N_MEASUREMENT", 0)
+            n_meas = ds.sizes.get("N_MEASUREMENT", 0)
 
-            for i in range(min(n_meas, 1000)):  # Limit to 1000 positions
+            # Process trajectory data - filter out invalid positions
+            for i in range(min(n_meas, 10000)):  # Limit to 10k positions
                 try:
                     lat = float(ds["LATITUDE"].values[i]) if "LATITUDE" in ds else None
                     lon = (
                         float(ds["LONGITUDE"].values[i]) if "LONGITUDE" in ds else None
                     )
+
+                    # Skip NaN positions
+                    if lat is None or lon is None or np.isnan(lat) or np.isnan(lon):
+                        continue
+
                     time_val: Any = None
+                    cycle_num: Any = None
 
-                    if "TIME" in ds:
-                        time_val = ds["TIME"].values[i]
-                        if isinstance(time_val, np.datetime64):
-                            ts = (
-                                time_val - np.datetime64("1970-01-01T00:00:00")
-                            ) / np.timedelta64(1, "s")
-                            time_val = datetime.fromtimestamp(float(ts), tz=UTC)
+                    # Parse JULD (Julian day) timestamp
+                    if "JULD" in ds:
+                        juld_val = ds["JULD"].values[i]
+                        try:
+                            # JULD is already converted to datetime64 by xarray
+                            if isinstance(juld_val, np.datetime64) and not np.isnat(
+                                juld_val
+                            ):
+                                ts = (
+                                    juld_val - np.datetime64("1970-01-01T00:00:00")
+                                ) / np.timedelta64(1, "s")
+                                time_val = datetime.fromtimestamp(float(ts), tz=UTC)
+                        except (ValueError, TypeError, OverflowError):
+                            pass
 
-                    if lat is not None and lon is not None:
-                        pos_dict: dict[str, Any] = {
-                            "latitude": lat,
-                            "longitude": lon,
-                            "time": time_val,
-                        }
-                        if isinstance(trajectory["positions"], list):
-                            trajectory["positions"].append(pos_dict)
+                    # Extract cycle number
+                    if "CYCLE_NUMBER" in ds:
+                        try:
+                            cycle_raw = ds["CYCLE_NUMBER"].values[i]
+                            if isinstance(cycle_raw, (int, np.integer)):
+                                cycle_num = int(cycle_raw)
+                            elif isinstance(cycle_raw, (float, np.floating)):
+                                if not np.isnan(cycle_raw) and cycle_raw >= 0:
+                                    cycle_num = int(cycle_raw)
+                        except (ValueError, TypeError):
+                            pass
+
+                    # Build position record
+                    pos_dict: dict[str, Any] = {
+                        "latitude": lat,
+                        "longitude": lon,
+                    }
+                    if time_val is not None:
+                        pos_dict["time"] = time_val
+                    if cycle_num is not None and cycle_num >= 0:
+                        pos_dict["cycle"] = cycle_num
+
+                    if isinstance(trajectory["positions"], list):
+                        trajectory["positions"].append(pos_dict)
+
                 except (IndexError, TypeError, ValueError):
+                    # Skip invalid records silently
                     continue
 
             logger.info(
                 "Trajectory file parsed",
                 file=file_path.name,
                 positions=len(trajectory["positions"]),
+                total_measurements=n_meas,
             )
             return trajectory
 
