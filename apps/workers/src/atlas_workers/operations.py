@@ -1,5 +1,3 @@
-"""ARGO processing operations - Main workflow functions."""
-
 import time
 from pathlib import Path
 from typing import Optional
@@ -82,12 +80,18 @@ def process_netcdf_files(float_id: str) -> dict:
     profiles = [ProfileData(**p) for p in profiles_dicts]
 
     metadata = process_result.get("metadata")
-    trajectory = process_result.get("trajectory", [])
+    trajectory_dict = process_result.get("trajectory")
+
+    # Extract positions list from trajectory dict
+    trajectory = []
+    if trajectory_dict and isinstance(trajectory_dict, dict):
+        trajectory = trajectory_dict.get("positions", [])
 
     logger.info(
         "NetCDF processing completed",
         float_id=float_id,
         profiles=len(profiles),
+        trajectory_points=len(trajectory),
     )
 
     return {
@@ -103,7 +107,6 @@ def upload_to_database(
     float_id: str,
     profiles: list,
     metadata: Optional[dict] = None,
-    trajectory: Optional[list] = None,
 ) -> dict:
     """Upload processed data to database.
 
@@ -111,7 +114,6 @@ def upload_to_database(
         float_id: Float ID
         profiles: List of ProfileData objects
         metadata: Float metadata
-        trajectory: Trajectory data
 
     Returns:
         Upload results dictionary
@@ -119,85 +121,74 @@ def upload_to_database(
     logger.info("Starting database upload", float_id=float_id)
     db_uploader = ArgoDataUploader()
 
-    # Upload metadata
-    if metadata:
-        float_metadata = FloatMetadata(
+    # Start a single transaction for all uploads (reuses 1 connection)
+    db_uploader.db.start_transaction()
+    try:
+        # Upload metadata
+        if metadata:
+            float_metadata = FloatMetadata(
+                float_id=float_id,
+                float_model=metadata.get("float_model"),
+                launch_date=metadata.get("launch_date"),
+                launch_lat=metadata.get("launch_lat"),
+                launch_lon=metadata.get("launch_lon"),
+                deployment_status=metadata.get("deployment_status", "ACTIVE"),
+            )
+            db_uploader.upload_float_metadata(float_metadata)
+            logger.debug("Metadata uploaded", float_id=float_id)
+
+        # Upload profiles
+        profiles_uploaded = db_uploader.upload_profiles_batch(profiles)
+        logger.info(
+            "Profiles uploaded",
             float_id=float_id,
-            float_model=metadata.get("float_model"),
-            launch_date=metadata.get("launch_date"),
-            launch_lat=metadata.get("launch_lat"),
-            launch_lon=metadata.get("launch_lon"),
-            deployment_status=metadata.get("deployment_status", "ACTIVE"),
+            uploaded=profiles_uploaded,
+            total=len(profiles),
         )
-        db_uploader.upload_float_metadata(float_metadata)
-        logger.debug("Metadata uploaded", float_id=float_id)
 
-    # Upload profiles
-    profiles_uploaded = db_uploader.upload_profiles_batch(profiles)
-    logger.info(
-        "Profiles uploaded",
-        float_id=float_id,
-        uploaded=profiles_uploaded,
-        total=len(profiles),
-    )
+        # Note: Trajectory data is now part of argo_profiles (surface_lat, surface_lon, cycle)
+        # No need for separate argo_positions_timeseries table
 
-    # Upload trajectory
-    trajectory_uploaded = 0
-    if trajectory:
-        trajectory_uploaded = db_uploader.upload_position_timeseries(
-            float_id, trajectory
-        )
-        logger.debug(
-            "Trajectory uploaded",
+        # Update current position (from latest profile)
+        if profiles:
+            latest_profile = max(profiles, key=lambda p: p.profile_time)
+            surface_temp = None
+            surface_sal = None
+            if latest_profile.measurements:
+                surface_measurement = latest_profile.measurements[0]
+                surface_temp = surface_measurement.temperature
+                surface_sal = surface_measurement.salinity
+
+            db_uploader.upload_float_position(
+                float_id=float_id,
+                latitude=latest_profile.latitude,
+                longitude=latest_profile.longitude,
+                cycle_number=latest_profile.cycle_number,
+                profile_time=latest_profile.profile_time,
+                temperature=surface_temp,
+                salinity=surface_sal,
+            )
+            logger.debug("Position updated", float_id=float_id)
+
+        # Commit the entire transaction (single connection for all operations)
+        db_uploader.db.commit_transaction()
+
+        upload_result = {
+            "profiles_uploaded": profiles_uploaded,
+        }
+
+        logger.info(
+            "Database upload completed",
             float_id=float_id,
-            points=trajectory_uploaded,
+            profiles=profiles_uploaded,
         )
 
-    # Update current position (from latest profile)
-    if profiles:
-        latest_profile = max(profiles, key=lambda p: p.profile_time)
-        surface_temp = None
-        surface_sal = None
-        if latest_profile.measurements:
-            surface_measurement = latest_profile.measurements[0]
-            surface_temp = surface_measurement.temperature
-            surface_sal = surface_measurement.salinity
-
-        db_uploader.upload_float_position(
-            float_id=float_id,
-            latitude=latest_profile.latitude,
-            longitude=latest_profile.longitude,
-            cycle_number=latest_profile.cycle_number,
-            profile_time=latest_profile.profile_time,
-            temperature=surface_temp,
-            salinity=surface_sal,
-        )
-        logger.debug("Position updated", float_id=float_id)
-
-    # Update statistics
-    db_uploader.update_float_stats(float_id)
-
-    # Log processing
-    db_uploader.log_processing(
-        float_id=float_id,
-        operation="full_sync",
-        status="success",
-        message=f"Processed {len(profiles)} profiles",
-        processing_time_ms=0,  # Will be set by caller
-    )
-
-    upload_result = {
-        "profiles_uploaded": profiles_uploaded,
-        "trajectory_points": trajectory_uploaded,
-    }
-
-    logger.info(
-        "Database upload completed",
-        float_id=float_id,
-        profiles=profiles_uploaded,
-    )
-
-    return upload_result
+        return upload_result
+    except Exception as e:
+        # Rollback on error
+        db_uploader.db.rollback_transaction()
+        logger.exception("Database upload failed", float_id=float_id, error=str(e))
+        raise
 
 
 async def process_batch_floats(
@@ -272,9 +263,7 @@ async def process_batch_floats(
             # Upload
             upload_result = None
             if upload_to_db:
-                upload_result = upload_to_database(
-                    float_id, profiles, metadata, trajectory
-                )
+                upload_result = upload_to_database(float_id, profiles, metadata)
 
             processing_time = time.time() - start_time
             results.append(

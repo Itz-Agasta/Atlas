@@ -1,7 +1,5 @@
-"""ARGO data models."""
-
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,10 +28,6 @@ class FloatMetadata(BaseModel):
     launch_lat: Optional[float] = Field(None, description="Deployment latitude")
     launch_lon: Optional[float] = Field(None, description="Deployment longitude")
     deployment_status: Optional[str] = Field("ACTIVE", description="Current status")
-    last_position_time: Optional[datetime] = None
-    last_position_lat: Optional[float] = None
-    last_position_lon: Optional[float] = None
-    data_centre: str = Field("incois", description="Data Assembly Center")
     metadata_updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -57,9 +51,6 @@ class MeasurementProfile(BaseModel):
     salinity: Optional[float] = Field(None, description="Practical Salinity Units")
     oxygen: Optional[float] = Field(None, description="Dissolved oxygen in µmol/kg")
     chlorophyll: Optional[float] = Field(None, description="Chlorophyll-a in mg/m³")
-    qc_flags: Optional[dict[str, int]] = Field(
-        None, description="Quality control flags"
-    )
 
 
 class ProfileData(BaseModel):
@@ -99,7 +90,6 @@ class ProfileData(BaseModel):
     quality_status: Optional[str] = Field(
         "REAL_TIME", description="REAL_TIME or DELAYED"
     )
-    metadata: Optional[dict[str, Any]] = Field(None, description="Additional metadata")
 
     def statistics(self) -> dict[str, float | None]:
         """Calculate profile statistics."""

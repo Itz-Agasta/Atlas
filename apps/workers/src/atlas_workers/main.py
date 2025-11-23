@@ -1,18 +1,17 @@
-"""Main ARGO worker - Download, process, and upload to Neon DB."""
-
 import argparse
 import asyncio
 import sys
 import time
 from typing import Optional
 
-from .db import ArgoDataUploader, NeonDBConnector
+from .db import NeonDBConnector
 from .operations import (
+    ArgoDataUploader,
     download_float_data,
     process_netcdf_files,
     upload_to_database,
 )
-from .utils import get_logger
+from .utils import get_logger, setup_logging
 
 logger = get_logger(__name__)
 
@@ -35,9 +34,20 @@ async def process_single_float(
     start_time = time.time()
     logger.info("Processing float", float_id=float_id, upload=upload_to_db)
 
+    # Track timing for each phase
+    timing = {
+        "download_seconds": 0.0,
+        "process_seconds": 0.0,
+        "upload_seconds": 0.0,
+        "total_seconds": 0.0,
+    }
+
     try:
         # Step 1: Download data
+        download_start = time.time()
         download_result = await download_float_data(float_id, skip_download)
+        timing["download_seconds"] = time.time() - download_start
+
         if not download_result["success"]:
             return {
                 "success": False,
@@ -47,7 +57,9 @@ async def process_single_float(
             }
 
         # Step 2: Process NetCDF files
+        process_start = time.time()
         process_result = process_netcdf_files(float_id)
+        timing["process_seconds"] = time.time() - process_start
         if not process_result["success"]:
             return {
                 "success": False,
@@ -64,13 +76,39 @@ async def process_single_float(
         # Step 3: Upload to database (if enabled)
         upload_result = None
         if upload_to_db:
-            upload_result = upload_to_database(float_id, profiles, metadata, trajectory)
+            upload_start = time.time()
+            upload_result = upload_to_database(float_id, profiles, metadata)
+            timing["upload_seconds"] = time.time() - upload_start
 
-        processing_time = time.time() - start_time
+        # Calculate total time
+        timing["total_seconds"] = time.time() - start_time
+
+        # Log timing breakdown
+        logger.info(
+            "Float processing completed",
+            float_id=float_id,
+            download_time=f"{timing['download_seconds']:.2f}s",
+            process_time=f"{timing['process_seconds']:.2f}s",
+            upload_time=f"{timing['upload_seconds']:.2f}s",
+            total_time=f"{timing['total_seconds']:.2f}s",
+        )
+
+        # Log final timing to database if uploaded
+        if upload_to_db:
+            db_uploader = ArgoDataUploader()
+            db_uploader.log_processing(
+                float_id=float_id,
+                operation="full_sync",
+                status="success",
+                message=f"Total: {timing['total_seconds']:.2f}s (Download: {timing['download_seconds']:.2f}s, Process: {timing['process_seconds']:.2f}s, Upload: {timing['upload_seconds']:.2f}s)",
+                processing_time_ms=int(timing["total_seconds"] * 1000),
+            )
+
         return {
             "success": True,
             "float_id": float_id,
-            "processing_time_seconds": processing_time,
+            "timing": timing,
+            "processing_time_seconds": timing["total_seconds"],
             "sync_result": download_result["sync_result"],
             "process_result": {
                 "profiles_count": len(profiles),
@@ -132,6 +170,9 @@ async def process_batch_floats(
 
 def main() -> int:
     """Main CLI entry point."""
+    # Setup logging
+    setup_logging()
+
     parser = argparse.ArgumentParser(
         description="ARGO Float Data Processor - Download, Process, Upload to Neon DB"
     )
@@ -180,9 +221,9 @@ def main() -> int:
         logger.info("Testing database connection...")
         db = NeonDBConnector()
         if db.health_check():
-            logger.info("✅ Database connection successful")
+            logger.info("Database connection successful")
             return 0
-        logger.error("❌ Database connection failed")
+        logger.error("Database connection failed")
         return 1
 
     upload_to_db = not args.no_upload
@@ -199,13 +240,17 @@ def main() -> int:
         )
 
         if result.get("success"):
-            logger.info("✅ Float processing completed successfully")
-            print(f"\n✅ Success: Float {args.float_id} processed")
+            logger.info("Float processing completed successfully")
+            timing = result.get("timing", {})
+            print(f"\nSuccess: Float {args.float_id} processed")
             print(f"   Profiles: {result['process_result']['profiles_count']}")
-            print(f"   Time: {result['processing_time_seconds']:.2f}s")
+            print(f"   FTP Download: {timing.get('download_seconds', 0):.2f}s")
+            print(f"   NetCDF Processing: {timing.get('process_seconds', 0):.2f}s")
+            print(f"   Database Upload: {timing.get('upload_seconds', 0):.2f}s")
+            print(f"   Total Time: {timing.get('total_seconds', 0):.2f}s")
             return 0
-        logger.error("❌ Float processing failed")
-        print(f"\n❌ Error: {result.get('error')}")
+        logger.error("Float processing failed")
+        print(f"\nError: {result.get('error')}")
         return 1
 
     # Batch mode
@@ -219,15 +264,15 @@ def main() -> int:
         )
 
         if result.get("success"):
-            logger.info("✅ Batch processing completed")
-            print("\n✅ Batch processing completed")
+            logger.info("Batch processing completed")
+            print("\n Batch processing completed")
             print(f"   Total: {result['total_floats']}")
             print(f"   Success: {result['successful']}")
             print(f"   Failed: {result['failed']}")
             print(f"   Time: {result['processing_time_seconds']:.2f}s")
             return 0
-        logger.error("❌ Batch processing failed")
-        print(f"\n❌ Error: {result.get('error')}")
+        logger.error("Batch processing failed")
+        print(f"\nError: {result.get('error')}")
         return 1
 
     # No mode specified
