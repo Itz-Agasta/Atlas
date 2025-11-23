@@ -1,56 +1,65 @@
-"""Structured logging setup."""
-
-import logging
 import sys
+from pathlib import Path
 
-import structlog
+from loguru import logger
 
 from ..config import settings
 
 
 def setup_logging() -> None:
-    """Configure structured logging with structlog."""
+    """Configure loguru logging with colored console output for dev and JSON for production."""
 
-    # Get logging level with validation
-    log_level_str = settings.LOG_LEVEL
-    try:
-        log_level = getattr(logging, log_level_str)
-        if not isinstance(log_level, int):
-            raise AttributeError(f"Invalid logging level: {log_level_str}")
-    except AttributeError:
-        # Fallback to INFO for invalid log levels
-        logging.getLogger(__name__).warning(
-            f"Invalid LOG_LEVEL '{log_level_str}', falling back to INFO"
+    # Remove default handler
+    logger.remove()
+
+    # Get logging level
+    log_level = settings.LOG_LEVEL
+
+    # Configure based on environment and log format
+    # Development always gets colored output for better readability
+    if settings.ENVIRONMENT == "development":
+        # Development: Colored console output
+        logger.add(
+            sys.stdout,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>",
+            level=log_level,
+            colorize=True,
+            enqueue=True,
         )
-        log_level = logging.INFO
+    elif settings.LOG_FORMAT == "json" or settings.ENVIRONMENT == "production":
+        # Production: JSON structured logging for OpenTelemetry/Grafana/Loki
+        logger.add(
+            sys.stdout,
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} | {message}",
+            serialize=True,  # JSON output
+            level=log_level,
+            enqueue=True,  # Async logging for better performance
+        )
+    else:
+        # Fallback: Colored console output
+        logger.add(
+            sys.stdout,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>",
+            level=log_level,
+            colorize=True,
+            enqueue=True,
+        )
 
-    # Configure standard logging
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=log_level,
-    )
+    # Add file logging for errors in production
+    if settings.ENVIRONMENT == "production":
+        log_file = Path("./logs/atlas_workers.log")
+        log_file.parent.mkdir(exist_ok=True)
 
-    # Configure structlog
-    structlog.configure(
-        processors=[
-            structlog.stdlib.filter_by_level,
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
-            structlog.stdlib.PositionalArgumentsFormatter(),
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
-            structlog.processors.UnicodeDecoder(),
-            structlog.processors.JSONRenderer()
-            if settings.LOG_FORMAT == "json"
-            else structlog.dev.ConsoleRenderer(),
-        ],
-        context_class=dict,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=True,
-    )
+        logger.add(
+            log_file,
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} | {message}",
+            serialize=True,
+            level="WARNING",
+            rotation="10 MB",
+            retention="1 week",
+            enqueue=True,
+        )
 
 
-def get_logger(name: str) -> structlog.BoundLogger:
-    return structlog.get_logger(name)
+def get_logger(name: str):
+    return logger.bind(name=name)
