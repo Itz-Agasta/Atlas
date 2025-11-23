@@ -1,6 +1,3 @@
-"""Neon PostgreSQL database connector with Apache Arrow support."""
-
-import io
 from contextlib import contextmanager
 from typing import Any, Generator, Optional
 
@@ -47,16 +44,65 @@ class NeonDBConnector:
         self.settings = DatabaseSettings()
         self.database_url = database_url or self.settings.DATABASE_URL
         self._connection: Optional[Connection] = None
+        self._transaction_active = False
 
         logger.info("Database connector initialized")
+
+    def start_transaction(self) -> None:
+        """Start a persistent transaction (reuses connection until commit/rollback)."""
+        if self._connection is None:
+            self._connection = psycopg2.connect(
+                self.database_url,
+                connect_timeout=self.settings.DB_TIMEOUT,
+            )
+            # Set statement timeout
+            with self._connection.cursor() as cursor:
+                cursor.execute(
+                    f"SET statement_timeout = {self.settings.DB_COMMAND_TIMEOUT * 1000}"
+                )
+            self._transaction_active = True
+            logger.debug("Database transaction started")
+
+    def commit_transaction(self) -> None:
+        """Commit the current transaction and close connection."""
+        if self._connection:
+            try:
+                self._connection.commit()
+                logger.debug("Database transaction committed")
+            finally:
+                self._connection.close()
+                self._connection = None
+                self._transaction_active = False
+                logger.debug("Database connection closed")
+
+    def rollback_transaction(self) -> None:
+        """Rollback the current transaction and close connection."""
+        if self._connection:
+            try:
+                self._connection.rollback()
+                logger.debug("Database transaction rolled back")
+            finally:
+                self._connection.close()
+                self._connection = None
+                self._transaction_active = False
+                logger.debug("Database connection closed")
 
     @contextmanager
     def get_connection(self) -> Generator[Connection, None, None]:
         """Get a database connection (context manager).
 
+        If transaction is active, reuses existing connection.
+        Otherwise creates temporary connection.
+
         Yields:
             PostgreSQL connection
         """
+        # If transaction active, reuse existing connection
+        if self._transaction_active and self._connection:
+            yield self._connection
+            return
+
+        # Otherwise create temporary connection
         conn = None
         try:
             conn = psycopg2.connect(
@@ -122,72 +168,13 @@ class NeonDBConnector:
                 return cursor.fetchall()
             return None
 
-    def execute_many(
-        self,
-        query: str,
-        params_list: list[tuple | dict],
-    ) -> None:
-        """Execute a query multiple times with different parameters.
-
-        Args:
-            query: SQL query string
-            params_list: List of parameter tuples/dicts
-        """
-        with self.get_cursor() as cursor:
-            cursor.executemany(query, params_list)
-            logger.debug("Batch query executed", count=len(params_list))
-
-    def copy_from_arrow(
-        self,
-        table_name: str,
-        columns: list[str],
-        arrow_buffer: io.BytesIO,
-    ) -> int:
-        """Bulk insert data from Arrow format using COPY command.
-
-        Args:
-            table_name: Target table name
-            columns: List of column names
-            arrow_buffer: Arrow IPC format buffer converted to CSV
-
-        Returns:
-            Number of rows inserted
-        """
-        import pyarrow as pa
-        import pyarrow.csv as csv
-
-        # Read Arrow buffer
-        reader = pa.ipc.open_stream(arrow_buffer)
-        table = reader.read_all()
-
-        # Convert to CSV for COPY
-        csv_buffer = io.BytesIO()
-        csv.write_csv(table, csv_buffer)
-        csv_buffer.seek(0)
-
-        # Use COPY command for fast bulk insert
-        with self.get_cursor() as cursor:
-            cursor.copy_expert(
-                f"""
-                COPY {table_name} ({",".join(columns)})
-                FROM STDIN WITH (FORMAT CSV, HEADER TRUE)
-                """,
-                csv_buffer,
-            )
-            row_count = cursor.rowcount
-            logger.info(
-                "Arrow data copied to database",
-                table=table_name,
-                rows=row_count,
-            )
-            return row_count
-
     def bulk_insert_dict(
         self,
         table_name: str,
         data: list[dict[str, Any]],
     ) -> int:
-        """Bulk insert data from list of dictionaries.
+        """Bulk insert data from list of dictionaries using execute_values.
+        Inserts thousands of rows in a single query, much faster than individual inserts.
 
         Args:
             table_name: Target table name
@@ -199,16 +186,26 @@ class NeonDBConnector:
         if not data:
             return 0
 
+        # Use execute_values for true batch insertion (much faster than executemany)
         columns = list(data[0].keys())
-        placeholders = ", ".join([f"%({col})s" for col in columns])
+
+        # Convert list of dicts to list of tuples in the same column order
+        values = [[row.get(col) for col in columns] for row in data]
+
         query = f"""
             INSERT INTO {table_name} ({", ".join(columns)})
-            VALUES ({placeholders})
+            VALUES %s
             ON CONFLICT DO NOTHING
         """
 
         with self.get_cursor() as cursor:
-            cursor.executemany(query, data)
+            # execute_values does a single multi-row INSERT instead of N individual INSERTs
+            psycopg2.extras.execute_values(
+                cursor,
+                query,
+                values,
+                page_size=1000,  # Insert in batches of 1000 rows
+            )
             row_count = cursor.rowcount
             logger.info(
                 "Bulk insert completed",
@@ -224,7 +221,8 @@ class NeonDBConnector:
         conflict_column: str,
         update_columns: Optional[list[str]] = None,
     ) -> bool:
-        """Insert or update a single row.
+        """Insert or update a single row with conflict resolution.
+        Used for metadata updates where records might already exist.
 
         Args:
             table_name: Target table name
