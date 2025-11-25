@@ -21,7 +21,7 @@ dev:
 	uv sync --extra dev
 
 test:
-	uv run pytest tests/ -v --cov=src/atlas_workers --cov-report=term-missing
+	uv run pytest tests/ -v
 
 lint:
 	uv run ruff check src/ tests/
