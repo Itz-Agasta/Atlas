@@ -147,6 +147,7 @@ async def process_single_float(
         }
 
 
+# NOTE: This is not properly tested yet
 async def process_batch_floats(
     float_ids: Optional[list[str]] = None,
     batch_size: int = 10,

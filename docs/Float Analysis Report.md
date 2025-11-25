@@ -155,7 +155,7 @@ Analysis of the ARGO float **2902230** NetCDF files reveals **60+ data fields** 
 
 **Example Parameters per Cycle:**
 
-```
+```plaintext
 VOLTAGE_BatteryInitialAtProfileDepth_volts
 PRESSURE_InternalVacuum_inHg
 CLOCK_StartDescentToPark_hours
@@ -242,7 +242,7 @@ country = location.address.split(',')[-1]
 
 Currently storing raw values. Consider also storing adjusted values:
 
-```jsonb
+```json
 {
   "TEMP": [20.5, 19.8, ...],
   "TEMP_ADJUSTED": [20.51, 19.79, ...],  -- Add this

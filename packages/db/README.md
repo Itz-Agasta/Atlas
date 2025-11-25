@@ -272,9 +272,6 @@ ORDER BY p.last_update DESC;
 
 ---
 
-### Example 3: Spatial Query - Floats Near a Location
-
-````sql
 ### Example 2: Spatial Query - Floats Near a Location
 
 ```sql
@@ -297,7 +294,7 @@ WHERE ST_DWithin(
 )
   AND p.profile_time > NOW() - INTERVAL '7 days'
 ORDER BY distance_km ASC;
-````
+```
 
 **Response Time:** <200ms (spatial index lookup)  
 **Use Case:** Find floats in specific ocean region
@@ -331,7 +328,7 @@ LIMIT 1;
 
 ---
 
-### Example 4: Summary Measurements for Dashboard
+### Example 3: Summary Measurements for Dashboard
 
 ```sql
 -- Get surface temperature for all floats in last month
@@ -481,8 +478,6 @@ WHERE p.lon BETWEEN 70 AND 75
 
 ---
 
-````
-
 **Response Time:** <5s (bulk update with subqueries)
 **Use Case:** Hourly cache refresh job
 
@@ -492,17 +487,17 @@ WHERE p.lon BETWEEN 70 AND 75
 
 ### Key Indexes
 
-| Table                  | Index                     | Type  | Purpose                  |
-| ---------------------- | ------------------------- | ----- | ------------------------ |
-| `argo_float_positions` | `pkey`                    | BTREE | Primary lookup           |
-| `argo_profiles`        | `profiles_float_time_idx` | BTREE | Profile lookups          |
-| `argo_profiles`        | `profiles_spatial_idx`    | GIST  | Surface location queries |
-| `argo_profiles`        | `profiles_qc_idx`         | BTREE | Quality filtering        |
-| `argo_profiles`        | `profiles_measurements_gin_idx` | GIN | JSONB queries       |
-| `processing_log`       | `log_float_op_idx`        | BTREE | Debug queries            |
-| `processing_log`       | `log_time_idx`            | BTREE | Time-based queries       |
-| `sync_manifest`        | `manifest_float_file_idx` | BTREE | Incremental sync         |
-| `sync_manifest`        | `manifest_status_idx`     | BTREE | Retry operations         |
+| Table                  | Index                           | Type  | Purpose                  |
+| ---------------------- | ------------------------------- | ----- | ------------------------ |
+| `argo_float_positions` | `pkey`                          | BTREE | Primary lookup           |
+| `argo_profiles`        | `profiles_float_time_idx`       | BTREE | Profile lookups          |
+| `argo_profiles`        | `profiles_spatial_idx`          | GIST  | Surface location queries |
+| `argo_profiles`        | `profiles_qc_idx`               | BTREE | Quality filtering        |
+| `argo_profiles`        | `profiles_measurements_gin_idx` | GIN   | JSONB queries            |
+| `processing_log`       | `log_float_op_idx`              | BTREE | Debug queries            |
+| `processing_log`       | `log_time_idx`                  | BTREE | Time-based queries       |
+| `sync_manifest`        | `manifest_float_file_idx`       | BTREE | Incremental sync         |
+| `sync_manifest`        | `manifest_status_idx`           | BTREE | Retry operations         |
 
 ---
 
@@ -521,7 +516,7 @@ ALTER TABLE argo_float_positions
   ON DELETE CASCADE;
 
 -- Maintains data consistency across all related records
-````
+```
 
 ## Uniqueness Constraints
 
