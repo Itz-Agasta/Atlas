@@ -1,3 +1,18 @@
+"""ARGO float processing operations.
+
+This module orchestrates downloading, parsing, and uploading ARGO float data.
+
+Two entry points exist for processing floats:
+1. SINGLE FLOAT MODE (main.py -> process_single_float):
+2. BATCH MODE (main.py -> process_batch_floats):
+
+Both modes use the same optimized upload path:
+- upload_to_database() ->  db.upload_float_profiles() -> execute_values with pre-serialized JSONB
+- Aggregate parser pre-serializes measurements to JSON string once
+- execute_values sends all rows in a single round-trip
+- ON CONFLICT handles upserts without separate SELECT queries
+"""
+
 import time
 from pathlib import Path
 from typing import Optional
@@ -6,7 +21,7 @@ from .config import settings
 from .db import ArgoDataUploader
 from .models.argo import FloatMetadata
 from .utils import get_logger
-from .workers.ftp_sync.ftp_sync import FTPSyncWorker
+from .workers.argo_sync import ArgoSyncWorker
 from .workers.netcdf_processor.netcdf_parser import NetCDFParserWorker
 
 logger = get_logger(__name__)
@@ -16,23 +31,28 @@ async def download_float_data(
     float_id: str,
     skip_download: bool = False,
 ) -> dict:
-    """Download data for a single float.
+    """Download aggregate NetCDF files for a float via HTTPS.
+
+    Downloads from IFREMER ARGO repository:
+    - {float_id}_prof.nc  (all profiles)
+    - {float_id}_meta.nc  (metadata)
+    - {float_id}_Rtraj.nc (trajectory)
 
     Args:
         float_id: Float ID to download
-        skip_download: Skip FTP download (use cached files)
+        skip_download: Use cached files instead
 
     Returns:
-        Download results dictionary
+        dict with success status and sync_result
     """
     sync_result = {}
     if not skip_download:
-        logger.info("Starting FTP download", float_id=float_id)
-        ftp_worker = FTPSyncWorker()
-        sync_result = await ftp_worker.sync(float_ids=[float_id])
+        logger.info("Starting download", float_id=float_id)
+        sync_worker = ArgoSyncWorker()
+        sync_result = await sync_worker.sync(float_ids=[float_id])
 
         if sync_result.get("errors", 0) > 0:
-            error_msg = f"FTP download failed for float {float_id}"
+            error_msg = f"Download failed for float {float_id}"
             logger.error(error_msg)
             return {
                 "success": False,
@@ -41,24 +61,29 @@ async def download_float_data(
             }
 
         logger.info(
-            "FTP download completed",
+            "Download completed",
             float_id=float_id,
             files=sync_result.get("files_downloaded", 0),
         )
     else:
-        logger.info("Skipping FTP download (using cached files)", float_id=float_id)
+        logger.info("Skipping download (using cached files)", float_id=float_id)
 
     return {"success": True, "sync_result": sync_result}
 
 
 def process_netcdf_files(float_id: str) -> dict:
-    """Process NetCDF files for a float.
+    """Parse NetCDF aggregate files and extract profile data.
+
+    Parses:
+    - {float_id}_prof.nc  -> profiles with measurements (pre-serialized JSONB)
+    - {float_id}_meta.nc  -> float metadata (deployment info)
+    - {float_id}_Rtraj.nc -> trajectory positions
 
     Args:
         float_id: Float ID to process
 
     Returns:
-        Processing results dictionary
+        dict with profiles (list of dicts), metadata, trajectory
     """
     logger.info("Starting NetCDF processing", float_id=float_id)
     parser_worker = NetCDFParserWorker()
@@ -73,12 +98,8 @@ def process_netcdf_files(float_id: str) -> dict:
             "process_result": process_result,
         }
 
-    # Convert dict profiles back to ProfileData objects
-    from .models.argo import ProfileData
-
-    profiles_dicts = process_result["profiles"]
-    profiles = [ProfileData(**p) for p in profiles_dicts]
-
+    # Aggregate parser returns dicts with pre-serialized measurements_json
+    profiles = process_result["profiles"]
     metadata = process_result.get("metadata")
     trajectory_dict = process_result.get("trajectory")
 
@@ -105,26 +126,31 @@ def process_netcdf_files(float_id: str) -> dict:
 
 def upload_to_database(
     float_id: str,
-    profiles: list,
+    profiles: list[dict],
     metadata: Optional[dict] = None,
 ) -> dict:
-    """Upload processed data to database.
+    """Upload processed data to Neon PostgreSQL.
+
+    TABLES UPDATED:
+    1. argo_float_metadata  - Float deployment info (upsert)
+    2. argo_profiles        - All profiles with JSONB measurements (upsert)
+    3. argo_float_positions - Current position from latest profile (upsert)
 
     Args:
         float_id: Float ID
-        profiles: List of ProfileData objects
-        metadata: Float metadata
+        profiles: List of profile dicts with measurements_json field
+        metadata: Float metadata dict
 
     Returns:
-        Upload results dictionary
+        dict with profiles_uploaded count
     """
     logger.info("Starting database upload", float_id=float_id)
     db_uploader = ArgoDataUploader()
 
-    # Start a single transaction for all uploads (reuses 1 connection)
+    # Start a single transaction for all uploads
     db_uploader.db.start_transaction()
     try:
-        # Upload metadata
+        # [TABLE: argo_float_metadata] - Static float info
         if metadata:
             float_metadata = FloatMetadata(
                 float_id=float_id,
@@ -137,8 +163,8 @@ def upload_to_database(
             db_uploader.upload_float_metadata(float_metadata)
             logger.debug("Metadata uploaded", float_id=float_id)
 
-        # Upload profiles
-        profiles_uploaded = db_uploader.upload_profiles_batch(profiles)
+        # [TABLE: argo_profiles] - All profiles with JSONB measurements
+        profiles_uploaded = db_uploader.upload_float_profiles(profiles)
         logger.info(
             "Profiles uploaded",
             float_id=float_id,
@@ -146,36 +172,30 @@ def upload_to_database(
             total=len(profiles),
         )
 
-        # Note: Trajectory data is now part of argo_profiles (surface_lat, surface_lon, cycle)
-        # No need for separate argo_positions_timeseries table
-
-        # Update current position (from latest profile)
+        # [TABLE: argo_float_positions] - Current position (latest profile)
         if profiles:
-            latest_profile = max(profiles, key=lambda p: p.profile_time)
+            latest_profile = max(profiles, key=lambda p: p.get("profile_time"))
             surface_temp = None
             surface_sal = None
-            if latest_profile.measurements:
-                surface_measurement = latest_profile.measurements[0]
-                surface_temp = surface_measurement.temperature
-                surface_sal = surface_measurement.salinity
+            if latest_profile.get("measurements"):
+                surface_measurement = latest_profile["measurements"][0]
+                surface_temp = surface_measurement.get("temperature")
+                surface_sal = surface_measurement.get("salinity")
 
+            # Use dict keys directly (all profiles have these fields)
             db_uploader.upload_float_position(
                 float_id=float_id,
-                latitude=latest_profile.latitude,
-                longitude=latest_profile.longitude,
-                cycle_number=latest_profile.cycle_number,
-                profile_time=latest_profile.profile_time,
+                latitude=latest_profile["latitude"],
+                longitude=latest_profile["longitude"],
+                cycle_number=latest_profile["cycle_number"],
+                profile_time=latest_profile["profile_time"],
                 temperature=surface_temp,
                 salinity=surface_sal,
             )
             logger.debug("Position updated", float_id=float_id)
 
-        # Commit the entire transaction (single connection for all operations)
+        # Commit transaction
         db_uploader.db.commit_transaction()
-
-        upload_result = {
-            "profiles_uploaded": profiles_uploaded,
-        }
 
         logger.info(
             "Database upload completed",
@@ -183,26 +203,40 @@ def upload_to_database(
             profiles=profiles_uploaded,
         )
 
-        return upload_result
+        return {"profiles_uploaded": profiles_uploaded}
+
     except Exception as e:
-        # Rollback on error
         db_uploader.db.rollback_transaction()
         logger.exception("Database upload failed", float_id=float_id, error=str(e))
         raise
 
 
+# NOTE: Not property tested yet...
 async def process_batch_floats(
     float_ids: Optional[list[str]] = None,
     upload_to_db: bool = True,
 ) -> dict:
-    """Process multiple floats in optimized batches.
+    """Process multiple floats in batch mode.
+
+    CALLED BY: main.py when --batch flag is used.
+
+    FLOW:
+    1. Download ALL floats in one batch (single index fetch)
+    2. Loop through each float:
+       - Parse NetCDF files (process_netcdf_files)
+       - Upload to database (upload_to_database) <- uses same optimized path
+    3. Return summary of successes/failures
+
+    NOTE: Each float still uses upload_to_database() which has the optimized
+    execute_values path. The "batch" here means downloading multiple floats,
+    not a different upload strategy.
 
     Args:
-        float_ids: List of float IDs (None = fetch all INCOIS floats)
-        upload_to_db: Whether to upload to database
+        float_ids: List of float IDs (None = all INCOIS floats)
+        upload_to_db: Upload results to database
 
     Returns:
-        Batch processing results
+        dict with total_floats, successful, failed counts
     """
     start_time = time.time()
     logger.info(
@@ -211,12 +245,12 @@ async def process_batch_floats(
     )
 
     try:
-        # Step 1: Batch download from FTP
-        ftp_worker = FTPSyncWorker()
-        sync_result = await ftp_worker.sync(float_ids=float_ids)
+        # Step 1: Batch download via HTTPS
+        sync_worker = ArgoSyncWorker()
+        sync_result = await sync_worker.sync(float_ids=float_ids)
 
         logger.info(
-            "Batch FTP sync completed",
+            "Batch sync completed",
             floats=sync_result.get("total_floats", 0),
             files=sync_result.get("files_downloaded", 0),
         )
@@ -232,19 +266,9 @@ async def process_batch_floats(
 
         results = []
         for float_id in floats_to_process:
-            # Download
-            download_result = await download_float_data(float_id, skip_download=True)
-            if not download_result["success"]:
-                results.append(
-                    {
-                        "success": False,
-                        "float_id": float_id,
-                        "error": download_result.get("error"),
-                    }
-                )
-                continue
+            download_result = {"success": True, "sync_result": sync_result}
 
-            # Process
+            # Process NetCDF files
             process_result = process_netcdf_files(float_id)
             if not process_result["success"]:
                 results.append(
@@ -260,7 +284,7 @@ async def process_batch_floats(
             metadata = process_result["metadata"]
             trajectory = process_result["trajectory"]
 
-            # Upload
+            # Upload to database
             upload_result = None
             if upload_to_db:
                 upload_result = upload_to_database(float_id, profiles, metadata)

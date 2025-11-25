@@ -1,14 +1,23 @@
 """ARGO data upload operations for Neon PostgreSQL.
 
-Handles uploading ARGO float data (metadata, profiles, positions)
-using execute_values with pre-serialized JSONB for optimal performance.
+This module provides the ArgoDataUploader class which handles uploading
+ARGO float data to 3 main tables:
+
+1. argo_float_metadata  - Static float deployment info
+2. argo_profiles        - Profile data with JSONB measurements
+3. argo_float_positions - Current float position (hot layer)
+
+Also logs to:
+4. processing_log       - Operation status tracking (dev)
+
+Uses execute_values with pre-serialized JSONB for optimal performance.
 """
 
 import json
 from datetime import datetime, timezone
 from typing import Optional
 
-from ..models.argo import FloatMetadata, ProfileData
+from ..models.argo import FloatMetadata
 from ..utils import get_logger
 from .connector import NeonDBConnector
 
@@ -30,10 +39,15 @@ class ArgoDataUploader:
         self.db = db_connector or NeonDBConnector()
 
     def upload_float_metadata(self, metadata: FloatMetadata) -> bool:
-        """Upload float metadata to database.
+        """Upload float metadata to argo_float_metadata table.
+
+        TABLE: argo_float_metadata
+        - float_id (PK)
+        - wmo_number, float_type, deployment_date
+        - deployment_lat, deployment_lon, status
 
         Args:
-            metadata: Float metadata object
+            metadata: FloatMetadata pydantic model
 
         Returns:
             True if successful
@@ -48,6 +62,7 @@ class ArgoDataUploader:
             )
             return False
 
+        # FIXME: deployment_country, battery_capacity missing
         data = {
             "float_id": float_id_int,
             "wmo_number": metadata.float_id,
@@ -55,7 +70,7 @@ class ArgoDataUploader:
             "deployment_date": metadata.launch_date,
             "deployment_lat": metadata.launch_lat,
             "deployment_lon": metadata.launch_lon,
-            "status": metadata.deployment_status or "ACTIVE",
+            "status": metadata.deployment_status or "UNKNOWN",
             "created_at": metadata.metadata_updated_at,
             "updated_at": datetime.now(timezone.utc),
         }
@@ -80,7 +95,12 @@ class ArgoDataUploader:
         temperature: Optional[float] = None,
         salinity: Optional[float] = None,
     ) -> bool:
-        """Upload current float position.
+        """Upload current float position to argo_float_positions table.
+
+        TABLE: argo_float_positions (hot layer - frequently updated)
+        - float_id (PK, FK to argo_float_metadata)
+        - current_lat, current_lon, cycle_number
+        - last_update, last_temp, last_salinity
 
         Args:
             float_id: Float ID
@@ -88,8 +108,8 @@ class ArgoDataUploader:
             longitude: Current longitude
             cycle_number: Current cycle number
             profile_time: Time of measurement
-            temperature: Surface temperature
-            salinity: Surface salinity
+            temperature: Surface temperature (optional)
+            salinity: Surface salinity (optional)
 
         Returns:
             True if successful
@@ -104,6 +124,7 @@ class ArgoDataUploader:
             )
             return False
 
+        # FIXME: current_depth missing
         data = {
             "float_id": float_id_int,
             "current_lat": latitude,
@@ -125,96 +146,16 @@ class ArgoDataUploader:
             conflict_column="float_id",
         )
 
-    def upload_profiles_batch(self, profiles: list[ProfileData]) -> int:
-        """Upload multiple profiles efficiently using a single transaction.
+    def upload_float_profiles(self, profiles: list[dict]) -> int:
+        """Upload profiles to argo_profiles table using pre-serialized JSONB.
 
-        Args:
-            profiles: List of profile data
+        TABLE: argo_profiles
+        - id (PK), float_id (FK), cycle
+        - profile_time, surface_lat, surface_lon
+        - max_depth, quality_flag
+        - measurements (JSONB - pre-serialized for performance)
 
-        Returns:
-            Number of profiles uploaded
-        """
-        if not profiles:
-            return 0
-
-        import psycopg2.extras
-
-        # Prepare data for bulk insert
-        values = []
-        for profile in profiles:
-            try:
-                float_id_int = int(profile.float_id)
-            except (ValueError, TypeError) as e:
-                logger.warning(
-                    "Invalid float_id in profile, skipping",
-                    float_id=profile.float_id,
-                    cycle=profile.cycle_number,
-                    error=str(e),
-                )
-                continue
-
-            measurements_json = None
-            if profile.measurements:
-                measurements_json = json.dumps(
-                    [m.model_dump(exclude_none=True) for m in profile.measurements]
-                )
-
-            values.append(
-                (
-                    float_id_int,
-                    profile.cycle_number,
-                    profile.profile_time,
-                    profile.latitude,
-                    profile.longitude,
-                    profile.max_depth,
-                    profile.quality_status,
-                    measurements_json,
-                    datetime.now(timezone.utc),
-                )
-            )
-
-        if not values:
-            return 0
-
-        query = """
-            INSERT INTO argo_profiles
-            (float_id, cycle, profile_time, surface_lat, surface_lon,
-             max_depth, quality_flag, measurements, created_at)
-            VALUES %s
-            ON CONFLICT (float_id, cycle) DO UPDATE SET
-                profile_time = EXCLUDED.profile_time,
-                surface_lat = EXCLUDED.surface_lat,
-                surface_lon = EXCLUDED.surface_lon,
-                max_depth = EXCLUDED.max_depth,
-                quality_flag = EXCLUDED.quality_flag,
-                measurements = EXCLUDED.measurements
-        """
-
-        try:
-            with self.db.get_connection() as conn:
-                with conn.cursor() as cursor:
-                    psycopg2.extras.execute_values(
-                        cursor,
-                        query,
-                        values,
-                        template="(%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)",
-                        page_size=1000,
-                    )
-                    logger.info(
-                        "Batch profile upload completed",
-                        total=len(profiles),
-                        success=len(values),
-                    )
-                    return len(values)
-        except Exception as e:
-            logger.exception("Batch profile upload failed", error=str(e))
-            raise
-
-    def upload_profiles_optimized(self, profiles: list[dict]) -> int:
-        """Upload profiles using pre-serialized JSON (FAST).
-
-        OPTIMIZATION: This method expects profiles with pre-serialized measurements_json
-        from the aggregate parser, avoiding repeated JSON serialization.
+        UNIQUE CONSTRAINT: (float_id, cycle) - upserts on conflict.
 
         Args:
             profiles: List of profile dicts with measurements_json field
@@ -265,12 +206,14 @@ class ArgoDataUploader:
         return self._upload_profiles_execute_values(values)
 
     def _upload_profiles_execute_values(self, values: list[tuple]) -> int:
-        """Upload profiles using execute_values (primary method).
+        """Private: Execute batch INSERT using psycopg2.extras.execute_values.
 
-        This is the recommended approach for Neon PostgreSQL because:
+        Called by upload_float_profiles() - not for direct use.
+
+        Why execute_values over COPY:
         1. Simple and reliable
-        2. COPY/Arrow provide no meaningful speedup (benchmarked)
-        3. The bottleneck is server-side JSONB parsing, not client-side
+        2. Supports ON CONFLICT upsert
+        3. Bottleneck is server-side JSONB parsing, not transfer
 
         Args:
             values: List of tuples (float_id, cycle, profile_time, lat, lon,
@@ -316,14 +259,21 @@ class ArgoDataUploader:
         error_details: Optional[dict] = None,
         processing_time_ms: Optional[int] = None,
     ) -> bool:
-        """Log processing operation.
+        """Log processing operation to processing_log table.
+
+        TABLE: processing_log
+        - id (PK), float_id
+        - operation (e.g., 'full_sync', 'parse_netcdf')
+        - status ('success', 'error')
+        - message, error_details (JSONB)
+        - processing_time_ms
 
         Args:
             float_id: Float ID
             operation: Operation name
-            status: Status (success, error, etc)
+            status: Status (success, error)
             message: Optional message
-            error_details: Optional error details
+            error_details: Optional error details dict
             processing_time_ms: Processing time in milliseconds
 
         Returns:
