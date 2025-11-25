@@ -43,10 +43,15 @@ def parse_metadata_file(file_path: Path) -> Optional[dict[str, Any]]:
                             )  # Extract scalar from array
                         if isinstance(launch_date_val, bytes):
                             launch_date_str = launch_date_val.decode("utf-8").strip()
-                            # Format: YYYYMMDDHHMMSS
-                            if launch_date_str and len(launch_date_str) >= 8:
+                            # Format: YYYYMMDDHHMMSS or YYYYMMDD
+                            if launch_date_str and len(launch_date_str) >= 14:
                                 metadata["launch_date"] = datetime.strptime(
                                     launch_date_str[:14], "%Y%m%d%H%M%S"
+                                ).replace(tzinfo=UTC)
+                            elif launch_date_str and len(launch_date_str) >= 8:
+                                # Handle date-only format (YYYYMMDD)
+                                metadata["launch_date"] = datetime.strptime(
+                                    launch_date_str[:8], "%Y%m%d"
                                 ).replace(tzinfo=UTC)
                 except (ValueError, AttributeError, UnicodeDecodeError) as e:
                     logger.warning("Failed to parse LAUNCH_DATE", error=str(e))

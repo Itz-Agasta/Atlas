@@ -165,7 +165,9 @@ async def process_batch_floats(
     # Import here to avoid circular imports
     from .operations import process_batch_floats as batch_processor
 
-    return await batch_processor(float_ids, upload_to_db)
+    return await batch_processor(
+        float_ids, batch_size=batch_size, upload_to_db=upload_to_db
+    )
 
 
 def main() -> int:

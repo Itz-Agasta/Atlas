@@ -368,7 +368,7 @@ CREATE TABLE argo_float_telemetry (
 
 ---
 
-## Summery
+## Summary
 
 When designing the database schema for v1, our team focused on capturing the essential data needed for basic oceanographic analysis while keeping the implementation manageable. Here's a breakdown of what our current schema covers:
 

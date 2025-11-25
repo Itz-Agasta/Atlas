@@ -21,16 +21,13 @@ class ArgoDataUploader:
         self.db = db_connector or NeonDBConnector()
 
     def upload_float_metadata(self, metadata: FloatMetadata) -> bool:
-        """Upload float metadata to dataIndividual depth measurements upload (not used)
+        """Upload float metadata to database.
 
-        Lines ~370-428
-        Has FIXME comment: "argo_profile_measurements - 0 records - Individual depth measurements... Note: Measurements are currently stored as JSONB in the argo_profiles table instead"base.
+        Args:
+            metadata: Float metadata object
 
-                Args:
-                    metadata: Float metadata object
-
-                Returns:
-                    True if successful
+        Returns:
+            True if successful
         """
         data = {
             "float_id": int(metadata.float_id),
