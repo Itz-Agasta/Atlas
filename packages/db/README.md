@@ -13,7 +13,7 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ## Database Architecture
 
-![alt text](../../docs/imgs/pg_schema.png)
+![alt text](../../docs/imgs/sql_db_arch_v1.6.png)
 
 ---
 
@@ -219,7 +219,133 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ---
 
-### 6. **processing_log** (DEBUG/Audit)
+### 6. **argo_profile_measurements** (WARM Layer - Normalized Profiles)
+
+**Purpose:** Normalized vertical profile measurements at each depth level  
+**Size:** ~2-3M rows (95,700 profiles × 20-40 measurements per profile)  
+**Update Frequency:** Every 6 hours (grows with new profiles)
+
+| Column           | Type      | Constraints   | Purpose                              |
+| ---------------- | --------- | ------------- | ------------------------------------ |
+| `id`             | SERIAL    | PRIMARY KEY   | Auto-increment measurement ID        |
+| `profile_id`     | INTEGER   | NOT NULL, FK  | Profile reference                    |
+| `depth`          | REAL      | NOT NULL      | Measurement depth in meters          |
+| `temperature`    | REAL      |               | Temperature value (°C)               |
+| `salinity`       | REAL      |               | Salinity value (PSU)                 |
+| `oxygen`         | REAL      |               | Dissolved oxygen (µmol/kg)           |
+| `chlorophyll`    | REAL      |               | Chlorophyll concentration (mg/m³)    |
+| `qc_temp`        | INTEGER   |               | Temperature QC flag (0-9 ARGO scale) |
+| `qc_salinity`    | INTEGER   |               | Salinity QC flag                     |
+| `qc_oxygen`      | INTEGER   |               | Oxygen QC flag                       |
+| `qc_chlorophyll` | INTEGER   |               | Chlorophyll QC flag                  |
+| `created_at`     | TIMESTAMP | DEFAULT now() | Record insertion time                |
+
+**Indexes:**
+
+- `argo_profile_measurements_pkey` - PRIMARY KEY (id)
+- `profile_measurements_profile_depth_idx` - BTREE (profile_id, depth) - **Composite for fast vertical profile lookup**
+- `profile_measurements_depth_idx` - BTREE (depth) - **Global depth queries**
+- `profile_measurements_temp_idx` - BTREE (temperature) - **Temperature analysis**
+
+**Foreign Keys:**
+
+- `argo_profile_measurements_profile_id_argo_profiles_id_fk` - REFERENCES argo_profiles(id) ON DELETE CASCADE
+
+**QC Flag Values (ARGO Standard):**
+
+- `0` = Good data
+- `1` = Probably good data
+- `2` = Probably bad data
+- `3` = Bad data
+- `4` = Changed
+- `5` = Not used
+- `8` = Estimated
+- `9` = Missing value
+
+**Use Cases:**
+
+- Vertical profiles: "Show temperature profile for float X at cycle Y"
+- QC filtering: "Only include measurements with QC flag ≤ 1"
+- Depth analysis: "Find all measurements at 1000m depth"
+- Parameter correlations: "Compare temperature vs salinity trends"
+
+---
+
+### 7. **argo_float_sensors** (WARM Layer - Sensor Metadata)
+
+**Purpose:** Sensor configuration and calibration data for each float  
+**Size:** ~2-5K rows (300 floats × 5-15 sensors each)  
+**Update Frequency:** Monthly (sensor configuration rarely changes)
+
+| Column                | Type      | Constraints   | Purpose                                        |
+| --------------------- | --------- | ------------- | ---------------------------------------------- |
+| `id`                  | SERIAL    | PRIMARY KEY   | Auto-increment sensor record ID                |
+| `float_id`            | BIGINT    | NOT NULL, FK  | Float reference                                |
+| `sensor_type`         | TEXT      | NOT NULL      | Sensor category (CTD, OPTODE, etc)             |
+| `sensor_maker`        | TEXT      |               | Manufacturer name                              |
+| `sensor_model`        | TEXT      |               | Model number or name                           |
+| `sensor_serial_no`    | TEXT      |               | Serial number for traceability                 |
+| `parameter_name`      | TEXT      |               | What parameter it measures (TEMP/PSAL/DOXY)    |
+| `calibration_data`    | JSONB     |               | Calibration coefficients and equations         |
+| `calibration_date`    | TIMESTAMP |               | When calibration was performed                 |
+| `calibration_comment` | TEXT      |               | Calibration notes/reference                    |
+| `units`               | TEXT      |               | Measurement units                              |
+| `accuracy`            | REAL      |               | Sensor accuracy specification                  |
+| `resolution`          | REAL      |               | Sensor resolution (smallest detectable change) |
+| `created_at`          | TIMESTAMP | DEFAULT now() | Record insertion time                          |
+| `updated_at`          | TIMESTAMP | DEFAULT now() | Last modification time                         |
+
+**Indexes:**
+
+- `argo_float_sensors_pkey` - PRIMARY KEY (id)
+- `float_sensors_float_sensor_idx` - BTREE (float_id, sensor_type) - **Find all sensors of type on float**
+- `float_sensors_parameter_idx` - BTREE (parameter_name) - **Find all sensors measuring parameter**
+
+**Foreign Keys:**
+
+- `argo_float_sensors_float_id_argo_float_metadata_float_id_fk` - REFERENCES argo_float_metadata(float_id) ON DELETE CASCADE
+
+**Calibration Data Structure (Example):**
+
+```json
+{
+  "calibration_equation": "TEMP_calib = G0 + G1 * freq_sample",
+  "coefficients": {
+    "G0": 24.5,
+    "G1": -0.045
+  },
+  "reference_document": "SBE_CTD_Sensor_Manual_v7.26",
+  "pre_calibration_offset": 0.02,
+  "post_calibration_offset": -0.01
+}
+```
+
+**Use Cases:**
+
+- Sensor validation: "What sensors are on float 2902224?"
+- Calibration tracking: "When was the CTD on float X last calibrated?"
+- Data correction: "Apply calibration coefficients to measurements"
+- Quality control: "Check if temperature measurements are within sensor accuracy"
+
+**Sample Query - Apply Calibration:**
+
+```sql
+SELECT
+    m.depth,
+    m.temperature as raw_temp,
+    m.temperature +
+      (s.calibration_data->>'pre_calibration_offset')::float as corrected_temp
+FROM argo_profile_measurements m
+JOIN argo_profiles p ON m.profile_id = p.id
+JOIN argo_float_sensors s ON p.float_id = s.float_id
+WHERE p.float_id = 2902224
+  AND s.parameter_name = 'TEMP'
+  AND m.qc_temp <= 1;  -- Only good quality data
+```
+
+---
+
+### 8. **processing_log** (DEBUG/Audit)
 
 **Purpose:** Track all worker operations for debugging and monitoring  
 **Size:** ~1-5K rows (depends on operation volume)  
@@ -259,7 +385,7 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ---
 
-### 7. **sync_manifest** (Operational)
+### 9. **sync_manifest** (Operational)
 
 **Purpose:** Track downloaded files to enable incremental syncing  
 **Size:** ~300-1K rows (grows as files are synced)  

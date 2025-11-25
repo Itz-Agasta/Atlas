@@ -1,0 +1,1 @@
+ALTER TABLE "argo_profiles" ADD CONSTRAINT "profiles_float_cycle_unique" UNIQUE("float_id","cycle");

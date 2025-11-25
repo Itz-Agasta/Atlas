@@ -1,4 +1,4 @@
-"""Export utilities for profile data to various formats."""
+"""Export utilities for profile data to various formats (JSON, Arrow)."""
 
 import json
 from pathlib import Path

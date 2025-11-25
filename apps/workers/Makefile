@@ -42,12 +42,6 @@ clean:
 	rm -rf dist/ build/ *.egg-info/ || true
 
 run-single:
-	# Note: Requires infisical CLI installed and configured
-	# Install: https://infisical.com/docs/cli/overview
-	@if [ -z "$(FLOAT_ID)" ]; then \
-		echo "Error: FLOAT_ID is required. Usage: make run-single FLOAT_ID=<id>"; \
-		exit 1; \
-	fi
 	@echo "Running ARGO loader (single float: $(FLOAT_ID))..."
 	infisical run --env=dev -- uv run python -m src.atlas_workers.main \
 		--float-id $(FLOAT_ID)

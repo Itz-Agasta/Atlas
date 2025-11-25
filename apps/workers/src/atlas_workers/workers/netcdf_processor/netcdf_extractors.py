@@ -1,4 +1,4 @@
-"""Data extraction utilities for NetCDF files."""
+"""Low-level utilities for extracting specific data fields from NetCDF files"""
 
 from datetime import UTC, datetime
 from typing import Any, Optional
@@ -9,30 +9,6 @@ import xarray as xr
 from ...utils import get_logger
 
 logger = get_logger(__name__)
-
-
-def safe_get(obj: Any, keys: str, default: Any = None) -> Any:
-    """Safely get nested value from object.
-
-    Args:
-        obj: Object to extract value from
-        keys: Dot-separated keys to traverse
-        default: Default value if extraction fails
-
-    Returns:
-        Extracted value or default
-    """
-    try:
-        for key in keys.split("."):
-            if isinstance(obj, dict):
-                obj = obj.get(key, default)
-            else:
-                obj = getattr(obj, key, default)
-            if obj is None:
-                return default
-        return obj
-    except (AttributeError, KeyError, TypeError):
-        return default
 
 
 def extract_profile_time(ds: xr.Dataset, prof_idx: int) -> datetime:
@@ -185,7 +161,18 @@ def get_float_id(ds: xr.Dataset, file_path: Any) -> str:
 
     # Fallback to filename parsing
     try:
-        return str(file_path).split("_")[0]
+        # Extract filename from path and parse float ID
+        # Expected format: D2902226_001.nc or 2902226_prof.nc
+        from pathlib import Path
+
+        filename = Path(file_path).name
+        # Remove prefix letter if present (e.g., D2902226 -> 2902226)
+        parts = filename.split("_")[0]
+        # Strip non-digits from start
+        float_id_str = "".join(c for c in parts if c.isdigit())
+        if float_id_str:
+            return float_id_str
+        return "unknown"
     except (IndexError, AttributeError):
         return "unknown"
 
