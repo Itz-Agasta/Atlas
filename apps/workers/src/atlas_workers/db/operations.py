@@ -10,7 +10,28 @@ logger = get_logger(__name__)
 
 
 class ArgoDataUploader:
-    """Upload ARGO data to Neon database with Arrow optimization."""
+    """Upload ARGO data to Neon database.
+
+    UPLOAD STRATEGY:
+    ================
+    1. Metadata upsert (single row per float)
+    2. Profiles batch insert using execute_values()
+    3. Position update (latest profile location)
+
+    CURRENT BOTTLENECK:
+    - Measurements stored as JSONB (slow serialization)
+    - ~98,725 measurements per float serialized to JSON strings
+    - GIN index on measurements is 6x larger than data
+
+    OPTIMIZATION TODO:
+    - Use Apache Arrow for columnar data transfer
+    - Consider normalized measurements table:
+      CREATE TABLE argo_measurements (
+          profile_id INT REFERENCES argo_profiles(id),
+          depth REAL, temperature REAL, salinity REAL, ...
+      )
+    - Use COPY protocol instead of INSERT for bulk data
+    """
 
     def __init__(self, db_connector: Optional[NeonDBConnector] = None):
         """Initialize uploader.
@@ -128,85 +149,77 @@ class ArgoDataUploader:
         if not profiles:
             return 0
 
-        success_count = 0
+        import psycopg2.extras
 
-        # Use a single transaction for all profiles
+        # Prepare data for bulk insert
+        values = []
+        for profile in profiles:
+            try:
+                float_id_int = int(profile.float_id)
+            except (ValueError, TypeError) as e:
+                logger.warning(
+                    "Invalid float_id in profile, skipping",
+                    float_id=profile.float_id,
+                    cycle=profile.cycle_number,
+                    error=str(e),
+                )
+                continue
+
+            measurements_json = None
+            if profile.measurements:
+                measurements_json = json.dumps(
+                    [m.model_dump(exclude_none=True) for m in profile.measurements]
+                )
+
+            values.append(
+                (
+                    float_id_int,
+                    profile.cycle_number,
+                    profile.profile_time,
+                    profile.latitude,
+                    profile.longitude,
+                    profile.max_depth,
+                    profile.quality_status,
+                    measurements_json,
+                    datetime.now(timezone.utc),
+                )
+            )
+
+        if not values:
+            return 0
+
+        query = """
+            INSERT INTO argo_profiles
+            (float_id, cycle, profile_time, surface_lat, surface_lon,
+             max_depth, quality_flag, measurements, created_at)
+            VALUES %s
+            ON CONFLICT (float_id, cycle) DO UPDATE SET
+                profile_time = EXCLUDED.profile_time,
+                surface_lat = EXCLUDED.surface_lat,
+                surface_lon = EXCLUDED.surface_lon,
+                max_depth = EXCLUDED.max_depth,
+                quality_flag = EXCLUDED.quality_flag,
+                measurements = EXCLUDED.measurements
+        """
+
         try:
             with self.db.get_connection() as conn:
                 with conn.cursor() as cursor:
-                    for profile in profiles:
-                        # Prepare profile data
-                        try:
-                            float_id_int = int(profile.float_id)
-                        except (ValueError, TypeError) as e:
-                            logger.warning(
-                                "Invalid float_id in profile, skipping",
-                                float_id=profile.float_id,
-                                cycle=profile.cycle_number,
-                                error=str(e),
-                            )
-                            continue
-
-                        profile_data = {
-                            "float_id": float_id_int,
-                            "cycle": profile.cycle_number,
-                            "profile_time": profile.profile_time,
-                            "surface_lat": profile.latitude,
-                            "surface_lon": profile.longitude,
-                            "max_depth": profile.max_depth,
-                            "quality_flag": profile.quality_status,
-                            "created_at": datetime.now(timezone.utc),
-                        }
-
-                        # Add measurements as JSONB
-                        if profile.measurements:
-                            profile_data["measurements"] = json.dumps(
-                                [
-                                    m.model_dump(exclude_none=True)
-                                    for m in profile.measurements
-                                ]
-                            )
-
-                        try:
-                            cursor.execute(
-                                """
-                                INSERT INTO argo_profiles
-                                (float_id, cycle, profile_time, surface_lat, surface_lon,
-                                 max_depth, quality_flag, measurements, created_at)
-                                VALUES (%(float_id)s, %(cycle)s, %(profile_time)s, %(surface_lat)s,
-                                        %(surface_lon)s, %(max_depth)s, %(quality_flag)s,
-                                        %(measurements)s::jsonb, %(created_at)s)
-                                ON CONFLICT (float_id, cycle) DO UPDATE SET
-                                    profile_time = EXCLUDED.profile_time,
-                                    surface_lat = EXCLUDED.surface_lat,
-                                    surface_lon = EXCLUDED.surface_lon,
-                                    max_depth = EXCLUDED.max_depth,
-                                    quality_flag = EXCLUDED.quality_flag,
-                                    measurements = EXCLUDED.measurements
-                                """,
-                                profile_data,
-                            )
-                            success_count += 1
-                        except Exception as e:
-                            logger.warning(
-                                "Failed to upload profile",
-                                float_id=profile.float_id,
-                                cycle=profile.cycle_number,
-                                error=str(e),
-                            )
-                            continue
-
-                    # Commit happens automatically when exiting context
+                    psycopg2.extras.execute_values(
+                        cursor,
+                        query,
+                        values,
+                        template="(%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)",
+                        page_size=1000,
+                    )
                     logger.info(
                         "Batch profile upload completed",
                         total=len(profiles),
-                        success=success_count,
+                        success=len(values),
                     )
-                    return success_count
-
+                    return len(values)
         except Exception as e:
             logger.exception("Batch profile upload failed", error=str(e))
-            # Re-raise to let caller distinguish connection failures vs processing failures
             raise
 
     def log_processing(

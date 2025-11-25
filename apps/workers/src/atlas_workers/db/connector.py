@@ -33,7 +33,32 @@ class DatabaseSettings(BaseSettings):
 
 
 class NeonDBConnector:
-    """Neon PostgreSQL database connector optimized for Arrow data transfer."""
+    """Neon PostgreSQL database connector optimized for bulk data transfer.
+
+    CONNECTION STRATEGY:
+    ====================
+    - Uses single connection per transaction (start_transaction/commit_transaction)
+    - This avoids Neon cold-start latency (~2-4s per new connection)
+    - All profile uploads reuse the same connection
+
+    FUTURE OPTIMIZATION:
+    - Consider connection pooling (psycopg2.pool.ThreadedConnectionPool)
+    - Add prepared statements for repeated queries
+    - Implement COPY protocol for bulk inserts (10x faster than INSERT)
+
+    TRANSACTION PATTERN:
+    ```python
+    db = NeonDBConnector()
+    db.start_transaction()  # Opens ONE connection
+    try:
+        upload_metadata(db)   # Reuses connection
+        upload_profiles(db)   # Reuses connection
+        upload_position(db)   # Reuses connection
+        db.commit_transaction()  # Commits & closes
+    except:
+        db.rollback_transaction()  # Rolls back & closes
+    ```
+    """
 
     def __init__(self, database_url: Optional[str] = None):
         """Initialize database connector.

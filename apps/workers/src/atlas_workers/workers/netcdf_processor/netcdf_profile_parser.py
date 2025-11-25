@@ -1,5 +1,18 @@
 """Profile parsing utilities for NetCDF files.
-Converts raw NetCDF profile data into structured ProfileData objects
+Converts raw NetCDF profile data into structured ProfileData objects.
+
+DATA VALIDATION RULES:
+======================
+- Measurements with ALL sensors null are skipped (invalid depth level)
+- Fill values (99999, NaN) are converted to None
+- Profiles without valid coordinates are skipped
+- Quality status derived from filename prefix (D=Delayed, R=Real-time)
+
+PERFORMANCE NOTE:
+================
+This module parses INDIVIDUAL profile files. For bulk processing,
+consider using the aggregate _prof.nc file which contains all profiles
+in a single vectorized dataset (see netcdf_aggregate_parser.py).
 """
 
 from datetime import UTC, datetime
@@ -24,6 +37,11 @@ logger = get_logger(__name__)
 
 
 def parse_measurements(ds: xr.Dataset, prof_idx: int) -> list[MeasurementProfile]:
+    """Extract measurements from a profile at all depth levels.
+
+    NOTE: This function loops through N_LEVELS (typically ~275 levels per profile).
+    For vectorized processing of multiple profiles, use Arrow-based approach.
+    """
     """Extract measurements from a profile.
 
     Args:

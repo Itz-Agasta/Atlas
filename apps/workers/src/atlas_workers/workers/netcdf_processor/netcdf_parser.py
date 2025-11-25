@@ -1,5 +1,17 @@
 """NetCDF Parser Worker for converting ARGO data to Json & Arrow format.
 Central coordinator that manages the entire conversion workflow
+
+ARCHITECTURE NOTE:
+==================
+Currently parses individual profile files (D{float_id}_XXX.nc) which is SLOW.
+The aggregate file ({float_id}_prof.nc) contains ALL profiles and is ~500x faster to parse.
+
+TODO: Refactor to use aggregate file:
+  - Single file contains N_PROF × N_LEVELS measurements in vectorized format
+  - Example: 2902233_prof.nc has shape (359, 275) = 98,725 measurements
+  - Opening takes 0.024s vs 12+ seconds for 358 individual files
+
+See: parse_aggregate_profiles() in netcdf_aggregate_parser.py (to be implemented)
 """
 
 from pathlib import Path

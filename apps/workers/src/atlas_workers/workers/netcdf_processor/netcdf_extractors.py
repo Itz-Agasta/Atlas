@@ -1,4 +1,20 @@
-"""Low-level utilities for extracting specific data fields from NetCDF files"""
+"""Low-level utilities for extracting specific data fields from NetCDF files.
+
+ARGO DATA FORMAT NOTES:
+=======================
+- JULD: Julian Day Number since 1950-01-01 (converted to datetime64 by xarray)
+- Coordinates: WGS84 latitude/longitude in decimal degrees
+- Pressure: dbar (decibar) - approximately equals depth in meters
+- Temperature: Celsius (ITS-90 scale)
+- Salinity: PSU (Practical Salinity Units)
+- Fill values: 99999 or NaN indicate missing data
+
+QUALITY FLAGS:
+- 'D' prefix in filename = Delayed mode (quality controlled)
+- 'R' prefix = Real-time (preliminary data)
+
+See ARGO documentation: https://archimer.ifremer.fr/doc/00187/29825/
+"""
 
 from datetime import UTC, datetime
 from typing import Any, Optional
