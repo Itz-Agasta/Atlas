@@ -1,3 +1,9 @@
+"""ARGO data upload operations for Neon PostgreSQL.
+
+Handles uploading ARGO float data (metadata, profiles, positions)
+using execute_values with pre-serialized JSONB for optimal performance.
+"""
+
 import json
 from datetime import datetime, timezone
 from typing import Optional
@@ -10,27 +16,9 @@ logger = get_logger(__name__)
 
 
 class ArgoDataUploader:
-    """Upload ARGO data to Neon database.
+    """Upload ARGO data (metadata, profiles, positions) to Neon database.
 
-    UPLOAD STRATEGY:
-    ================
-    1. Metadata upsert (single row per float)
-    2. Profiles batch insert using execute_values()
-    3. Position update (latest profile location)
-
-    CURRENT BOTTLENECK:
-    - Measurements stored as JSONB (slow serialization)
-    - ~98,725 measurements per float serialized to JSON strings
-    - GIN index on measurements is 6x larger than data
-
-    OPTIMIZATION TODO:
-    - Use Apache Arrow for columnar data transfer
-    - Consider normalized measurements table:
-      CREATE TABLE argo_measurements (
-          profile_id INT REFERENCES argo_profiles(id),
-          depth REAL, temperature REAL, salinity REAL, ...
-      )
-    - Use COPY protocol instead of INSERT for bulk data
+    Uses execute_values for batch profile uploads with pre-serialized JSONB.
     """
 
     def __init__(self, db_connector: Optional[NeonDBConnector] = None):
@@ -221,6 +209,103 @@ class ArgoDataUploader:
         except Exception as e:
             logger.exception("Batch profile upload failed", error=str(e))
             raise
+
+    def upload_profiles_optimized(self, profiles: list[dict]) -> int:
+        """Upload profiles using pre-serialized JSON (FAST).
+
+        OPTIMIZATION: This method expects profiles with pre-serialized measurements_json
+        from the aggregate parser, avoiding repeated JSON serialization.
+
+        Args:
+            profiles: List of profile dicts with measurements_json field
+
+        Returns:
+            Number of profiles uploaded
+        """
+        if not profiles:
+            return 0
+
+        # Prepare data tuples using pre-serialized JSON
+        values = []
+        for profile in profiles:
+            try:
+                float_id_int = int(profile["float_id"])
+            except (ValueError, TypeError) as e:
+                logger.warning(
+                    "Invalid float_id in profile, skipping",
+                    float_id=profile.get("float_id"),
+                    cycle=profile.get("cycle_number"),
+                    error=str(e),
+                )
+                continue
+
+            # Use pre-serialized JSON if available, else serialize now
+            measurements_json = profile.get("measurements_json")
+            if measurements_json is None and profile.get("measurements"):
+                measurements_json = json.dumps(profile["measurements"])
+
+            values.append(
+                (
+                    float_id_int,
+                    profile.get("cycle_number"),
+                    profile.get("profile_time"),
+                    profile.get("latitude"),
+                    profile.get("longitude"),
+                    profile.get("max_depth"),
+                    profile.get("quality_status"),
+                    measurements_json,
+                    datetime.now(timezone.utc),
+                )
+            )
+
+        if not values:
+            return 0
+
+        # Use execute_values with pre-serialized JSON (fast enough, more reliable than COPY)
+        return self._upload_profiles_execute_values(values)
+
+    def _upload_profiles_execute_values(self, values: list[tuple]) -> int:
+        """Upload profiles using execute_values (primary method).
+
+        This is the recommended approach for Neon PostgreSQL because:
+        1. Simple and reliable
+        2. COPY/Arrow provide no meaningful speedup (benchmarked)
+        3. The bottleneck is server-side JSONB parsing, not client-side
+
+        Args:
+            values: List of tuples (float_id, cycle, profile_time, lat, lon,
+                   max_depth, quality, measurements_json, created_at)
+
+        Returns:
+            Number of rows uploaded
+        """
+        import psycopg2.extras
+
+        query = """
+            INSERT INTO argo_profiles
+            (float_id, cycle, profile_time, surface_lat, surface_lon,
+             max_depth, quality_flag, measurements, created_at)
+            VALUES %s
+            ON CONFLICT (float_id, cycle) DO UPDATE SET
+                profile_time = EXCLUDED.profile_time,
+                surface_lat = EXCLUDED.surface_lat,
+                surface_lon = EXCLUDED.surface_lon,
+                max_depth = EXCLUDED.max_depth,
+                quality_flag = EXCLUDED.quality_flag,
+                measurements = EXCLUDED.measurements
+        """
+
+        with self.db.get_connection() as conn:
+            with conn.cursor() as cursor:
+                psycopg2.extras.execute_values(
+                    cursor,
+                    query,
+                    values,
+                    template="(%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)",
+                    page_size=1000,
+                )
+                logger.info("Batch upload completed", rows=len(values))
+                return len(values)
 
     def log_processing(
         self,
