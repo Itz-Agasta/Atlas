@@ -6,14 +6,14 @@ import logging
 from typing import Any
 
 from atlas_workers.utils import setup_logging
-from atlas_workers.workers import FTPSyncWorker, NetCDFParserWorker
+from atlas_workers.workers import ArgoSyncWorker, NetCDFParserWorker
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
 
-def ftp_sync_handler(event: dict, context: Any) -> dict:
-    """AWS Lambda handler for FTP sync worker.
+def argo_sync_handler(event: dict, context: Any) -> dict:
+    """AWS Lambda handler for ARGO sync worker.
 
     Event format:
     {
@@ -27,9 +27,9 @@ def ftp_sync_handler(event: dict, context: Any) -> dict:
         }
     """
     try:
-        logger.info("FTP Sync handler invoked", extra={"event": event})
+        logger.info("ARGO Sync handler invoked", extra={"event": event})
 
-        worker = FTPSyncWorker()
+        worker = ArgoSyncWorker()
         float_ids = event.get("float_ids")
 
         # Run async worker
@@ -40,7 +40,7 @@ def ftp_sync_handler(event: dict, context: Any) -> dict:
             "body": json.dumps(result, default=str),
         }
     except Exception as e:
-        logger.exception("FTP sync failed", extra={"error": str(e)})
+        logger.exception("ARGO sync failed", extra={"error": str(e)})
         return {
             "statusCode": 500,
             "body": json.dumps({"error": str(e)}),
@@ -84,9 +84,9 @@ def netcdf_parser_handler(event: dict, context: Any) -> dict:
 
 # For local testing
 if __name__ == "__main__":
-    # Test FTP sync handler
-    print("Testing FTP sync handler...")
-    result = ftp_sync_handler({"float_ids": ["2902224"]}, None)
+    # Test ARGO sync handler
+    print("Testing ARGO sync handler...")
+    result = argo_sync_handler({"float_ids": ["2902224"]}, None)
     print(json.dumps(json.loads(result["body"]), indent=2))
 
     print("\nTesting NetCDF parser handler...")

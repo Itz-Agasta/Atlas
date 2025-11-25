@@ -1,1 +1,0 @@
-"""FTP sync worker modules."""
