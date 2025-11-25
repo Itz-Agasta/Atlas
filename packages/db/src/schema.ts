@@ -157,7 +157,7 @@ export const argo_measurements_summary = pgMaterializedView(
 ).as((qb) =>
   qb
     .select({
-      profile_id: argo_profiles.id,
+      id: argo_profiles.id,
       float_id: argo_profiles.float_id,
       cycle: argo_profiles.cycle,
       profile_time: argo_profiles.profile_time,

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from ..models.argo import FloatMetadata, ProfileData
@@ -29,8 +29,18 @@ class ArgoDataUploader:
         Returns:
             True if successful
         """
+        try:
+            float_id_int = int(metadata.float_id)
+        except (ValueError, TypeError) as e:
+            logger.error(
+                "Invalid float_id format for metadata upload",
+                float_id=metadata.float_id,
+                error=str(e),
+            )
+            return False
+
         data = {
-            "float_id": int(metadata.float_id),
+            "float_id": float_id_int,
             "wmo_number": metadata.float_id,
             "float_type": metadata.float_model,
             "deployment_date": metadata.launch_date,
@@ -38,7 +48,7 @@ class ArgoDataUploader:
             "deployment_lon": metadata.launch_lon,
             "status": metadata.deployment_status or "ACTIVE",
             "created_at": metadata.metadata_updated_at,
-            "updated_at": datetime.now(),
+            "updated_at": datetime.now(timezone.utc),
         }
 
         # Remove None values
@@ -75,15 +85,25 @@ class ArgoDataUploader:
         Returns:
             True if successful
         """
+        try:
+            float_id_int = int(float_id)
+        except (ValueError, TypeError) as e:
+            logger.error(
+                "Invalid float_id format for position upload",
+                float_id=float_id,
+                error=str(e),
+            )
+            return False
+
         data = {
-            "float_id": int(float_id),
+            "float_id": float_id_int,
             "current_lat": latitude,
             "current_lon": longitude,
             "cycle_number": cycle_number,
             "last_update": profile_time,
             "last_temp": temperature,
             "last_salinity": salinity,
-            "updated_at": datetime.now(),
+            "updated_at": datetime.now(timezone.utc),
         }
 
         # Remove None values
@@ -116,15 +136,26 @@ class ArgoDataUploader:
                 with conn.cursor() as cursor:
                     for profile in profiles:
                         # Prepare profile data
+                        try:
+                            float_id_int = int(profile.float_id)
+                        except (ValueError, TypeError) as e:
+                            logger.warning(
+                                "Invalid float_id in profile, skipping",
+                                float_id=profile.float_id,
+                                cycle=profile.cycle_number,
+                                error=str(e),
+                            )
+                            continue
+
                         profile_data = {
-                            "float_id": int(profile.float_id),
+                            "float_id": float_id_int,
                             "cycle": profile.cycle_number,
                             "profile_time": profile.profile_time,
                             "surface_lat": profile.latitude,
                             "surface_lon": profile.longitude,
                             "max_depth": profile.max_depth,
                             "quality_flag": profile.quality_status,
-                            "created_at": datetime.now(),
+                            "created_at": datetime.now(timezone.utc),
                         }
 
                         # Add measurements as JSONB
@@ -175,7 +206,8 @@ class ArgoDataUploader:
 
         except Exception as e:
             logger.exception("Batch profile upload failed", error=str(e))
-            return 0
+            # Re-raise to let caller distinguish connection failures vs processing failures
+            raise
 
     def log_processing(
         self,
@@ -199,14 +231,22 @@ class ArgoDataUploader:
         Returns:
             True if successful
         """
+        try:
+            float_id_int = int(float_id)
+        except (ValueError, TypeError) as e:
+            logger.error(
+                "Invalid float_id format for logging", float_id=float_id, error=str(e)
+            )
+            return False
+
         data = {
-            "float_id": int(float_id),
+            "float_id": float_id_int,
             "operation": operation,
             "status": status,
             "message": message,
             "error_details": json.dumps(error_details) if error_details else None,
             "processing_time_ms": processing_time_ms,
-            "created_at": datetime.now(),
+            "created_at": datetime.now(timezone.utc),
         }
 
         # Remove None values
