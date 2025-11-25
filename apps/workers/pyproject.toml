@@ -11,7 +11,7 @@ dependencies = [
     "pyarrow>=13.0.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
-    "structlog>=23.2.0",
+    "loguru>=0.7.0",
     "psycopg2-binary>=2.9.11",
     "cftime>=1.6.5",
 ]
@@ -28,5 +28,6 @@ dev = [
 [dependency-groups]
 dev = [
     "ruff>=0.14.4",
-    "pyrefly>=0.40.0",
+    "pyrefly>=0.1.0",
+    "pytest>=9.0.1",
 ]

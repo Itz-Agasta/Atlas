@@ -50,10 +50,15 @@ class Settings(BaseSettings):
 
     # Logging
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
-    LOG_FORMAT: Literal["json", "text"] = "json"  # json or text
+    LOG_FORMAT: Literal["json", "text"] = (
+        "text"  # json for production, text for development
+    )
 
     # Environment
     ENVIRONMENT: str = "development"  # development, staging, production
+
+    # Database Configuration
+    DATABASE_URL: Optional[str] = None
 
 
 settings = Settings()

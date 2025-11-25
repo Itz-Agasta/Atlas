@@ -13,7 +13,7 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ## Database Architecture
 
-![alt text](../../docs/imgs/pg_schema.png)
+![alt text](../../docs/imgs/sql_db_arch_v1.6.png)
 
 ---
 
@@ -43,11 +43,10 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 - `argo_float_metadata_pkey` - PRIMARY KEY (float_id)
 - `argo_float_metadata_wmo_idx` - BTREE (wmo_number)
-- `argo_float_metadata_wmo_number_unique` - UNIQUE (wmo_number)
 
 **Foreign Keys:**
 
-- Referenced by: argo_float_positions, argo_positions_timeseries, argo_profiles, argo_float_stats, processing_log, sync_manifest
+- Referenced by: argo_float_positions, argo_profiles, processing_log, sync_manifest
 
 ---
 
@@ -85,48 +84,7 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ---
 
-### 3. **argo_positions_timeseries** (WARM Layer - Last 6 Months)
-
-**Purpose:** Historical position tracking with geospatial indexing  
-**Size:** ~95,700 positions (300 floats × ~319 profiles × 10-day cycles)  
-**Update Frequency:** Every 6 hours (incremental append)
-
-| Column       | Type                  | Constraints   | Purpose                       |
-| ------------ | --------------------- | ------------- | ----------------------------- |
-| `id`         | SERIAL                | PRIMARY KEY   | Auto-increment row ID         |
-| `float_id`   | BIGINT                | NOT NULL, FK  | Float reference               |
-| `lat`        | REAL                  | NOT NULL      | Position latitude             |
-| `lon`        | REAL                  | NOT NULL      | Position longitude            |
-| `time`       | TIMESTAMP             | NOT NULL      | Position timestamp            |
-| `cycle`      | INTEGER               |               | Mission cycle number          |
-| `location`   | GEOMETRY(POINT, 4326) |               | Spatial point for GIS queries |
-| `created_at` | TIMESTAMP             | DEFAULT now() | Record insertion time         |
-
-**Indexes:**
-
-- `argo_positions_timeseries_pkey` - PRIMARY KEY (id)
-- `positions_time_idx` - BTREE (float_id, time) - **Performance index**
-- `positions_time_only_idx` - BTREE (time)
-- `positions_spatial_idx` - GIST (location) - **Spatial index for map queries**
-
-**Foreign Keys:**
-
-- `argo_positions_timeseries_float_id_argo_float_metadata_float_id` - REFERENCES argo_float_metadata(float_id) ON DELETE CASCADE
-
-**Use Cases:**
-
-- Trajectory visualization: "Show me where float X was between date1 and date2"
-- Spatial queries: "Find all floats within 500km of coordinates"
-- Analytics: "Calculate average position per 10-day cycle"
-
-**Storage Strategy:**
-
-- WARM layer (6 months of data): Kept in PostgreSQL
-- COLD layer (historical): Archived to MinIO S3 as Parquet files
-
----
-
-### 4. **argo_profiles** (WARM Layer - Last 6 Months)
+### 3. **argo_profiles** (WARM Layer - Last 6 Months)
 
 **Purpose:** Profile measurements (temperature, salinity, oxygen, chlorophyll)  
 **Size:** ~95,700 profiles (300 floats × ~319 profiles each)  
@@ -149,10 +107,12 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 **Indexes:**
 
 - `argo_profiles_pkey` - PRIMARY KEY (id)
-- `profiles_float_time_idx` - BTREE (float_id, profile_time) - **Performance index**
+- `profiles_float_time_idx` - BTREE (float_id, profile_time)
 - `profiles_time_idx` - BTREE (profile_time)
 - `profiles_qc_idx` - BTREE (quality_flag)
-- `profiles_spatial_idx` - GIST (surface_location) - **Spatial index**
+- `profiles_spatial_idx` - GIST (surface_location)
+- `profiles_measurements_gin_idx` - GIN (measurements)
+- `profiles_float_cycle_unique` - UNIQUE (float_id, cycle)
 
 **Foreign Keys:**
 
@@ -166,9 +126,7 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
   "PSAL": [34.5, 34.6, 34.7, 34.9, 35.0, 34.8, 34.7],
   "DOXY": [200, 190, 180, 150, 100, 50, 30],
   "CHLA": [0.8, 0.9, 1.0, 0.7, 0.5, 0.3, 0.2],
-  "depths": [0, 5, 10, 20, 50, 100, 200],
-  "vertical_sampling_scheme": "PRIMARY",
-  "c_profile_type": 800
+  "depths": [0, 5, 10, 20, 50, 100, 200]
 }
 ```
 
@@ -180,46 +138,7 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ---
 
-### 5. **argo_float_stats** (WARM Layer - Cached)
-
-**Purpose:** Pre-calculated aggregates for dashboard performance  
-**Size:** ~300 rows (one per active float)  
-**Update Frequency:** Hourly (cache warmer job)
-
-| Column                 | Type      | Constraints     | Purpose                                |
-| ---------------------- | --------- | --------------- | -------------------------------------- |
-| `float_id`             | BIGINT    | PRIMARY KEY, FK | Float reference                        |
-| `avg_temp`             | REAL      |                 | Average temperature (all profiles)     |
-| `temp_min`             | REAL      |                 | Minimum recorded temperature           |
-| `temp_max`             | REAL      |                 | Maximum recorded temperature           |
-| `depth_range_min`      | INTEGER   |                 | Shallowest measurement depth           |
-| `depth_range_max`      | INTEGER   |                 | Deepest measurement depth              |
-| `profile_count`        | INTEGER   | DEFAULT 0       | Total profiles collected               |
-| `location_bounds_nmin` | REAL      |                 | South boundary (min latitude)          |
-| `location_bounds_nmax` | REAL      |                 | North boundary (max latitude)          |
-| `location_bounds_emin` | REAL      |                 | West boundary (min longitude)          |
-| `location_bounds_emax` | REAL      |                 | East boundary (max longitude)          |
-| `recent_temp_trend`    | REAL      |                 | Temperature change (now vs 7 days ago) |
-| `last_updated`         | TIMESTAMP |                 | When stats were calculated             |
-| `updated_at`           | TIMESTAMP | DEFAULT now()   | Cache timestamp                        |
-
-**Indexes:**
-
-- `argo_float_stats_pkey` - PRIMARY KEY (float_id)
-
-**Foreign Keys:**
-
-- `argo_float_stats_float_id_argo_float_metadata_float_id` - REFERENCES argo_float_metadata(float_id) ON DELETE CASCADE
-
-**Use Cases:**
-
-- Dashboard stats: "Show min/max temperature for float X"
-- Bounding boxes: "Get spatial extent of float's trajectory"
-- Trends: "Is temperature increasing or decreasing?"
-
----
-
-### 6. **processing_log** (DEBUG/Audit)
+### 4. **processing_log** (DEBUG/Audit)
 
 **Purpose:** Track all worker operations for debugging and monitoring  
 **Size:** ~1-5K rows (depends on operation volume)  
@@ -259,7 +178,7 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ---
 
-### 7. **sync_manifest** (Operational)
+### 5. **sync_manifest** (Operational)
 
 **Purpose:** Track downloaded files to enable incremental syncing  
 **Size:** ~300-1K rows (grows as files are synced)  
@@ -293,6 +212,39 @@ The database uses **Neon PostgreSQL 17** with **PostGIS** for geospatial queries
 
 ---
 
+### 6. **argo_measurements_summary** (Materialized View - Pre-computed)
+
+**Purpose:** Pre-computed measurements at standard depths for fast dashboard queries  
+**Refresh:** Manual or scheduled (depends on data updates)
+
+| Column              | Type      | Purpose                               |
+| ------------------- | --------- | ------------------------------------- |
+| `profile_id`        | INTEGER   | Profile ID reference                  |
+| `float_id`          | BIGINT    | Float reference                       |
+| `cycle`             | INTEGER   | Profile cycle number                  |
+| `profile_time`      | TIMESTAMP | When profile was taken                |
+| `surface_lat`       | REAL      | Latitude at surface                   |
+| `surface_lon`       | REAL      | Longitude at surface                  |
+| `max_depth`         | INTEGER   | Deepest measurement (meters)          |
+| `surface_temp`      | REAL      | Temperature at surface (0-10m)        |
+| `surface_salinity`  | REAL      | Salinity at surface (0-10m)           |
+| `temp_100m`         | REAL      | Temperature at 100m depth             |
+| `salinity_100m`     | REAL      | Salinity at 100m depth                |
+| `temp_500m`         | REAL      | Temperature at 500m depth             |
+| `salinity_500m`     | REAL      | Salinity at 500m depth                |
+| `temp_1000m`        | REAL      | Temperature at 1000m depth            |
+| `salinity_1000m`    | REAL      | Salinity at 1000m depth               |
+| `measurement_count` | INTEGER   | Number of measurements in profile     |
+| `quality_flag`      | TEXT      | Data quality (REAL_TIME/DELAYED_MODE) |
+
+**Use Cases:**
+
+- Dashboard: "Show temperature at 100m for all floats"
+- Analytics: "Average salinity at surface over time"
+- Performance: Avoid JSONB expansion for common queries
+
+---
+
 ## SQL Query Examples
 
 ### Example 1: Current Positions of All Active Floats
@@ -320,49 +272,27 @@ ORDER BY p.last_update DESC;
 
 ---
 
-### Example 2: Float Trajectory Over Time Period
+### Example 2: Spatial Query - Floats Near a Location
 
 ```sql
--- Detail panel: Show where float 2902224 traveled between two dates
-SELECT
-    float_id,
-    lat,
-    lon,
-    time,
-    cycle,
-    ST_AsGeoJSON(location) as geom_json
-FROM argo_positions_timeseries
-WHERE float_id = 2902224
-  AND time BETWEEN '2025-09-01' AND '2025-11-06'
-ORDER BY time ASC;
-```
-
-**Response Time:** <100ms (WARM layer, spatial index on time range)  
-**Use Case:** Trajectory visualization on map
-
----
-
-### Example 3: Spatial Query - Floats Near a Location
-
-```sql
--- Find all floats within 500km of Indian coast (72°E, 12°N)
+-- Find all profiles within 500km of Indian coast (72°E, 12°N) in last 7 days
 SELECT
     m.float_id,
     m.wmo_number,
-    p.lat,
-    p.lon,
+    p.surface_lat,
+    p.surface_lon,
     ST_Distance(
         ST_MakePoint(72, 12)::geography,
-        ST_MakePoint(p.lon, p.lat)::geography
+        p.surface_location::geography
     ) / 1000 as distance_km
-FROM argo_positions_timeseries p
+FROM argo_profiles p
 JOIN argo_float_metadata m ON p.float_id = m.float_id
 WHERE ST_DWithin(
-    ST_MakePoint(p.lon, p.lat)::geography,
+    p.surface_location::geography,
     ST_MakePoint(72, 12)::geography,
     500000  -- 500km in meters
 )
-  AND p.time > NOW() - INTERVAL '7 days'
+  AND p.profile_time > NOW() - INTERVAL '7 days'
 ORDER BY distance_km ASC;
 ```
 
@@ -371,7 +301,7 @@ ORDER BY distance_km ASC;
 
 ---
 
-### Example 4: Profile Data for a Specific Float & Cycle
+### Example 3: Profile Data for a Specific Float & Cycle
 
 ```sql
 -- Vertical profile: Show temperature and salinity for float 2902224, cycle 150
@@ -398,6 +328,59 @@ LIMIT 1;
 
 ---
 
+### Example 3: Summary Measurements for Dashboard
+
+```sql
+-- Get surface temperature for all floats in last month
+SELECT
+    float_id,
+    profile_time,
+    surface_lat,
+    surface_lon,
+    surface_temp,
+    surface_salinity
+FROM argo_measurements_summary
+WHERE profile_time > NOW() - INTERVAL '1 month'
+ORDER BY profile_time DESC;
+```
+
+**Response Time:** <100ms (materialized view)  
+**Use Case:** Dashboard charts and analytics
+
+````
+
+**Response Time:** <200ms (spatial index lookup)
+**Use Case:** Find floats in specific ocean region
+
+---
+
+### Example 4: Profile Data for a Specific Float & Cycle
+
+```sql
+-- Vertical profile: Show temperature and salinity for float 2902224, cycle 150
+SELECT
+    id,
+    cycle,
+    profile_time,
+    surface_lat,
+    surface_lon,
+    max_depth,
+    measurements->>'TEMP' as temp_profile,
+    measurements->>'PSAL' as salinity_profile,
+    measurements->>'DOXY' as oxygen_profile,
+    measurements->>'depths' as depth_levels,
+    quality_flag
+FROM argo_profiles
+WHERE float_id = 2902224
+  AND cycle = 150
+LIMIT 1;
+````
+
+**Response Time:** <50ms (BTREE index on float_id, cycle)  
+**Use Case:** Display vertical profile graph
+
+---
+
 ### Example 5: Temperature Trends Over 6 Months
 
 ```sql
@@ -418,31 +401,6 @@ ORDER BY float_id, week DESC;
 
 **Response Time:** <2s (batch query, aggregation)  
 **Use Case:** Historical trends analysis
-
----
-
-### Example 6: Floats with Temperature Anomalies
-
-```sql
--- Anomaly detection: Find floats with unusual temperature readings
-SELECT
-    p.id,
-    p.float_id,
-    p.profile_time,
-    CAST(p.measurements->>'TEMP' as REAL) as temp,
-    s.avg_temp,
-    s.temp_max,
-    CAST(p.measurements->>'TEMP' as REAL) - s.avg_temp as deviation
-FROM argo_profiles p
-JOIN argo_float_stats s ON p.float_id = s.float_id
-WHERE CAST(p.measurements->>'TEMP' as REAL) > s.temp_max * 1.1
-   OR CAST(p.measurements->>'TEMP' as REAL) < s.temp_min * 0.9
-ORDER BY ABS(deviation) DESC
-LIMIT 20;
-```
-
-**Response Time:** <500ms (profile scan with stats join)  
-**Use Case:** Detect sensor malfunctions or unusual oceanographic events
 
 ---
 
@@ -516,45 +474,11 @@ WHERE p.lon BETWEEN 70 AND 75
 
 ---
 
-### Example 10: Statistics Cache Refresh
+    **Use Case:** Efficient map tile rendering
 
-```sql
--- Cache warmer: Recalculate float statistics
-UPDATE argo_float_stats s
-SET
-    avg_temp = (
-        SELECT AVG(CAST(measurements->>'TEMP' as REAL))
-        FROM argo_profiles p
-        WHERE p.float_id = s.float_id
-          AND p.profile_time > NOW() - INTERVAL '6 months'
-    ),
-    temp_min = (
-        SELECT MIN(CAST(measurements->>'TEMP' as REAL))
-        FROM argo_profiles p
-        WHERE p.float_id = s.float_id
-          AND p.profile_time > NOW() - INTERVAL '6 months'
-    ),
-    temp_max = (
-        SELECT MAX(CAST(measurements->>'TEMP' as REAL))
-        FROM argo_profiles p
-        WHERE p.float_id = s.float_id
-          AND p.profile_time > NOW() - INTERVAL '6 months'
-    ),
-    profile_count = (
-        SELECT COUNT(*)
-        FROM argo_profiles p
-        WHERE p.float_id = s.float_id
-          AND p.profile_time > NOW() - INTERVAL '6 months'
-    ),
-    last_updated = NOW(),
-    updated_at = NOW()
-WHERE s.float_id IN (
-    SELECT DISTINCT float_id FROM argo_profiles
-    WHERE profile_time > NOW() - INTERVAL '1 hour'
-);
-```
+---
 
-**Response Time:** <5s (bulk update with subqueries)  
+**Response Time:** <5s (bulk update with subqueries)
 **Use Case:** Hourly cache refresh job
 
 ---
@@ -563,18 +487,17 @@ WHERE s.float_id IN (
 
 ### Key Indexes
 
-| Table                       | Index                     | Type  | Purpose                  |
-| --------------------------- | ------------------------- | ----- | ------------------------ |
-| `argo_float_positions`      | `pkey`                    | BTREE | Primary lookup           |
-| `argo_positions_timeseries` | `positions_time_idx`      | BTREE | Time range queries       |
-| `argo_positions_timeseries` | `positions_spatial_idx`   | GIST  | Geographic queries       |
-| `argo_profiles`             | `profiles_float_time_idx` | BTREE | Profile lookups          |
-| `argo_profiles`             | `profiles_spatial_idx`    | GIST  | Surface location queries |
-| `argo_profiles`             | `profiles_qc_idx`         | BTREE | Quality filtering        |
-| `processing_log`            | `log_float_op_idx`        | BTREE | Debug queries            |
-| `processing_log`            | `log_time_idx`            | BTREE | Time-based queries       |
-| `sync_manifest`             | `manifest_float_file_idx` | BTREE | Incremental sync         |
-| `sync_manifest`             | `manifest_status_idx`     | BTREE | Retry operations         |
+| Table                  | Index                           | Type  | Purpose                  |
+| ---------------------- | ------------------------------- | ----- | ------------------------ |
+| `argo_float_positions` | `pkey`                          | BTREE | Primary lookup           |
+| `argo_profiles`        | `profiles_float_time_idx`       | BTREE | Profile lookups          |
+| `argo_profiles`        | `profiles_spatial_idx`          | GIST  | Surface location queries |
+| `argo_profiles`        | `profiles_qc_idx`               | BTREE | Quality filtering        |
+| `argo_profiles`        | `profiles_measurements_gin_idx` | GIN   | JSONB queries            |
+| `processing_log`       | `log_float_op_idx`              | BTREE | Debug queries            |
+| `processing_log`       | `log_time_idx`                  | BTREE | Time-based queries       |
+| `sync_manifest`        | `manifest_float_file_idx`       | BTREE | Incremental sync         |
+| `sync_manifest`        | `manifest_status_idx`           | BTREE | Retry operations         |
 
 ---
 
@@ -595,13 +518,12 @@ ALTER TABLE argo_float_positions
 -- Maintains data consistency across all related records
 ```
 
-### Unique Constraints
+## Uniqueness Constraints
 
-| Table                       | Column(s)    | Purpose                                 |
-| --------------------------- | ------------ | --------------------------------------- |
-| `argo_float_metadata`       | `wmo_number` | Ensure one float per WMO ID             |
-| `argo_positions_timeseries` | (composite)  | Natural uniqueness via float_id + time  |
-| `argo_profiles`             | (composite)  | Natural uniqueness via float_id + cycle |
+| Table                 | Column(s)    | Purpose                                 |
+| --------------------- | ------------ | --------------------------------------- |
+| `argo_float_metadata` | `wmo_number` | Ensure one float per WMO ID             |
+| `argo_profiles`       | (composite)  | Natural uniqueness via float_id + cycle |
 
 ---
 
@@ -622,18 +544,15 @@ ALTER TABLE argo_float_positions
 ### Worker #2: NetCDF Parser (Every 6 hours)
 
 1. Read downloaded NetCDF files
-2. Parse positions → `argo_positions_timeseries`
-3. Parse profiles → `argo_profiles`
-4. Update `argo_float_positions` (HOT layer)
-5. Archive to MinIO S3 (COLD layer)
-6. Log to `processing_log`
+2. Parse profiles → `argo_profiles`
+3. Update `argo_float_positions` (HOT layer)
+4. Archive to MinIO S3 (COLD layer)
+5. Log to `processing_log`
 
 ### Worker #3: Cache Warmer (Hourly)
 
-1. Recalculate aggregates from profiles
-2. Update `argo_float_stats`
-3. Clone to Redis (HOT layer)
-4. Update bounding boxes
+1. Refresh `argo_measurements_summary` materialized view
+2. Clone to Redis (HOT layer)
 
 ## Setup & Maintenance
 
@@ -654,5 +573,5 @@ For questions about database structure, index design, or query optimization, ref
 
 ---
 
-**Last Updated:** November 7, 2025  
-**Singed By** @Itz-Agasta
+**Last Updated:** November 25, 2025  
+**Signed By** @Itz-Agasta
