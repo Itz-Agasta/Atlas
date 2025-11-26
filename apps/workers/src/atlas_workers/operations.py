@@ -218,8 +218,6 @@ async def process_batch_floats(
 ) -> dict:
     """Process multiple floats in batch mode.
 
-    CALLED BY: main.py when --batch flag is used.
-
     FLOW:
     1. Download ALL floats in one batch (single index fetch)
     2. Loop through each float:

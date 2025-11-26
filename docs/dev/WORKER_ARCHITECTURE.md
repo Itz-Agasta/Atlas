@@ -7,24 +7,37 @@
 
 The workers package downloads ARGO oceanographic float data from IFREMER, parses NetCDF files, and uploads to Neon PostgreSQL. Optimized for throughput with aggregate file parsing and batch database operations.
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   FTP Sync      │ --> │  NetCDF Parser  │ --> │  Neon Upload    │
-│   (HTTPS)       │     │  (xarray)       │     │  (execute_values)│
-│   ~5s           │     │  ~0.5s          │     │  ~20s           │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-```
+![worker](../imgs/worker_arch.png)
 
 **End-to-end benchmark** (float 2902232, 348 profiles):
 
-- Download: 5.2s
+- Download: 4.0s (concurrent HTTPS)
 - Parse: 0.5s
 - Upload: 18.9s
-- **Total: ~22s**
+- **Total: ~24s**
 
 ## Key Design Decisions
 
-### 1. Aggregate Files vs Individual Profiles
+### 1. HTTPS vs FTP Protocol
+
+IFREMER provides data via both FTP (`ftp.ifremer.fr`) and HTTPS (`data-argo.ifremer.fr`).
+
+**Benchmark Results** (float 2902232, ~5MB total):
+
+| Protocol               | Total Time | Speed         | Connection | Notes                    |
+| ---------------------- | ---------- | ------------- | ---------- | ------------------------ |
+| FTP (sequential)       | 23.4s      | 1.7 Mbps      | 2.8s       | Slow, single connection  |
+| HTTPS (sequential)     | 9.0s       | 4.5 Mbps      | -          | 2.6x faster than FTP     |
+| **HTTPS (concurrent)** | **4.0s**   | **10.2 Mbps** | -          | **5.8x faster than FTP** |
+
+**Decision**: Use HTTPS with concurrent downloads. Why:
+
+1. **Speed**: 5-6x faster than FTP with concurrent requests
+2. **Reliability**: HTTP has better error handling, retries, CDN caching
+3. **Firewall-friendly**: FTP passive mode often blocked in cloud environments
+4. **Simpler code**: `httpx.AsyncClient` vs `ftplib` with connection management
+
+### 2. Aggregate Files vs Individual Profiles
 
 IFREMER provides two formats:
 
@@ -38,7 +51,7 @@ IFREMER provides two formats:
 
 **Decision**: Use aggregate files exclusively. 25x faster parsing.
 
-### 2. JSONB Storage for Measurements
+### 3. JSONB Storage for Measurements
 
 Each profile contains ~240 depth levels with temperature, salinity, oxygen, etc.
 
@@ -56,7 +69,7 @@ Why JSONB wins:
 - Simpler schema, fewer JOINs
 - Better compression (JSONB is stored binary internally)
 
-### 3. Database Upload Method
+### 4. Database Upload Method
 
 Benchmarked approaches for 359 profiles with JSONB:
 
@@ -71,7 +84,7 @@ Benchmarked approaches for 359 profiles with JSONB:
 
 The bottleneck is **server-side JSONB parsing** (~15s of 20s total), not client serialization or network. More complex approaches don't help because PostgreSQL must parse JSON strings into binary JSONB format regardless of transfer method.
 
-### 4. Pre-serialized JSON
+### 5. Pre-serialized JSON
 
 Measurements are serialized to JSON strings during parsing, not during upload:
 
