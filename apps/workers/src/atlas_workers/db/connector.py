@@ -1,8 +1,17 @@
+"""Neon PostgreSQL database connector for ARGO data.
+
+Provides database connectivity optimized for bulk data transfer to Neon's
+serverless PostgreSQL. Uses execute_values for batch inserts with JSONB.
+
+See docs/dev/WORKER_ARCHITECTURE.md for benchmarks and design decisions.
+"""
+
 from contextlib import contextmanager
 from typing import Any, Generator, Optional
 
 import psycopg2
 import psycopg2.extras
+import psycopg2.pool
 from psycopg2.extensions import connection as Connection
 from psycopg2.extensions import cursor as Cursor
 from pydantic import Field
@@ -33,7 +42,20 @@ class DatabaseSettings(BaseSettings):
 
 
 class NeonDBConnector:
-    """Neon PostgreSQL database connector optimized for Arrow data transfer."""
+    """Neon PostgreSQL database connector optimized for bulk data transfer.
+
+    Uses transaction pattern to avoid Neon cold-start latency:
+    ```python
+    db = NeonDBConnector()
+    db.start_transaction()
+    try:
+        upload_metadata(db)
+        upload_profiles(db)
+        db.commit_transaction()
+    except:
+        db.rollback_transaction()
+    ```
+    """
 
     def __init__(self, database_url: Optional[str] = None):
         """Initialize database connector.
@@ -172,13 +194,14 @@ class NeonDBConnector:
         self,
         table_name: str,
         data: list[dict[str, Any]],
+        conflict_action: str = "DO NOTHING",
     ) -> int:
         """Bulk insert data from list of dictionaries using execute_values.
-        Inserts thousands of rows in a single query, much faster than individual inserts.
 
         Args:
             table_name: Target table name
             data: List of row dictionaries
+            conflict_action: SQL conflict action (default: DO NOTHING)
 
         Returns:
             Number of rows inserted
@@ -186,25 +209,22 @@ class NeonDBConnector:
         if not data:
             return 0
 
-        # Use execute_values for true batch insertion (much faster than executemany)
+        # Use execute_values for true batch insertion
         columns = list(data[0].keys())
-
-        # Convert list of dicts to list of tuples in the same column order
         values = [[row.get(col) for col in columns] for row in data]
 
         query = f"""
             INSERT INTO {table_name} ({", ".join(columns)})
             VALUES %s
-            ON CONFLICT DO NOTHING
+            ON CONFLICT {conflict_action}
         """
 
         with self.get_cursor() as cursor:
-            # execute_values does a single multi-row INSERT instead of N individual INSERTs
             psycopg2.extras.execute_values(
                 cursor,
                 query,
                 values,
-                page_size=1000,  # Insert in batches of 1000 rows
+                page_size=1000,
             )
             row_count = cursor.rowcount
             logger.info(

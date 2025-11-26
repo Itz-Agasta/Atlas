@@ -26,7 +26,7 @@ async def process_single_float(
     Args:
         float_id: Float ID to process
         upload_to_db: Whether to upload to database
-        skip_download: Skip FTP download (use cached files)
+        skip_download: Skip HTTPS download (use cached files)
 
     Returns:
         Processing results dictionary
@@ -147,7 +147,7 @@ async def process_single_float(
         }
 
 
-# NOTE: This is not properly tested yet
+# Batch processing - requires more testing for production use
 async def process_batch_floats(
     float_ids: Optional[list[str]] = None,
     batch_size: int = 10,
@@ -166,9 +166,7 @@ async def process_batch_floats(
     # Import here to avoid circular imports
     from .operations import process_batch_floats as batch_processor
 
-    return await batch_processor(
-        float_ids, batch_size=batch_size, upload_to_db=upload_to_db
-    )
+    return await batch_processor(float_ids, upload_to_db=upload_to_db)
 
 
 def main() -> int:
@@ -202,7 +200,7 @@ def main() -> int:
     parser.add_argument(
         "--skip-download",
         action="store_true",
-        help="Skip FTP download, use cached files only",
+        help="Skip HTTPS download, use cached files only",
     )
 
     parser.add_argument(
@@ -247,7 +245,7 @@ def main() -> int:
             timing = result.get("timing", {})
             print(f"\nSuccess: Float {args.float_id} processed")
             print(f"   Profiles: {result['process_result']['profiles_count']}")
-            print(f"   FTP Download: {timing.get('download_seconds', 0):.2f}s")
+            print(f"   HTTPS Download: {timing.get('download_seconds', 0):.2f}s")
             print(f"   NetCDF Processing: {timing.get('process_seconds', 0):.2f}s")
             print(f"   Database Upload: {timing.get('upload_seconds', 0):.2f}s")
             print(f"   Total Time: {timing.get('total_seconds', 0):.2f}s")

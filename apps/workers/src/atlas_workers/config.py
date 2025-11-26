@@ -1,5 +1,3 @@
-"""Configuration settings for Atlas Workers."""
-
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -7,57 +5,46 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Application settings."""
+    """Application settings with environment variable support."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
-        env_parse_none_str="None",  # Allow "None" string in .env files to be parsed as Python None for Optional fields
+        env_parse_none_str="None",
     )
 
-    # FTP Configuration
-    FTP_SERVER: str = "data-argo.ifremer.fr"
-    FTP_PORT: int = 21
-    FTP_TIMEOUT: int = 300
-    FTP_MAX_RETRIES: int = 3
-    FTP_RETRY_DELAY: int = 5
-
-    # Data Configuration
-    ARGO_DAC: str = "incois"  # Data Assembly Center
-
-    # Local cache path for downloaded ARGO files
-    LOCAL_CACHE_PATH: Path = Path(
-        "./data/argo_cache"
-    )  # AWS LAMBDA: ""/tmp/argo_cache""
-
-    ENABLE_INCREMENTAL_SYNC: bool = True
-
-    # HTTP Configuration (for HTTPS fallback)
+    # HTTPS Configuration
     HTTP_BASE_URL: str = "https://data-argo.ifremer.fr"
     HTTP_TIMEOUT: int = 30
     HTTP_MAX_RETRIES: int = 3
+    HTTP_RETRY_DELAY: int = 5  # Seconds between retries
+
+    # Data Configuration
+    ARGO_DAC: str = "incois"  # Data Assembly Center (incois, aoml, coriolis, etc.)
+    LOCAL_CACHE_PATH: Path = Path("./data/argo_cache")
+    ENABLE_INCREMENTAL_SYNC: bool = True
+
+    # Use aggregate _prof.nc files only (skip individual profile downloads)
+    # Aggregate files contain ALL profiles in a single file - 25x faster parsing
+    USE_AGGREGATE_ONLY: bool = True
+
+    # Bypass manifest cache - re-download all files
+    # Use for debugging & benchmarking or when cache is stale
+    FORCE_REDOWNLOAD: bool = False
 
     # Processing Configuration
     BATCH_SIZE: int = 10
     MAX_WORKERS: int = 4
-    PROFILE_BATCH_LIMIT: Optional[int] = None  # None = process all
-
-    # Output Configuration
-    OUTPUT_ARROW_FORMAT: bool = True
-    ARROW_COMPRESSION: str = "zstd"
+    PROFILE_BATCH_LIMIT: Optional[int] = None  # None = process all profiles
 
     # Logging
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
-    LOG_FORMAT: Literal["json", "text"] = (
-        "text"  # json for production, text for development
-    )
+    LOG_FORMAT: Literal["json", "text"] = "text"  # json for production
 
     # Environment
     ENVIRONMENT: str = "development"  # development, staging, production
-
-    # Database Configuration
     DATABASE_URL: Optional[str] = None
 
 
