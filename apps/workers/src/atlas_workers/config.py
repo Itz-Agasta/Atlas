@@ -38,7 +38,6 @@ class Settings(BaseSettings):
     HTTP_BASE_URL: str = "https://data-argo.ifremer.fr"
     HTTP_TIMEOUT: int = 30
     HTTP_MAX_RETRIES: int = 3
-    HTTP_RETRY_DELAY: int = 5
 
     # Processing Configuration
     BATCH_SIZE: int = 10

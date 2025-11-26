@@ -2,25 +2,26 @@
 FTP Sync Worker for ARGO oceanographic data.
 
 Syncs data from ARGO FTP server to local storage with manifest tracking
-to avoid re-downloading files.
+to avoid re-downloading files. Uses HTTPS and concurrent downloads.
 """
 
 import json
 import asyncio
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import httpx
 
-from ...utils.logging import get_logger
 from ...config import settings
-from .http_fallback import HTTPFallbackDownloader, HTTPDownloadError
-from .ftp_connection import FTPDownloader, FTPConnectionError
+from ...utils.logging import get_logger
 
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
+
+MAX_CONCURRENT_DOWNLOADS = 10
 
 @dataclass
 class SyncStats:
@@ -42,7 +43,7 @@ class SyncStats:
 
 
 class FTPSyncWorker:
-    """Worker for syncing ARGO float data from FTP server."""
+    """Worker for syncing ARGO float data from HTTPS server."""
 
     BASE_PATH = "dac"
     PROFILE_INDEX = "ar_index_global_prof.txt"
@@ -60,25 +61,14 @@ class FTPSyncWorker:
         self.manifest_file = self.cache_path / "manifest.json"
         self.manifest: Dict = {}
         
-        # Initialize FTP downloader with connection pooling
-        self.ftp_downloader = FTPDownloader(
-            host=settings.FTP_SERVER,
-            port=settings.FTP_PORT,
-            timeout=settings.FTP_TIMEOUT,
-            max_connections=5
-        )
-        
-        # Initialize HTTP fallback downloader
-        self.http_downloader = HTTPFallbackDownloader(
-            base_url=settings.HTTP_BASE_URL,
-            timeout=settings.HTTP_TIMEOUT
-        )
-        
         # Create cache directory if it doesn't exist
         self.cache_path.mkdir(parents=True, exist_ok=True)
         
         # Load existing manifest
         self._load_manifest()
+        
+        # Semaphore to limit concurrent downloads
+        self.download_semaphore = asyncio.Semaphore(MAX_CONCURRENT_DOWNLOADS)
 
     def _load_manifest(self):
         """Load manifest from disk."""
@@ -147,7 +137,7 @@ class FTPSyncWorker:
         return floats
 
     async def _download_index(self) -> str:
-        """Download the profile index file via HTTP using httpx."""
+        """Download the profile index file via HTTPS using httpx."""
         url = f"{settings.HTTP_BASE_URL}/{self.PROFILE_INDEX}"
         
         async with httpx.AsyncClient(timeout=settings.HTTP_TIMEOUT) as client:
@@ -155,58 +145,55 @@ class FTPSyncWorker:
             response.raise_for_status()
             return response.text
 
-    async def _download_file_with_fallback(self, remote_path: str, local_path: Path) -> int:
+    async def _download_file(self, remote_path: str, local_path: Path, float_id: str, file_date: str) -> Dict:
         """
-        Download a file with FTP (primary) and HTTP fallback.
+        Download a single file via HTTPS.
         
         Args:
             remote_path: Remote file path on server
             local_path: Local path to save file
+            float_id: Float ID for manifest tracking
+            file_date: File date for manifest tracking
             
         Returns:
-            Size of downloaded file in bytes
-            
-        Raises:
-            Exception: If both FTP and HTTP downloads fail
+            Dictionary with download result information
         """
-        # Create parent directories
-        local_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Try FTP first (with connection pooling)
-        try:
-            logger.debug(f"Attempting FTP download: {remote_path}")
-            
-            size = await self.ftp_downloader.download_file(
-                remote_path=remote_path,
-                local_path=local_path,
-                base_path=self.BASE_PATH
-            )
-            
-            logger.debug(f"FTP download successful: {remote_path} ({size:,} bytes)")
-            return size
-            
-        except FTPConnectionError as ftp_error:
-            logger.warning(f"FTP download failed for {remote_path}: {ftp_error}")
-            logger.info(f"Attempting HTTP fallback for {remote_path}")
-            
-            # Try HTTP fallback
+        async with self.download_semaphore:
             try:
-                size = await self.http_downloader.download_file(
-                    remote_path=remote_path,
-                    local_path=local_path,
-                    base_path=self.BASE_PATH
-                )
-                logger.info(f"HTTP fallback successful for {remote_path} ({size:,} bytes)")
-                return size
+                # Create parent directories
+                local_path.parent.mkdir(parents=True, exist_ok=True)
                 
-            except HTTPDownloadError as http_error:
-                logger.error(
-                    f"Both FTP and HTTP downloads failed for {remote_path}. "
-                    f"FTP error: {ftp_error}, HTTP error: {http_error}"
-                )
-                raise Exception(
-                    f"Download failed via FTP and HTTP: {remote_path}"
-                ) from http_error
+                # Construct HTTPS URL
+                url = f"{settings.HTTP_BASE_URL}/{self.BASE_PATH}/{remote_path}"
+                
+                logger.debug(f"Downloading: {remote_path}")
+                
+                async with httpx.AsyncClient(timeout=settings.HTTP_TIMEOUT) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                    
+                    # Write file to disk
+                    local_path.write_bytes(response.content)
+                    
+                    size = len(response.content)
+                    logger.debug(f"Downloaded {size:,} bytes: {remote_path}")
+                    
+                    return {
+                        'success': True,
+                        'path': remote_path,
+                        'size': size,
+                        'float_id': float_id,
+                        'date': file_date,
+                        'synced_at': datetime.utcnow().isoformat()
+                    }
+                    
+            except Exception as e:
+                logger.error(f"Failed to download {remote_path}: {e}")
+                return {
+                    'success': False,
+                    'path': remote_path,
+                    'error': str(e)
+                }
 
     def _is_file_synced(self, file_path: str, file_date: str) -> bool:
         """
@@ -227,7 +214,7 @@ class FTPSyncWorker:
 
     async def sync(self, float_ids: Optional[List[str]] = None) -> SyncStats:
         """
-        Sync ARGO float data from FTP server.
+        Sync ARGO float data from HTTPS server.
         
         Args:
             float_ids: Optional list of specific float IDs to sync.
@@ -238,7 +225,7 @@ class FTPSyncWorker:
         """
         stats = SyncStats()
         
-        logger.info(f"Downloading profile index from {settings.FTP_SERVER}...")
+        logger.info(f"Downloading profile index from {settings.HTTP_BASE_URL}...")
         index_content = await self._download_index()
         
         logger.info(f"Parsing profile index for DAC: {self.dac}...")
@@ -253,11 +240,14 @@ class FTPSyncWorker:
                   (f" with IDs {float_ids}" if float_ids else ""))
             return stats
         
-        logger.info(f"Found {len(floats)} float(s) with {sum(len(files) for files in floats.values())} file(s)")
+        total_files = sum(len(files) for files in floats.values())
+        logger.info(f"Found {len(floats)} float(s) with {total_files} file(s)")
         
-        # Download files
+        # Prepare all download tasks
+        download_tasks = []
+        
         for float_id, files in floats.items():
-            logger.info(f"Processing float {float_id} ({len(files)} files)...")
+            logger.info(f"Preparing float {float_id} ({len(files)} files)...")
             stats.floats_synced.add(float_id)
             
             for file_info in files:
@@ -269,38 +259,39 @@ class FTPSyncWorker:
                     stats.skipped += 1
                     continue
                 
-                # Download file (with automatic HTTP fallback)
+                # Add download task
                 local_path = self.cache_path / file_path
-                
-                try:
-                    logger.debug(f"Downloading: {file_path}")
-                    
-                    # This method now handles both FTP and HTTP fallback internally
-                    size = await self._download_file_with_fallback(file_path, local_path)
-                    
+                task = self._download_file(file_path, local_path, float_id, file_date)
+                download_tasks.append(task)
+        
+        # Execute all downloads concurrently
+        if download_tasks:
+            logger.info(f"Starting concurrent download of {len(download_tasks)} files "
+                       f"(max {MAX_CONCURRENT_DOWNLOADS} concurrent)...")
+            
+            results = await asyncio.gather(*download_tasks, return_exceptions=True)
+            
+            # Process results
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.error(f"Download task failed with exception: {result}")
+                    stats.failed += 1
+                elif result['success']:
                     # Update manifest
-                    self.manifest[file_path] = {
-                        'date': file_date,
-                        'size': size,
-                        'synced_at': datetime.utcnow().isoformat(),
-                        'float_id': float_id,
+                    self.manifest[result['path']] = {
+                        'date': result['date'],
+                        'size': result['size'],
+                        'synced_at': result['synced_at'],
+                        'float_id': result['float_id'],
                     }
                     
                     stats.downloaded += 1
-                    stats.total_size += size
-                    
-                    logger.debug(f"Downloaded {size:,} bytes: {file_path}")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to download {file_path}: {e}")
+                    stats.total_size += result['size']
+                else:
                     stats.failed += 1
         
         # Save manifest
         self._save_manifest()
-        
-        # Close connection pools
-        await self.ftp_downloader.close()
-        await self.http_downloader.close()
         
         logger.info(f"Sync complete! Downloaded: {stats.downloaded}, Skipped: {stats.skipped}, "
                    f"Failed: {stats.failed}, Total size: {stats.total_size:,} bytes, "
