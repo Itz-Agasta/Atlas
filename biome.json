@@ -20,7 +20,8 @@
       "!**/.alchemy",
       "!**/.svelte-kit",
       "!**/wrangler.jsonc",
-      "!**/.source"
+      "!**/.source",
+      "!data"
     ]
   },
   "extends": ["ultracite/core", "ultracite/next"]
