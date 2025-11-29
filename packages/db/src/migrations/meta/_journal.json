@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1762452481313,
-      "tag": "0000_youthful_clea",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1762870585824,
-      "tag": "0001_colorful_cyclops",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1762876308509,
-      "tag": "0002_blushing_frank_castle",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1763749481986,
-      "tag": "0003_youthful_iceman",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1763749780124,
-      "tag": "0004_lush_infant_terrible",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1763795587435,
-      "tag": "0005_bent_the_fallen",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1763805370590,
-      "tag": "0006_young_human_cannonball",
+      "when": 1764434742427,
+      "tag": "0000_wise_captain_flint",
       "breakpoints": true
     }
   ]
