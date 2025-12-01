@@ -6,12 +6,12 @@ import numpy as np
 import xarray as xr
 
 from ... import FloatMetadata, get_logger
-from ...utils.helper import helper
+from ...utils.helper import Helper
 
 # Note: Any is kept for internal dict typing
 
 logger = get_logger(__name__)
-helper_instance = helper()
+helper_instance = Helper()
 
 
 def extract_string(ds, var_name: str) -> Optional[str]:

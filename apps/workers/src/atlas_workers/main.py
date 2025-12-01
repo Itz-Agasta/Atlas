@@ -5,6 +5,7 @@ import time
 from typing import TypedDict
 
 from .db import Postgres
+from .models import FloatStatus
 from .utils import get_logger
 from .workers import ArgoSyncWorker, NetCDFParserWorker
 
@@ -50,8 +51,6 @@ async def process_single_float(
         upload_start = time.time()
         db = Postgres()
         try:
-            from .models.argo import FloatStatus
-
             # Use Pydantic's validation with automatic type coercion
             # - profile_time -> last_update (via validation_alias)
             # - float_id string -> int (automatic)

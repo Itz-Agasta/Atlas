@@ -63,7 +63,7 @@ jobs:
         run: (cd apps/workers && uv sync --only-group dev && uv run ty check )
       #  continue-on-error: true
 
-      - name: Pyrefly Type Check - ML Services
+      - name: ty Type Check - ML Services
         run: (cd apps/ml-services && uv sync --only-group dev && uv run ty check )
       #  continue-on-error: true
 

@@ -131,10 +131,8 @@ class NetCDFParserWorker:
                 )
 
     # FIXME: will merge it with process_dic fun later. make it a pvt fun
-    def converter(float_id: str, cache_path: Path | None = None) -> dict[str, Any]:
+    def convert(self, float_id: str, cache_path: Path | None = None) -> dict[str, Any]:
         """Convert NetCDF profiles to Parquet format.
-
-        Main entry point for profile conversion to Parquet.
 
         Args:
             float_id: Float ID to process

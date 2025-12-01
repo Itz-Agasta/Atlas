@@ -137,6 +137,7 @@ class Postgres:
                 "Batch upload failed",
                 extra={"float_id": float_id, "error": str(e)},
             )
+            self.conn.rollback()
             return False
 
     # TODO: Add a function for processing_log table insert

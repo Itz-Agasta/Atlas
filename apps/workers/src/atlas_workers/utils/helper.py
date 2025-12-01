@@ -3,6 +3,7 @@ from datetime import UTC
 from typing import Optional
 
 import numpy as np
+import xarray as xr
 
 from ..models.argo import FloatMetadata
 from .logging import get_logger
@@ -10,8 +11,8 @@ from .logging import get_logger
 logger = get_logger(__name__)
 
 
-class helper:
-    def classify_float_type(self, ds) -> str:
+class Helper:
+    def classify_float_type(self, ds: xr.Dataset) -> str:
         """Classify float type based on sensors and parameters.
 
         Args:
@@ -113,7 +114,7 @@ class helper:
             return "unknown"
 
     def determine_float_status(
-        self, ds, recent_profile_time: Optional[datetime.datetime] = None
+        self, ds: xr.Dataset, recent_profile_time: Optional[datetime.datetime] = None
     ) -> str:
         """Determine float operational status.
 
