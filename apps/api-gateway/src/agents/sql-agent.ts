@@ -256,10 +256,7 @@ ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "no
     }
 
     // Execute the SQL query using the database's raw query execution
-    const result = (await db.execute(cleanedSQL)) as {
-      rows: Record<string, unknown>[];
-      rowCount?: number;
-    };
+    const result = await db.execute(cleanedSQL);
     const executionTimeMs = Date.now() - startTime;
 
     return {
