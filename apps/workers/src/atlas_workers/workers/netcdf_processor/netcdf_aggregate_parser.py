@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 helper_instance = Helper()
 
 
-def extract_string(ds, var_name: str) -> Optional[str]:
+def extract_string(ds: xr.Dataset, var_name: str) -> Optional[str]:
     """Extract and clean string from xarray dataset."""
     if var_name not in ds.variables:
         return None
@@ -28,7 +28,7 @@ def extract_string(ds, var_name: str) -> Optional[str]:
     return str(val) if val else None
 
 
-def parse_date(ds, var_name: str) -> Optional[datetime]:
+def parse_date(ds: xr.Dataset, var_name: str) -> Optional[datetime]:
     """Parse date from xarray dataset."""
     date_str = extract_string(ds, var_name)
     if not date_str or date_str.isspace():

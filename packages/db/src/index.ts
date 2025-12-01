@@ -8,7 +8,7 @@ if (!connectionString) {
   throw new Error("DB URL required");
 }
 
-let processedConnectionString = connectionString as string;
+let processedConnectionString = connectionString;
 if (connectionString.includes("postgres:postgres@supabase_db_")) {
   const url = new URL(connectionString);
   url.hostname = url.hostname.split("_")[1];
