@@ -1,9 +1,10 @@
-"""Data models for ARGO workers."""
-
-from .argo import FloatMetadata, MeasurementProfile, ProfileData
+from .argo import FloatMetadata, FloatStatus
 
 __all__ = [
     "FloatMetadata",
-    "ProfileData",
-    "MeasurementProfile",
+    "FloatStatus",
 ]
+
+# TODO_DUCKDB: Import profile models when implemented
+# from .argo import MeasurementProfile, ProfileData
+# __all__ += ["ProfileData", "MeasurementProfile"]

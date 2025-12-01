@@ -1,1 +1,0 @@
-CREATE INDEX "profiles_measurements_gin_idx" ON "argo_profiles" USING gin ("measurements");

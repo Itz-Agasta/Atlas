@@ -1,1 +1,0 @@
-ALTER TABLE "argo_positions_timeseries" ALTER COLUMN "time" DROP NOT NULL;

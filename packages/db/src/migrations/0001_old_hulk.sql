@@ -1,0 +1,1 @@
+ALTER TABLE "processing_log" DROP COLUMN "message";

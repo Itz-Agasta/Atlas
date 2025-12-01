@@ -1,9 +1,20 @@
-import dotenv from "dotenv";
+import "dotenv/config";
 
-dotenv.config({
-  path: ".env",
-});
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
-import { drizzle } from "drizzle-orm/node-postgres";
+const connectionString = process.env.DB_READ_URL;
+if (!connectionString) {
+  throw new Error("DB URL required");
+}
 
-export const db = drizzle(process.env.DATABASE_URL || "");
+let processedConnectionString = connectionString;
+if (connectionString.includes("postgres:postgres@supabase_db_")) {
+  const url = new URL(connectionString);
+  url.hostname = url.hostname.split("_")[1];
+  processedConnectionString = url.href;
+}
+
+// Disable prefetch as it is not supported for "Transaction" pool mode
+export const client = postgres(processedConnectionString, { prepare: false });
+export const db = drizzle(client);

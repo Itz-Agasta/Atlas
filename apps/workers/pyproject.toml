@@ -1,9 +1,14 @@
 [project]
 name = "atlas-workers"
 version = "0.1.0"
+authors = [
+  { name="Agasta", email="rupam.golui@proton.me" },
+]
 description = "ARGO Float Data Processing Workers - FTP Sync & NetCDF Parser"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 dependencies = [
     "httpx>=0.25.0",
     "xarray>=2023.12.0",
@@ -30,4 +35,10 @@ dev = [
     "ruff>=0.14.4",
     "pyrefly>=0.1.0",
     "pytest>=9.0.1",
+    "ty>=0.0.1a29",
 ]
+
+[tool.ty.rules]
+index-out-of-bounds = "ignore"
+[tool.ty.src]
+exclude = ["tests"]

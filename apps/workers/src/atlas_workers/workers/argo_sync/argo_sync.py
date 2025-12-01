@@ -6,8 +6,7 @@ from typing import Optional, TypedDict
 
 import httpx
 
-from ...config import settings
-from ...utils import get_logger
+from ... import get_logger, settings
 
 logger = get_logger(__name__)
 
@@ -57,7 +56,7 @@ class ArgoSyncWorker:
         with open(self.manifest_file, "w") as f:
             json.dump(self.manifest, f, indent=2, default=str)
 
-    async def _fetch_index_http(self, index_file: str) -> str:
+    async def _fetch_index_http(self, index_file: str) -> Optional[str]:
         """Fetch index file via HTTPS (fallback to HTTP).
 
         Args:
@@ -88,15 +87,18 @@ class ArgoSyncWorker:
                         logger.error(
                             "Failed to fetch index after retries", error=str(e)
                         )
-                        raise
+                        return ""
 
-    def _parse_profile_index(self, index_content: str) -> dict[str, list[dict]]:
+    def _parse_profile_index(self, index_content: str | None) -> dict[str, list[dict]]:
         """Parse ar_index_global_prof.txt into float data.
 
         Returns:
             Dict mapping float_ids to list of profile file info
         """
         floats = {}
+        if index_content is None:
+            return {}
+
         lines = index_content.strip().split("\n")
 
         # Skip header lines (lines starting with '#')

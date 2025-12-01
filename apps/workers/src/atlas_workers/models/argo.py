@@ -1,105 +1,122 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class FloatMetadata(BaseModel):
-    """ARGO float metadata."""
+    """ARGO float metadata matching argo_float_metadata table schema."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "float_id": "2902224",
-                "float_model": "APEX",
+                "float_id": 2902224,
+                "wmo_number": "2902224",
+                "status": "ACTIVE",
+                "float_type": "core",
+                "data_centre": "IN",
+                "project_name": "Argo India",
+                "operating_institution": "INCOIS",
+                "pi_name": "M Ravichandran",
+                "platform_type": "ARVOR",
+                "platform_maker": "NKE",
+                "float_serial_no": "17007",
                 "launch_date": "2019-03-15T00:00:00Z",
-                "launch_lat": -5.2,
-                "launch_lon": 71.5,
-                "deployment_status": "ACTIVE",
+                "launch_lat": 16.42,
+                "launch_lon": 88.05,
             }
         }
     )
 
-    float_id: str = Field(..., description="WMO number")
-    float_model: Optional[str] = Field(
-        None, description="Float model type (APEX, SOLO, etc)"
+    # Core identifiers
+    float_id: int = Field(..., description="Float ID (integer)")
+    wmo_number: str = Field(..., description="WMO number (string)")
+
+    # Status and type
+    status: Optional[str] = Field(
+        "UNKNOWN",
+        description="ACTIVE | INACTIVE | UNKNOWN | DEAD",
     )
+    float_type: Optional[str] = Field(
+        "unknown",
+        description="core | oxygen | biogeochemical | deep | unknown",
+    )
+
+    # Institutional info
+    data_centre: str = Field(..., description="Data centre code (e.g., IN)")
+    project_name: Optional[str] = Field(None, description="Project name")
+    operating_institution: Optional[str] = Field(
+        None, description="Operating institution"
+    )
+    pi_name: Optional[str] = Field(None, description="Principal investigator")
+
+    # Platform details
+    platform_type: Optional[str] = Field(
+        None, description="Platform type (ARVOR, APEX)"
+    )
+    platform_maker: Optional[str] = Field(None, description="Platform maker (NKE)")
+    float_serial_no: Optional[str] = Field(None, description="Float serial number")
+
+    # Deployment info
     launch_date: Optional[datetime] = Field(None, description="Deployment date")
     launch_lat: Optional[float] = Field(None, description="Deployment latitude")
     launch_lon: Optional[float] = Field(None, description="Deployment longitude")
-    deployment_status: Optional[str] = Field("ACTIVE", description="Current status")
-    metadata_updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    start_mission_date: Optional[datetime] = Field(None, description="Mission start")
+    end_mission_date: Optional[datetime] = Field(None, description="Mission end")
 
 
-class MeasurementProfile(BaseModel):
-    """Single vertical profile measurement."""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "depth": 1000.0,
-                "temperature": 2.5,
-                "salinity": 34.7,
-                "oxygen": 145.0,
-                "chlorophyll": 0.8,
-            }
-        }
-    )
-
-    depth: float = Field(..., description="Pressure/depth in meters")
-    temperature: Optional[float] = Field(None, description="Temperature in Celsius")
-    salinity: Optional[float] = Field(None, description="Practical Salinity Units")
-    oxygen: Optional[float] = Field(None, description="Dissolved oxygen in µmol/kg")
-    chlorophyll: Optional[float] = Field(None, description="Chlorophyll-a in mg/m³")
-
-
-class ProfileData(BaseModel):
-    """Complete ARGO float profile cycle."""
+class FloatStatus(BaseModel):
+    """ARGO float current position matching argo_float_status table schema."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "float_id": "2902224",
-                "cycle_number": 320,
-                "profile_time": "2025-11-06T03:20:00Z",
+                "float_id": 2902224,
                 "latitude": -4.8,
                 "longitude": 72.1,
-                "measurements": [
-                    {
-                        "depth": 0.0,
-                        "temperature": 15.2,
-                        "salinity": 34.5,
-                        "oxygen": 210.0,
-                    },
-                ],
-                "max_depth": 2087.0,
-                "quality_status": "REAL_TIME",
+                "cycle_number": 320,
+                "battery_percent": 69,
+                "last_update": "2025-11-29T03:20:00Z",
+                "last_depth": 2000,
+                "last_temp": 15.2,
+                "last_salinity": 34.5,
             }
         }
     )
 
-    float_id: str = Field(..., description="WMO float ID")
-    cycle_number: int = Field(..., description="Cycle number")
-    profile_time: datetime = Field(..., description="Time of profile measurement")
-    latitude: float = Field(..., description="Surface latitude")
-    longitude: float = Field(..., description="Surface longitude")
-    measurements: list[MeasurementProfile] = Field(
-        default_factory=list, description="Vertical profile measurements"
+    float_id: int = Field(..., description="Float ID (FK to argo_float_metadata)")
+    latitude: Optional[float] = Field(None, description="Current latitude")
+    longitude: Optional[float] = Field(None, description="Current longitude")
+    cycle_number: Optional[int] = Field(None, description="Current cycle number")
+    battery_percent: Optional[int] = Field(
+        None, description="Battery percentage (0-100)"
     )
-    max_depth: Optional[float] = Field(None, description="Maximum depth sampled")
-    quality_status: Optional[str] = Field(
-        "REAL_TIME", description="REAL_TIME or DELAYED"
+    last_update: Optional[datetime] = Field(
+        None, validation_alias="profile_time", description="Last profile timestamp"
     )
+    last_depth: Optional[float] = Field(None, description="Last max depth in meters")
+    last_temp: Optional[float] = Field(None, description="Surface temperature (C)")
+    last_salinity: Optional[float] = Field(None, description="Surface salinity (PSU)")
 
-    def statistics(self) -> dict[str, float | None]:
-        """Calculate profile statistics."""
-        temps = [m.temperature for m in self.measurements if m.temperature is not None]
-        salinity = [m.salinity for m in self.measurements if m.salinity is not None]
-        oxygen = [m.oxygen for m in self.measurements if m.oxygen is not None]
 
-        return {
-            "avg_temperature": sum(temps) / len(temps) if temps else None,
-            "avg_salinity": sum(salinity) / len(salinity) if salinity else None,
-            "avg_oxygen": sum(oxygen) / len(oxygen) if oxygen else None,
-            "measurement_count": len(self.measurements),
-        }
+# TODO_DUCKDB: Profile data models for DuckDB/Parquet storage
+# These will be used when implementing DuckDB upload operations
+#
+# class MeasurementProfile(BaseModel):
+#     """Single vertical profile measurement."""
+#     depth: float
+#     temperature: Optional[float]
+#     salinity: Optional[float]
+#     oxygen: Optional[float]
+#     chlorophyll: Optional[float]
+#
+# class ProfileData(BaseModel):
+#     """Complete ARGO float profile cycle for DuckDB storage."""
+#     float_id: int
+#     cycle_number: int
+#     profile_time: datetime
+#     latitude: float
+#     longitude: float
+#     measurements: list[MeasurementProfile]
+#     max_depth: Optional[float]
+#     quality_status: Optional[str]

@@ -1,6 +1,6 @@
 {
-  "id": "394f5c16-5ca4-4eb1-83bc-43863e15a7a7",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "44e36d04-130e-4473-b297-a19061b41f86",
+  "prevId": "394f5c16-5ca4-4eb1-83bc-43863e15a7a7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -259,12 +259,6 @@
         },
         "status": {
           "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "message": {
-          "name": "message",
           "type": "text",
           "primaryKey": false,
           "notNull": false

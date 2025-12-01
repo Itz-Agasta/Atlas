@@ -1,5 +1,3 @@
-"""Worker processes for ARGO data pipeline."""
-
 from .argo_sync import ArgoSyncWorker
 from .netcdf_processor.netcdf_parser import NetCDFParserWorker
 
