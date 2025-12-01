@@ -1,9 +1,3 @@
-"""Database connectivity and operations."""
+from .pg import Postgres
 
-from .connector import NeonDBConnector
-from .operations import ArgoDataUploader
-
-__all__ = [
-    "NeonDBConnector",
-    "ArgoDataUploader",
-]
+__all__ = ["Postgres"]
