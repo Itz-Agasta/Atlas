@@ -38,23 +38,22 @@ export const argo_float_metadata = pgTable("argo_float_metadata", {
   start_mission_date: timestamp("start_mission_date"), // Parsed
   end_mission_date: timestamp("end_mission_date"), // Nullable
 
-  // Extras
-  battery_capacity: integer("battery_capacity"),
   created_at: timestamp("created_at").default(sql`NOW()`),
   updated_at: timestamp("updated_at").default(sql`NOW()`),
 });
 
 // CURRENT STATUS (hot layer updates)
-export const argo_float_positions = pgTable(
+export const argo_float_status = pgTable(
   "argo_float_status",
   {
     float_id: bigint("float_id", { mode: "number" })
       .primaryKey()
       .references(() => argo_float_metadata.float_id, { onDelete: "cascade" }),
-    location: geometry("location", { type: "point", mode: "xy", srid: 4326 }),
-    current_depth: integer("current_depth"),
+    location: geometry("location", { typed: "point", mode: "xy", srid: 4326 }),
     cycle_number: integer("cycle_number"),
+    battery_percent: integer("battery_percent"), // 0–100
     last_update: timestamp("last_update"),
+    last_depth: real("last_depth"),
     last_temp: real("last_temp"),
     last_salinity: real("last_salinity"),
     updated_at: timestamp("updated_at").default(sql`NOW()`),
@@ -67,7 +66,6 @@ export const processing_log = pgTable("processing_log", {
   float_id: bigint("float_id", { mode: "number" }),
   operation: text("operation"), // "FULL SYNC", "STATUS UPDATE"
   status: text("status"), // "SUCCESS", "ERROR"
-  message: text("message"),
   error_details: jsonb("error_details"),
   processing_time_ms: integer("processing_time_ms"),
   created_at: timestamp("created_at").default(sql`NOW()`),
@@ -75,6 +73,6 @@ export const processing_log = pgTable("processing_log", {
 
 export default {
   argo_float_metadata,
-  argo_float_positions,
+  argo_float_status,
   processing_log,
 };

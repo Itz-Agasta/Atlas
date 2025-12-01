@@ -1,0 +1,1 @@
+ALTER TABLE "argo_float_status" RENAME COLUMN "current_depth" TO "last_depth";

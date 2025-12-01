@@ -8,6 +8,34 @@
       "when": 1764434742427,
       "tag": "0000_wise_captain_flint",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1764449382492,
+      "tag": "0001_old_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764506806228,
+      "tag": "0002_nice_hitman",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1764534801043,
+      "tag": "0003_dizzy_maginty",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1764535669385,
+      "tag": "0004_yummy_salo",
+      "breakpoints": true
     }
   ]
 }
