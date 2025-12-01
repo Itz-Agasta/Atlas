@@ -26,7 +26,6 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: |
-            **/requirements*.txt
             **/pyproject.toml
             **/uv.lock
           prune-cache: true
@@ -44,7 +43,7 @@ jobs:
           (cd apps/ml-services && uv sync --only-group dev && uv run ruff check --output-format=github .)
       #  continue-on-error: true
 
-  # Type Check - Python Code (Pyrefly)
+  # Type Check - Python Code (ty)
   typecheck-python:
     name: Python Type Check
     runs-on: ubuntu-latest
@@ -57,16 +56,15 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: |
-            **/requirements*.txt
             **/pyproject.toml
             **/uv.lock
 
-      - name: Pyrefly Type Check - Workers
-        run: (cd apps/workers && uv sync --only-group dev && uv run pyrefly check src/)
+      - name: ty Type Check - Workers
+        run: (cd apps/workers && uv sync --only-group dev && uv run ty check )
       #  continue-on-error: true
 
       - name: Pyrefly Type Check - ML Services
-        run: (cd apps/ml-services && uv sync --only-group dev && uv run pyrefly check .)
+        run: (cd apps/ml-services && uv sync --only-group dev && uv run ty check )
       #  continue-on-error: true
 
   # Lint and Format Check - TypeScript Code

@@ -11,7 +11,7 @@ from ...utils.helper import helper
 # Note: Any is kept for internal dict typing
 
 logger = get_logger(__name__)
-helper_instance = helper.helper()
+helper_instance = helper()
 
 
 def extract_string(ds, var_name: str) -> Optional[str]:
