@@ -12,7 +12,6 @@ help:
 	@echo "  make clean            Clean build artifacts"
 	@echo "  make run-single       Run ARGO loader (single float)"
 	@echo "  make run-batch        Run ARGO loader (batch mode)"
-	@echo "  make deploy-aws       Deploy to AWS Lambda"
 
 install:
 	uv sync
@@ -50,14 +49,3 @@ run-batch:
 	@echo "Running ARGO loader (batch mode)..."
 	infisical run --env=dev -- uv run python -m src.atlas_workers.main \
 		--batch
-
-deploy-aws:
-	@echo "Preparing Lambda package..."
-	mkdir -p lambda-package
-	cp -r src/atlas_workers lambda-package/
-	uv export --no-dev -o /tmp/requirements.txt --quiet
-	pip install -r /tmp/requirements.txt -t lambda-package/ --quiet --disable-pip-version-check --no-warn-conflicts >/dev/null 2>&1
-	rm /tmp/requirements.txt
-	cd lambda-package && zip -r ../function.zip . && cd ..
-	@echo "✓ Lambda package created: function.zip"
-	@echo "Deploy with: aws lambda update-function-code --function-name argo-ftp-sync --zip-file fileb://function.zip"
