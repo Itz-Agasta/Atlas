@@ -1,6 +1,4 @@
-"""Utility functions for workers."""
-
-from .logging import get_logger, setup_logging
+from .logging import get_logger
 
 __all__ = [
     "get_logger",
