@@ -19,6 +19,7 @@ dependencies = [
     "loguru>=0.7.0",
     "psycopg2-binary>=2.9.11",
     "cftime>=1.6.5",
+    "boto3>=1.26.0",
 ]
 
 [project.optional-dependencies]

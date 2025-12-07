@@ -3,13 +3,10 @@ from pathlib import Path
 from typing import Any
 
 from ... import get_logger, settings
+from .converter import ParquetConverter
 from .netcdf_aggregate_parser import (
     get_profile_stats,
     parse_metadata_file,
-)
-from .netcdf_to_parquet_converter import (
-    extract_profiles_dataframe,
-    save_parquet,
 )
 
 logger = get_logger(__name__)
@@ -28,7 +25,7 @@ class NetCDFParserWorker:
             float_id: Float ID to process
 
         Returns:
-            Stats Dict containing metadata, status, and processing stats
+            Stats Dict containing metadata, status, parquet path, and processing stats
         """
         float_dir = self.cache_path / settings.ARGO_DAC / float_id
         if not float_dir.exists():
@@ -41,11 +38,21 @@ class NetCDFParserWorker:
             "errors": 0,
             "metadata": None,
             "status": None,
+            "parquet_path": None,
         }
 
         self._prepare_pg_data(float_dir, float_id, stats)
 
-        # TODO: same style return parquet path into stats. so it can be upload into R2
+        # Convert to Parquet for R2 staging
+        prof_file = float_dir / f"{float_id}_prof.nc"
+        converter = ParquetConverter()
+        parquet_path = converter.convert(prof_file, float_id)
+        if parquet_path:
+            stats["parquet_path"] = parquet_path
+            logger.info(
+                "Parquet file conversion done!", float_id=float_id, path=parquet_path
+            )
+
         return stats
 
     def _prepare_pg_data(
@@ -129,58 +136,3 @@ class NetCDFParserWorker:
                 logger.warning(
                     "Battery estimation failed", float_id=float_id, error=str(e)
                 )
-
-    # FIXME: will merge it with process_dic fun later. make it a pvt fun
-    def convert(self, float_id: str, cache_path: Path | None = None) -> dict[str, Any]:
-        """Convert NetCDF profiles to Parquet format.
-
-        Args:
-            float_id: Float ID to process
-            cache_path: Local NetCDF cache directory (uses settings if None)
-
-        Returns:
-            Dict with conversion stats and local file paths
-        """
-        cache_path = Path(cache_path or settings.LOCAL_CACHE_PATH)
-        staging_path = Path(settings.PARQUET_STAGING_PATH)
-        staging_path.mkdir(parents=True, exist_ok=True)
-
-        prof_file = cache_path / settings.ARGO_DAC / float_id / f"{float_id}_prof.nc"
-
-        if not prof_file.exists():
-            logger.warning("Profile file not found", float_id=float_id)
-            return {"float_id": float_id, "error": "Profile file not found"}
-
-        stats: dict[str, Any] = {
-            "float_id": float_id,
-            "profiles_converted": 0,
-            "parquet_files": [],
-            "errors": 0,
-        }
-
-        try:
-            profiles_df = extract_profiles_dataframe(prof_file, float_id)
-
-            if profiles_df is None or profiles_df.empty:
-                logger.warning("No valid profiles found", float_id=float_id)
-                stats["error"] = "No profiles to convert"
-                return stats
-
-            stats["profiles_converted"] = len(profiles_df)
-
-            parquet_path = staging_path / f"{float_id}_profiles.parquet"
-            save_parquet(profiles_df, parquet_path, float_id)
-            stats["parquet_files"].append(str(parquet_path))
-
-            logger.info(
-                "Profile conversion complete",
-                float_id=float_id,
-                profiles=stats["profiles_converted"],
-                output=str(parquet_path),
-            )
-
-        except Exception as e:
-            logger.error("Profile conversion failed", float_id=float_id, error=str(e))
-            stats["errors"] += 1
-
-        return stats

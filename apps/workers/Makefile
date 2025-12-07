@@ -42,7 +42,7 @@ clean:
 
 run-single:
 	@echo "Running ARGO loader (single float: $(FLOAT_ID))..."
-	infisical run --env=dev -- uv run python -m src.atlas_workers.main \
+	infisical run --path="/worker" -- uv run python -m src.atlas_workers.main \
 		--float-id $(FLOAT_ID)
 
 run-batch:

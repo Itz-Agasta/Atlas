@@ -52,17 +52,16 @@ class Settings(BaseSettings):
     # DuckDB Configuration (profile data warehouse)
     DUCKDB_PATH: Path = Path("./data/duckdb")
 
-    # Parquet Conversion (NetCDF → Parquet for DuckDB)
+    # Parquet Conversion (NetCDF -> Parquet for DuckDB)
     PARQUET_STAGING_PATH: Path = Path("./data/parquet_staging")
     PARQUET_COMPRESSION: str = "snappy"  # snappy, gzip, brotli
 
     # Cloudflare R2 Configuration (distributed Parquet storage)
-    R2_ENABLED: bool = False  # Set to True to enable R2 uploads
-    R2_BUCKET: str = "atlas-argo-data"
-    R2_ACCOUNT_ID: Optional[str] = None  # Cloudflare Account ID
-    R2_ACCESS_KEY_ID: Optional[str] = None  # R2 API token
-    R2_SECRET_ACCESS_KEY: Optional[str] = None  # R2 API secret
-    R2_ENDPOINT_URL: Optional[str] = None  # Auto-generated if not set
+    S3_ACCESS_KEY: Optional[str] = None
+    S3_SECRET_KEY: Optional[str] = None
+    S3_BUCKET_NAME: str = "atlas"
+    S3_ENDPOINT: Optional[str] = None
+    S3_REGION: str = "auto"
 
 
 settings = Settings()

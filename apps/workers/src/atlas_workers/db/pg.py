@@ -24,7 +24,7 @@ class DatabaseSettings(BaseSettings):
     DB_COMMAND_TIMEOUT: int = Field(300, description="Command timeout in seconds")
 
 
-class Postgres:
+class PgClient:
     def __init__(self, db_url: Optional[str] = None):
         self.settings = DatabaseSettings()
         self.db_url = db_url or self.settings.PG_WRITE_URL
