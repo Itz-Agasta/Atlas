@@ -173,12 +173,6 @@ def get_profile_stats(
 
                 if battery_percent is not None:
                     summary["battery_percent"] = battery_percent
-                    logger.info(
-                        "Battery estimated",
-                        float_id=float_id,
-                        voltage=current_voltage,
-                        percent=battery_percent,
-                    )
 
             return summary
 
