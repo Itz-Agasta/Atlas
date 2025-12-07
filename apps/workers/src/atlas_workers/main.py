@@ -2,9 +2,10 @@ import argparse
 import asyncio
 import sys
 import time
+from pathlib import Path
 from typing import TypedDict
 
-from .db import Postgres
+from .db import PgClient, S3Client
 from .models import FloatStatus
 from .utils import get_logger
 from .workers import ArgoSyncWorker, NetCDFParserWorker
@@ -16,6 +17,7 @@ class ProcessResult(TypedDict, total=False):
     success: bool
     float_id: str
     timing: dict[str, float]
+    parquet_path: str | None
     error: str
 
 
@@ -25,10 +27,10 @@ async def process_single_float(
     """Process a single ARGO float: download, parse, upload."""
     # Track timing for each phases
     timing = {
-        "download_seconds": 0.0,
-        "process_seconds": 0.0,
-        "pg_upload_seconds": 0.0,
-        "total_seconds": 0.0,
+        "download_time": 0.0,
+        "process_time": 0.0,
+        "upload_time": 0.0,
+        "total_time": 0.0,
     }
 
     start_time = time.time()
@@ -39,17 +41,17 @@ async def process_single_float(
         if not skip_download:
             sync_worker = ArgoSyncWorker()
             await sync_worker.sync(float_ids=[float_id])
-        timing["download_seconds"] = time.time() - download_start
+        timing["download_time"] = time.time() - download_start
 
         # 2. Parse
         process_start = time.time()
         parser = NetCDFParserWorker()
         result = parser.process_directory(float_id)
-        timing["process_seconds"] = time.time() - process_start
+        timing["process_time"] = time.time() - process_start
 
         # 3. Upload into pg
-        upload_start = time.time()
-        db = Postgres()
+        pg_upload_start = time.time()
+        db = PgClient()
         try:
             # Use Pydantic's validation with automatic type coercion
             # - profile_time -> last_update (via validation_alias)
@@ -66,26 +68,55 @@ async def process_single_float(
                 raise ValueError("Database upload failed")
 
             db.conn.commit()
-            timing["pg_upload_seconds"] = time.time() - upload_start
+            pg_upload_time = time.time() - pg_upload_start
         finally:
             db.conn.close()
 
-        # TODO: # 4. upload into duckdb
+        # 4. Upload into R2
+        s3_upload_time = 0.0
+        parquet_path = result.get("parquet_path")
+        if parquet_path:
+            s3_upload_start = time.time()
+            try:
+                s3_client = S3Client()
+                upload_success = s3_client.upload_file(
+                    float_id=float_id,
+                    local_path=Path(parquet_path),
+                )
+                s3_upload_time = time.time() - s3_upload_start
 
-        timing["total_seconds"] = time.time() - start_time
+            except Exception as e:
+                logger.warning(
+                    "R2 upload skipped",
+                    float_id=float_id,
+                    error=str(e),
+                )
+        else:
+            logger.warning("No parquet file to upload", float_id=float_id)
+
+        timing["total_time"] = time.time() - start_time
+        timing["upload_time"] = pg_upload_time + s3_upload_time
 
         logger.info(
             "Float processing completed",
             float_id=float_id,
-            download_time=f"{timing['download_seconds']:.2f}s",
-            process_time=f"{timing['process_seconds']:.2f}s",
-            pg_upload_time=f"{timing['pg_upload_seconds']:.2f}s",
-            total_time=f"{timing['total_seconds']:.2f}s",
+            download_time=f"{timing['download_time']:.2f}s",
+            process_time=f"{timing['process_time']:.2f}s",
+            pg_upload_time=f"{pg_upload_time:.2f}s",
+            s3_upload_time=f"{s3_upload_time:.2f}s",
+            upload_time=f"{timing['upload_time']:.2f}s",
+            total_time=f"{timing['total_time']:.2f}s",
         )
 
-        # TODO: upload logs into processing_log table
+        # TODO: make both uploads parallel
 
-        return {"success": True, "float_id": float_id, "timing": timing}
+        # TODO: upload logs into processing_log table in pg
+
+        return {
+            "success": True,
+            "float_id": float_id,
+            "timing": timing,
+        }
 
     except Exception as e:
         logger.exception("Float processing failed", float_id=float_id, error=str(e))
@@ -140,10 +171,10 @@ def main() -> int:
     if result.get("success"):
         timing = result.get("timing") or {}
         print(f"\n Success: Float {args.float_id} processed")
-        print(f"  Download:   {timing.get('download_seconds', 0.0):.2f}s")
-        print(f"  Process:    {timing.get('process_seconds', 0.0):.2f}s")
-        print(f"  Upload:     {timing.get('pg_upload_seconds', 0.0):.2f}s")
-        print(f"  Total:      {timing.get('total_seconds', 0.0):.2f}s")
+        print(f"  Download:   {timing.get('download_time', 0.0):.2f}s")
+        print(f"  Process:    {timing.get('process_time', 0.0):.2f}s")
+        print(f"  Upload:     {timing.get('upload_time', 0.0):.2f}s")
+        print(f"  Total:      {timing.get('total_time', 0.0):.2f}s")
         return 0
     else:
         error_msg = result.get("error") or "Unknown error"
