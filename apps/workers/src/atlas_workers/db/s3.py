@@ -80,10 +80,9 @@ class S3Client:
 
             return True
 
-        except ClientError as e:
-            logger.error("R2 client error", exc_info=e)
-        except BotoCoreError as e:
-            logger.error("R2 boto core error", exc_info=e)
+        except (ClientError, BotoCoreError) as e:
+            logger.error("R2 error", exc_info=e)
+            return False
         except Exception as e:
             logger.error("Unexpected R2 error", exc_info=e)
             return False
