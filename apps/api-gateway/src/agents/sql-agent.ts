@@ -2,6 +2,7 @@ import { createGroq } from "@ai-sdk/groq";
 import { db } from "@atlas/db";
 import { generateText } from "ai";
 import { config } from "../config/config";
+import { validateSQL } from "../utils/helper";
 
 const groq = createGroq({
   apiKey: config.groqApiKey,
@@ -27,41 +28,6 @@ export type SQLAgentParams = {
 };
 
 /**
- * Validate that generated SQL to keep agent read‑only
- * This guards against multi‑statement execution even if the LLM goes off‑spec.
- */
-const TRAILING_SEMICOLONS_REGEX = /;+\s*$/;
-const DISALLOWED_KEYWORDS_REGEX =
-  /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|BEGIN|COMMIT|ROLLBACK)\b/;
-
-function validateSQL(sqlQuery: string): { isValid: boolean; cleaned: string } {
-  const cleanedSQL = sqlQuery
-    .trim()
-    .replace(/^```sql\n?|```$/g, "")
-    .trim();
-
-  // Remove trailing semicolons so we only ever execute a single statement
-  const withoutTrailingSemicolons = cleanedSQL.replace(
-    TRAILING_SEMICOLONS_REGEX,
-    ""
-  );
-
-  const upperSQL = withoutTrailingSemicolons.toUpperCase();
-  const startsWithSelectOrWith =
-    upperSQL.startsWith("SELECT") || upperSQL.startsWith("WITH");
-
-  // Any remaining semicolon implies an extra statement
-  const hasExtraSemicolon = upperSQL.includes(";");
-
-  const hasDisallowedKeyword = DISALLOWED_KEYWORDS_REGEX.test(upperSQL);
-
-  const isValid =
-    startsWithSelectOrWith && !hasExtraSemicolon && !hasDisallowedKeyword;
-
-  return { isValid, cleaned: withoutTrailingSemicolons };
-}
-
-/**
  * Text-to-SQL Agent
  * Converts natural language queries to SQL for Argo float data
  */
@@ -75,157 +41,120 @@ export async function SQLAgent(
     // Generate SQL query using LLM
     const { text: sqlQuery } = await generateText({
       model: groq(config.models.sqlAgent),
-      system: `You are an expert SQL writer for oceanographic Argo float data in PostgreSQL with PostGIS.
+      system: `You are an expert SQL writer for Argo float METADATA queries in PostgreSQL with PostGIS.
+
+IMPORTANT: This agent handles ONLY metadata queries (float info, status, locations).
+Profile data (temperature/salinity measurements) is handled by a separate DuckDB agent.
 
 DATABASE SCHEMA:
 
 **argo_float_metadata** (static metadata):
   - float_id (bigint, PK): Unique float identifier
-  - wmo_number (text, unique): WMO identifier
-  - float_type (text): Type of float
-  - deployment_date (timestamp): When float was deployed
-  - deployment_lat, deployment_lon (real): Deployment location
-  - deployment_country (text): Country that deployed the float
-  - status (text): ACTIVE, INACTIVE, LOST
-  - battery_capacity (integer): Battery percentage
+  - wmo_number (text, unique, NOT NULL): WMO identifier (e.g., "2902235")
+  - status (text): "ACTIVE" | "INACTIVE" | "UNKNOWN" | "DEAD"
+  - float_type (text): "core" | "oxygen" | "biogeochemical" | "deep" | "unknown"
+  - data_centre (text, NOT NULL): Data center code (e.g., "IN")
+  - project_name (text): Project name (e.g., "Argo India")
+  - operating_institution (text): Institution name (e.g., "INCOIS")
+  - pi_name (text): Principal investigator
+  - platform_type (text): Platform type (e.g., "ARVOR")
+  - platform_maker (text): Manufacturer (e.g., "NKE")
+  - float_serial_no (text): Serial number
+  - launch_date (timestamp): Deployment date
+  - launch_lat, launch_lon (real): Deployment coordinates
+  - start_mission_date (timestamp): Mission start
+  - end_mission_date (timestamp): Mission end (nullable for active floats)
   - created_at, updated_at (timestamp)
 
-**argo_float_positions** (current/latest positions):
-  - float_id (bigint, PK, FK): References argo_float_metadata
-  - current_lat, current_lon (real): Current position
-  - current_depth (integer): Current depth in meters
+**argo_float_status** (hot layer - current status):
+  - float_id (bigint, PK, FK): References argo_float_metadata (cascade delete)
+  - location (geometry POINT, SRID 4326): Current position (PostGIS)
   - cycle_number (integer): Current cycle number
-  - last_update (timestamp): When last updated
-  - last_temp, last_salinity (real): Latest measurements
+  - battery_percent (integer): Battery level (0-100)
+  - last_update (timestamp): Last data update
+  - last_depth (real): Last recorded depth (meters)
+  - last_temp (real): Last temperature (°C)
+  - last_salinity (real): Last salinity (PSU)
   - updated_at (timestamp)
 
-**argo_positions_timeseries** (position history):
+**processing_log** (system logs):
   - id (serial, PK)
-  - float_id (bigint, FK): References argo_float_metadata
-  - lat, lon (real): Position
-  - time (timestamp): Measurement time
-  - cycle (integer): Cycle number
-  - location (geometry, POINT, SRID 4326): PostGIS geometry
+  - float_id (bigint): Related float
+  - operation (text): Operation type (e.g., "FULL SYNC")
+  - status (text): "SUCCESS" | "ERROR"
+  - error_details (jsonb): Error information
+  - processing_time_ms (integer): Processing duration
   - created_at (timestamp)
 
-**argo_profiles** (oceanographic profiles):
-  - id (serial, PK)
-  - float_id (bigint, FK): References argo_float_metadata
-  - cycle (integer): Cycle number
-  - profile_time (timestamp): When profile was taken
-  - surface_lat, surface_lon (real): Surface position
-  - max_depth (integer): Maximum profile depth in meters
-  - surface_location (geometry, POINT, SRID 4326)
-  - measurements (jsonb): Array of measurement objects, each with:
-    [
-      {
-        "depth": 0.0,
-        "temperature": 20.5,
-        "salinity": 34.5
-      },
-      {
-        "depth": 10.0,
-        "temperature": 19.8,
-        "salinity": 34.6
-      },
-      ...
-    ]
-    Access measurements via jsonb_array_elements() or ->'field' operators
-  - quality_flag (text): REAL_TIME or DELAYED_MODE
-  - created_at (timestamp)
-
-**argo_float_stats** (cached statistics):
-  - float_id (bigint, PK, FK)
-  - avg_temp, temp_min, temp_max (real)
-  - depth_range_min, depth_range_max (integer)
-  - profile_count (integer)
-  - location_bounds_nmin, location_bounds_nmax (real): South/North bounds
-  - location_bounds_emin, location_bounds_emax (real): West/East bounds
-  - recent_temp_trend (real): Temperature trend
-  - last_updated, updated_at (timestamp)
+SPATIAL QUERIES (PostGIS):
+- Use ST_DWithin for radius queries: ST_DWithin(location::geography, ST_GeogFromText('POINT(lon lat)'), distance_meters)
+- Use ST_MakeEnvelope for bounding boxes: ST_Intersects(location, ST_MakeEnvelope(west, south, east, north, 4326))
+- Indexes: GIST index on argo_float_status.location
 
 QUERY GUIDELINES:
 1. Generate ONLY valid PostgreSQL SELECT statements
-2. Use proper JSONB operators: ->, ->>, @>, jsonb_array_elements
-3. For spatial/geographic queries use bounding box operators: BETWEEN for latitude/longitude
-   - Do NOT use ST_MakePolygon, ST_GeomFromText, or complex PostGIS functions
-   - These require special geometry types that may not be available
-   - Stick to simple bounding box logic with BETWEEN clauses
-4. Use LATERAL joins for JSONB array processing
-5. Include appropriate WHERE, ORDER BY, LIMIT clauses
+2. For float locations, use argo_float_status.location (PostGIS geometry)
+3. Extract lat/lon from geometry: ST_Y(location) AS lat, ST_X(location) AS lon
+4. Filter by status, project_name, float_type, operating_institution
+5. Join metadata + status for comprehensive float information
 6. Use CTEs (WITH) for complex queries
-7. Return meaningful column aliases
-8. Add comments for complex operations
-9. **IMPORTANT: Do NOT select full JSONB measurement arrays - they are too large**
-   - Either extract specific measurements using ->> operator
-   - Or use jsonb_array_length() to count measurements without returning all data
-   - For summaries, use aggregation functions (AVG, MIN, MAX)
-10. NO DELETE, UPDATE, INSERT, DROP statements allowed
-11. Limit results to 1000 rows maximum
+7. NO DELETE, UPDATE, INSERT, DROP statements allowed
+8. Limit results to 1000 rows maximum
 
 EXAMPLES:
 
-Q: "Show temperature profiles for float WMO-4903556"
-A: SELECT 
-     profile_time,
-     max_depth,
-     jsonb_array_length(measurements) as num_measurements,
-     (measurements->0->>'temperature')::real as surface_temperature
-   FROM argo_profiles
-   WHERE float_id = (SELECT float_id FROM argo_float_metadata WHERE wmo_number = '4903556')
-   ORDER BY profile_time DESC
-   LIMIT 100;
-
-Q: "Find floats with high salinity in the Indian Ocean"
+Q: "List all active floats in the Indian Ocean"
 A: SELECT 
      m.wmo_number,
      m.float_type,
-     p.surface_lat,
-     p.surface_lon,
-     p.cycle
-   FROM argo_profiles p
-   JOIN argo_float_metadata m ON p.float_id = m.float_id
-   WHERE p.surface_lat BETWEEN -20 AND 30
-     AND p.surface_lon BETWEEN 40 AND 100
-   ORDER BY m.wmo_number, p.profile_time DESC
+     m.project_name,
+     ST_Y(s.location) AS latitude,
+     ST_X(s.location) AS longitude,
+     s.battery_percent,
+     s.last_update
+   FROM argo_float_metadata m
+   JOIN argo_float_status s ON m.float_id = s.float_id
+   WHERE m.status = 'ACTIVE'
+     AND ST_Y(s.location) BETWEEN -20 AND 30
+     AND ST_X(s.location) BETWEEN 40 AND 100
+   ORDER BY s.last_update DESC
+   LIMIT 100;
+
+Q: "Find floats within 500km of Sri Lanka"
+A: SELECT 
+     m.wmo_number,
+     m.float_type,
+     ST_Y(s.location) AS latitude,
+     ST_X(s.location) AS longitude,
+     ST_Distance(s.location::geography, ST_GeogFromText('POINT(80.77 7.87)')) / 1000 AS distance_km
+   FROM argo_float_metadata m
+   JOIN argo_float_status s ON m.float_id = s.float_id
+   WHERE ST_DWithin(s.location::geography, ST_GeogFromText('POINT(80.77 7.87)'), 500000)
+   ORDER BY distance_km
    LIMIT 50;
 
-Q: "Average temperature at 1000m depth across all floats"
-A: WITH depth_temps AS (
-     SELECT 
-       float_id,
-       profile_time,
-       (m->>'temperature')::real as temp,
-       (m->>'depth')::real as depth
-     FROM argo_profiles,
-          jsonb_array_elements(measurements) as m
-     WHERE quality_flag = 'DELAYED_MODE'
-   )
-   SELECT 
-     AVG(temp) as avg_temp_at_1000m,
-     COUNT(*) as sample_count,
-     STDDEV(temp) as std_dev
-   FROM depth_temps
-   WHERE depth BETWEEN 950 AND 1050;
-
-Q: "Analyze temperature-salinity relationship in Antarctic waters"
+Q: "Show BGC floats with low battery"
 A: SELECT 
-     p.float_id,
-     p.profile_time,
-     p.surface_lat,
-     p.surface_lon,
-     jsonb_array_length(p.measurements) as num_measurements,
-     AVG((meas->>'temperature')::real) as avg_temperature,
-     AVG((meas->>'salinity')::real) as avg_salinity,
-     STDDEV((meas->>'temperature')::real) as temp_stddev,
-     STDDEV((meas->>'salinity')::real) as salinity_stddev
-   FROM argo_profiles p
-   CROSS JOIN LATERAL jsonb_array_elements(p.measurements) as meas
-   WHERE p.surface_lat BETWEEN -90 AND -50
-     AND p.surface_lon BETWEEN -180 AND 180
-   GROUP BY p.float_id, p.profile_time, p.surface_lat, p.surface_lon, p.measurements
-   ORDER BY p.profile_time DESC
+     m.wmo_number,
+     m.operating_institution,
+     s.battery_percent,
+     s.cycle_number,
+     s.last_update
+   FROM argo_float_metadata m
+   JOIN argo_float_status s ON m.float_id = s.float_id
+   WHERE m.float_type = 'biogeochemical'
+     AND s.battery_percent < 20
+   ORDER BY s.battery_percent ASC
    LIMIT 100;
+
+Q: "Count floats by project"
+A: SELECT 
+     project_name,
+     COUNT(*) AS float_count,
+     SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) AS active_count
+   FROM argo_float_metadata
+   GROUP BY project_name
+   ORDER BY float_count DESC;
 
 Generate ONLY the SQL query without any markdown formatting, explanations, or comments.`,
       prompt: `Generate PostgreSQL query for: ${query}
@@ -262,8 +191,8 @@ ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "no
     return {
       success: true,
       sql: cleanedSQL,
-      data: result.rows,
-      rowCount: result.rowCount ?? result.rows.length,
+      data: result as unknown as Record<string, unknown>[],
+      rowCount: (result as unknown as Record<string, unknown>[]).length,
       executionTimeMs,
     };
   } catch (error) {
