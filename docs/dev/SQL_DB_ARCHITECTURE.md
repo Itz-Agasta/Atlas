@@ -79,7 +79,7 @@ SELECT * WHERE ST_Intersects(location, ST_MakeEnvelope(60,-10,100,20,4326));
 
 **Indexes:** `(float_id, operation)`, `created_at`.
 
-> NOTE: Floats profiles are stored in duckdb.
+> NOTE: Floats profiles are stored in duck-db.
 
 ## Extensions
 
