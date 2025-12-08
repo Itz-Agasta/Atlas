@@ -5,13 +5,14 @@ import {
   testSQLInputSchema,
 } from "@atlas/api/schemas/agent";
 import { classifyQueryDirect } from "../../agents/classifier";
+import { DuckDBAgent, type DuckDBAgentResult } from "../../agents/duckdb-agent";
 import { executeGeneralAgent } from "../../agents/general-agent";
 import { RAGAgent, type RAGAgentResult } from "../../agents/rag-agent";
 import { SQLAgent, type SQLAgentResult } from "../../agents/sql-agent";
 import { responseOrchestrator } from "../../middleware/orchestrator";
 
 /**
- * Execute SQL agent with error handling
+ * Execute SQL agent with error handling (metadata queries only)
  */
 async function executeSQLAgent(params: {
   query: string;
@@ -26,6 +27,28 @@ async function executeSQLAgent(params: {
       success: false,
       error:
         error instanceof Error ? error.message : "SQL agent execution failed",
+    };
+  }
+}
+
+/**
+ * Execute DuckDB agent with error handling (profile data queries)
+ */
+async function executeDuckDBAgent(params: {
+  query: string;
+  floatId?: number;
+  timeRange?: { start?: string; end?: string };
+  dryRun?: boolean;
+}): Promise<DuckDBAgentResult> {
+  try {
+    return await DuckDBAgent(params);
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "DuckDB agent execution failed",
     };
   }
 }
@@ -95,10 +118,14 @@ export const agentRouter = router({
           };
         }
 
-        // Step 2: Determine which agents to execute
+        // Step 2: Determine which agents to execute based on query type
         const shouldExecuteSQL =
           includeSql &&
-          ["DATA_ANALYSIS", "HYBRID", "FORECASTING"].includes(
+          ["METADATA_QUERY", "HYBRID"].includes(classification.queryType);
+
+        const shouldExecuteDuckDB =
+          includeSql &&
+          ["PROFILE_ANALYSIS", "HYBRID", "FORECASTING"].includes(
             classification.queryType
           );
 
@@ -109,9 +136,12 @@ export const agentRouter = router({
           );
 
         // Step 3: Execute agents in parallel
-        const [sqlResults, ragResults] = await Promise.all([
+        const [sqlResults, duckdbResults, ragResults] = await Promise.all([
           shouldExecuteSQL
             ? executeSQLAgent({ query, floatId, timeRange })
+            : Promise.resolve(undefined),
+          shouldExecuteDuckDB
+            ? executeDuckDBAgent({ query, floatId, timeRange })
             : Promise.resolve(undefined),
           shouldExecuteRAG
             ? executeRAGAgent(query, yearRange)
@@ -123,6 +153,7 @@ export const agentRouter = router({
           queryType: classification.queryType,
           originalQuery: query,
           sqlResults,
+          duckdbResults,
           ragResults,
         });
 
@@ -131,6 +162,7 @@ export const agentRouter = router({
           query,
           classification,
           sqlResults: sqlResults || null,
+          duckdbResults: duckdbResults || null,
           ragResults: ragResults || null,
           response: finalResponse.response,
           citations: finalResponse.citations,
