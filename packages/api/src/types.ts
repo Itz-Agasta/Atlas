@@ -35,7 +35,8 @@ export type ResearchPaperChunk = {
 
 // Query classification types
 export type QueryType =
-  | "DATA_ANALYSIS"
+  | "METADATA_QUERY"
+  | "PROFILE_ANALYSIS"
   | "LITERATURE_REVIEW"
   | "HYBRID"
   | "METHODOLOGICAL"
