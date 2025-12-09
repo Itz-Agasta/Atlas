@@ -1,11 +1,10 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createGroq } from "@ai-sdk/groq";
 import { generateText } from "ai";
 import { config } from "../config/config";
 import logger from "../config/logger";
 
-const openrouter = createOpenAI({
-  apiKey: config.openRouterApiKey,
-  baseURL: "https://openrouter.ai/api/v1",
+const groq = createGroq({
+  apiKey: config.groqApiKey,
 });
 
 // Regex for parsing JSON from text responses
@@ -82,7 +81,7 @@ CRITICAL: At least ONE agent must be true. Never return all false.`;
 export async function routeQuery(query: string): Promise<RoutingDecision> {
   try {
     const { text } = await generateText({
-      model: openrouter(config.models.router),
+      model: groq(config.models.sqlAgent),
       system: ROUTER_SYSTEM_PROMPT,
       prompt: `Route this query to appropriate agents: "${query}"
 

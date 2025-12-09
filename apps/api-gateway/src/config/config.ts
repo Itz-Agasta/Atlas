@@ -15,7 +15,7 @@ export const config = {
   qdrantUrl: process.env.QDRANT_URL || "http://localhost:6333",
   qdrantApiKey: process.env.QDRANT_API_KEY || "",
 
-  databaseUrl: process.env.DATABASE_URL || "",
+  databaseUrl: process.env.PG_READ_URL || "",
 
   // S3/R2 Configuration for DuckDB
   s3: {
