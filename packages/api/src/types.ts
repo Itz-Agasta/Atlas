@@ -46,7 +46,6 @@ export type ScientificResponse = {
   response: string;
   citations: Citation[];
   dataQuality: DataQuality;
-  queryType: string;
   timestamp: Date;
   tokensUsed?: number;
   processingTimeMs?: number;

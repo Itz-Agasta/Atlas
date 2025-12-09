@@ -95,7 +95,7 @@ Respond in this exact JSON format:
   "reasoning": "brief explanation",
   "confidence": 0.0 to 1.0
 }`,
-      maxTokens: 200,
+      maxOutputTokens: 200,
     });
 
     // Parse the JSON response. models aren't guaranteed to output pure JSON

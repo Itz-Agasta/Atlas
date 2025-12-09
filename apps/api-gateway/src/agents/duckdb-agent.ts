@@ -204,7 +204,7 @@ ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "no
     return {
       success: true,
       sql: cleanedSQL,
-      data: rows as Record<string, unknown>[],
+      data: rows as unknown as Record<string, unknown>[],
       rowCount: rows.length,
       executionTimeMs,
     };

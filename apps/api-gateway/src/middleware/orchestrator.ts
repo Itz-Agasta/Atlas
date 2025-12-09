@@ -74,7 +74,6 @@ IMPORTANT:
       response: text,
       citations,
       dataQuality,
-      queryType: results.queryType,
       timestamp: new Date(),
       tokensUsed: usage?.totalTokens,
       processingTimeMs: Date.now() - startTime,
@@ -88,7 +87,6 @@ IMPORTANT:
 
 function formatAgentContext(results: AgentResults): string {
   let context = `ORIGINAL QUERY: ${results.originalQuery}\n\n`;
-  context += `QUERY TYPE: ${results.queryType}\n\n`;
 
   context += formatSQLContext(results.sqlResults);
   context += formatDuckDBContext(results.duckdbResults);

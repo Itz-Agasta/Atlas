@@ -45,7 +45,7 @@ export async function executeGeneralAgent(
 ): Promise<GeneralAgentResult> {
   try {
     const { text } = await generateText({
-      model: groq(config.models.classifier),
+      model: groq(config.models.generalAgent),
       system: GENERAL_AGENT_SYSTEM_PROMPT,
       prompt: query,
       maxOutputTokens: 200,
