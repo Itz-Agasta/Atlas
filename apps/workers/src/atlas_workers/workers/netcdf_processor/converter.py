@@ -82,6 +82,7 @@ class ParquetConverter:
                 data_mode = get_1d_array("DATA_MODE")
                 pos_qc = get_1d_array("POSITION_QC")
 
+                # FIXME: I was planning to make o2 , n2 these double but im getting int with duckdb. need to investigate
                 # BGC sensors (often sparse, 2D)
                 oxygen = get_2d_array("OXYGEN")
                 oxygen_qc = get_2d_array("OXYGEN_QC")

@@ -4,14 +4,15 @@ import {
   classifyInputSchema,
   testSQLInputSchema,
 } from "@atlas/api/schemas/agent";
-import { classifyQueryDirect } from "../../agents/classifier";
+import { DuckDBAgent, type DuckDBAgentResult } from "../../agents/duckdb-agent";
 import { executeGeneralAgent } from "../../agents/general-agent";
 import { RAGAgent, type RAGAgentResult } from "../../agents/rag-agent";
+import { routeQuery } from "../../agents/router-agent";
 import { SQLAgent, type SQLAgentResult } from "../../agents/sql-agent";
 import { responseOrchestrator } from "../../middleware/orchestrator";
 
 /**
- * Execute SQL agent with error handling
+ * Execute SQL agent with error handling (metadata queries only)
  */
 async function executeSQLAgent(params: {
   query: string;
@@ -26,6 +27,28 @@ async function executeSQLAgent(params: {
       success: false,
       error:
         error instanceof Error ? error.message : "SQL agent execution failed",
+    };
+  }
+}
+
+/**
+ * Execute DuckDB agent with error handling (profile data queries)
+ */
+async function executeDuckDBAgent(params: {
+  query: string;
+  floatId?: number;
+  timeRange?: { start?: string; end?: string };
+  dryRun?: boolean;
+}): Promise<DuckDBAgentResult> {
+  try {
+    return await DuckDBAgent(params);
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "DuckDB agent execution failed",
     };
   }
 }
@@ -73,18 +96,24 @@ export const agentRouter = router({
         input;
 
       try {
-        // Step 1: Classify the query
-        const classification = await classifyQueryDirect(query);
+        // Step 1: Route query to appropriate agents
+        const routing = await routeQuery(query);
 
         // Handle general queries without wasting resources
-        if (classification.queryType === "GENERAL") {
+        if (
+          routing.generalAgent &&
+          !routing.sqlAgent &&
+          !routing.duckdbAgent &&
+          !routing.ragAgent
+        ) {
           const generalResponse = await executeGeneralAgent(query);
 
           return {
             success: true,
             query,
-            classification,
+            routing,
             sqlResults: null,
+            duckdbResults: null,
             ragResults: null,
             response: generalResponse.response,
             citations: null,
@@ -95,42 +124,33 @@ export const agentRouter = router({
           };
         }
 
-        // Step 2: Determine which agents to execute
-        const shouldExecuteSQL =
-          includeSql &&
-          ["DATA_ANALYSIS", "HYBRID", "FORECASTING"].includes(
-            classification.queryType
-          );
-
-        const shouldExecuteRAG =
-          includeRag &&
-          ["LITERATURE_REVIEW", "HYBRID", "METHODOLOGICAL"].includes(
-            classification.queryType
-          );
-
-        // Step 3: Execute agents in parallel
-        const [sqlResults, ragResults] = await Promise.all([
-          shouldExecuteSQL
+        // Step 2: Execute agents in parallel based on routing decision
+        const [sqlResults, duckdbResults, ragResults] = await Promise.all([
+          routing.sqlAgent && includeSql
             ? executeSQLAgent({ query, floatId, timeRange })
             : Promise.resolve(undefined),
-          shouldExecuteRAG
+          routing.duckdbAgent && includeSql
+            ? executeDuckDBAgent({ query, floatId, timeRange })
+            : Promise.resolve(undefined),
+          routing.ragAgent && includeRag
             ? executeRAGAgent(query, yearRange)
             : Promise.resolve(undefined),
         ]);
 
-        // Step 4: Orchestrate the final response
+        // Step 3: Orchestrate the final response
         const finalResponse = await responseOrchestrator({
-          queryType: classification.queryType,
           originalQuery: query,
           sqlResults,
+          duckdbResults,
           ragResults,
         });
 
         return {
           success: true,
           query,
-          classification,
+          routing,
           sqlResults: sqlResults || null,
+          duckdbResults: duckdbResults || null,
           ragResults: ragResults || null,
           response: finalResponse.response,
           citations: finalResponse.citations,
@@ -172,15 +192,15 @@ export const agentRouter = router({
     }),
 
   /**
-   * Classify query type without execution
+   * Route query to appropriate agents without execution
    *
    * @URL `POST /trpc/agent.classify`
    */
   classify: publicProcedure
     .input(classifyInputSchema)
     .query(async ({ input }) => {
-      const classification = await classifyQueryDirect(input.query);
-      return classification;
+      const routing = await routeQuery(input.query);
+      return routing;
     }),
 });
 

@@ -14,8 +14,6 @@ export type { Context } from "./context";
 export type {
   Citation,
   DataQuality,
-  QueryClassification,
-  QueryType,
   ResearchPaperChunk,
   ScientificResponse,
 } from "./types";

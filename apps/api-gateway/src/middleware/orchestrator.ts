@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { Citation, ScientificResponse } from "@atlas/api";
 import { generateText } from "ai";
+import type { DuckDBAgentResult } from "../agents/duckdb-agent";
 import type { RAGAgentResult } from "../agents/rag-agent";
 import type { SQLAgentResult } from "../agents/sql-agent";
 import { config } from "../config/config";
@@ -12,11 +13,12 @@ const openrouter = createOpenAI({
 
 // Constants
 const MAX_EXCERPT_LENGTH = 300;
+const MAX_DUCKDB_ROWS_IN_CONTEXT = 100;
 
 export type AgentResults = {
-  queryType: string;
   originalQuery: string;
   sqlResults?: SQLAgentResult;
+  duckdbResults?: DuckDBAgentResult;
   ragResults?: RAGAgentResult;
 };
 
@@ -35,13 +37,14 @@ export async function responseOrchestrator(
       system: `You are an expert oceanographer and scientific writer specialized in Argo float data analysis.
 
 Your task is to generate a comprehensive, well-cited response combining:
-1. Quantitative analysis of Argo float data (if available)
-2. Supporting research from peer-reviewed literature (if available)
-3. Statistical rigor and uncertainty quantification
-4. Proper academic citations
+1. Float metadata analysis (locations, status, deployment info) from PostgreSQL - if available
+2. Profile data analysis (temperature/salinity measurements, depth profiles) from DuckDB - if available
+3. Supporting research from peer-reviewed literature - if available
+4. Statistical rigor and uncertainty quantification
+5. Proper academic citations
 
 RESPONSE FORMAT:
-- Start with key findings from the data analysis
+- Start with key findings from the data analysis (metadata or profile data)
 - Provide statistical context (mean, std dev, ranges, trends)
 - Explain significance of the findings
 - Connect to relevant research literature with citations
@@ -71,7 +74,6 @@ IMPORTANT:
       response: text,
       citations,
       dataQuality,
-      queryType: results.queryType,
       timestamp: new Date(),
       tokensUsed: usage?.totalTokens,
       processingTimeMs: Date.now() - startTime,
@@ -85,9 +87,9 @@ IMPORTANT:
 
 function formatAgentContext(results: AgentResults): string {
   let context = `ORIGINAL QUERY: ${results.originalQuery}\n\n`;
-  context += `QUERY TYPE: ${results.queryType}\n\n`;
 
   context += formatSQLContext(results.sqlResults);
+  context += formatDuckDBContext(results.duckdbResults);
   context += formatRAGContext(results.ragResults);
   context += formatNoDataWarning(results);
 
@@ -100,7 +102,7 @@ function formatSQLContext(sqlResults?: SQLAgentResult): string {
   }
 
   if (sqlResults.success && sqlResults.data) {
-    let context = "ARGO FLOAT DATA ANALYSIS:\n";
+    let context = "ARGO FLOAT METADATA ANALYSIS (PostgreSQL):\n";
     context += `SQL Query Executed:\n${sqlResults.sql}\n\n`;
     context += `Results (${sqlResults.rowCount} rows):\n`;
     context += JSON.stringify(sqlResults.data, null, 2);
@@ -109,7 +111,38 @@ function formatSQLContext(sqlResults?: SQLAgentResult): string {
   }
 
   if (sqlResults.error) {
-    return `ARGO DATA ERROR: ${sqlResults.error}\n\n`;
+    return `METADATA QUERY ERROR: ${sqlResults.error}\n\n`;
+  }
+
+  return "";
+}
+
+function formatDuckDBContext(duckdbResults?: DuckDBAgentResult): string {
+  if (!duckdbResults) {
+    return "";
+  }
+
+  if (duckdbResults.success && duckdbResults.data) {
+    let context = "ARGO PROFILE DATA ANALYSIS (DuckDB on Parquet):\n";
+    context += `DuckDB Query Executed:\n${duckdbResults.sql}\n\n`;
+    context += `Results (${duckdbResults.rowCount} rows):\n`;
+    context += JSON.stringify(
+      duckdbResults.data.slice(0, MAX_DUCKDB_ROWS_IN_CONTEXT),
+      null,
+      2
+    );
+    if (
+      duckdbResults.rowCount &&
+      duckdbResults.rowCount > MAX_DUCKDB_ROWS_IN_CONTEXT
+    ) {
+      context += `\n... (showing first ${MAX_DUCKDB_ROWS_IN_CONTEXT} of ${duckdbResults.rowCount} rows)\n`;
+    }
+    context += "\n\n";
+    return context;
+  }
+
+  if (duckdbResults.error) {
+    return `PROFILE DATA QUERY ERROR: ${duckdbResults.error}\n\n`;
   }
 
   return "";
@@ -168,9 +201,10 @@ function formatPaperCitation(
 
 function formatNoDataWarning(results: AgentResults): string {
   const hasNoSQL = !results.sqlResults?.success;
+  const hasNoDuckDB = !results.duckdbResults?.success;
   const hasNoRAG = !results.ragResults?.success;
 
-  if (hasNoSQL && hasNoRAG) {
+  if (hasNoSQL && hasNoDuckDB && hasNoRAG) {
     return "Note: No data or literature was successfully retrieved. Provide a general response based on oceanographic knowledge.\n";
   }
   return "";
@@ -194,9 +228,12 @@ function extractCitations(ragResults?: RAGAgentResult): Citation[] {
 }
 
 function calculateDataQuality(results: AgentResults) {
-  const floatsAnalyzed = results.sqlResults?.rowCount || 0;
+  const floatsAnalyzed =
+    (results.sqlResults?.rowCount || 0) +
+    (results.duckdbResults?.rowCount || 0);
   const papersReferenced = results.ragResults?.papersFound || 0;
   const sqlQueriesExecuted = results.sqlResults?.success ? 1 : 0;
+  const duckdbQueriesExecuted = results.duckdbResults?.success ? 1 : 0;
   const ragSearchesPerformed = results.ragResults?.success ? 1 : 0;
 
   let averageCitationRelevance: number | undefined;
@@ -211,7 +248,7 @@ function calculateDataQuality(results: AgentResults) {
   return {
     floatsAnalyzed,
     papersReferenced,
-    sqlQueriesExecuted,
+    sqlQueriesExecuted: sqlQueriesExecuted + duckdbQueriesExecuted,
     ragSearchesPerformed,
     averageCitationRelevance,
   };

@@ -14,6 +14,7 @@
     "@ai-sdk/openai": "^2.0.68",
     "@atlas/api": "workspace:*",
     "@atlas/db": "workspace:*",
+    "@duckdb/node-api": "^1.4.2-r.1",
     "@hono/trpc-server": "^0.4.0",
     "@trpc/server": "catalog:",
     "ai": "^5.0.94",
