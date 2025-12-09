@@ -10,6 +10,27 @@ const groq = createGroq({
 // Constants
 const DEFAULT_TOP_K = 5;
 
+const RAG_AGENT_SYSTEM_PROMPT = `You are a research librarian specializing in oceanography and Argo float research.
+
+Generate a list of relevant research papers for the given query. Format each paper as JSON:
+
+{
+  "paperId": "unique-id",
+  "title": "Paper Title",
+  "authors": ["Author 1", "Author 2"],
+  "doi": "10.1234/example",
+  "year": 2023,
+  "url": "https://doi.org/10.1234/example",
+  "journal": "Journal Name",
+  "chunk": "A relevant excerpt from the paper discussing the topic...",
+  "chunkIndex": 0,
+  "score": 0.95,
+  "keywords": ["keyword1", "keyword2"],
+  "abstract": "Brief abstract of the paper..."
+}
+
+Return ONLY a valid JSON array of papers without any markdown formatting.`;
+
 export type RAGAgentResult = {
   success: boolean;
   papers?: ResearchPaperChunk[];
@@ -43,28 +64,9 @@ export async function RAGAgent(
     // For now, use LLM to generate mock research context
     const { text: summary } = await generateText({
       model: groq(config.models.ragAgent),
-      system: `You are a research librarian specializing in oceanography and Argo float research.
-
-Generate a list of relevant research papers for the given query. Format each paper as JSON:
-
-{
-  "paperId": "unique-id",
-  "title": "Paper Title",
-  "authors": ["Author 1", "Author 2"],
-  "doi": "10.1234/example",
-  "year": 2023,
-  "url": "https://doi.org/10.1234/example",
-  "journal": "Journal Name",
-  "chunk": "A relevant excerpt from the paper discussing the topic...",
-  "chunkIndex": 0,
-  "score": 0.95,
-  "keywords": ["keyword1", "keyword2"],
-  "abstract": "Brief abstract of the paper..."
-}
-
-Provide ${topK} relevant papers ${yearRange ? `published between ${yearRange.start || "any year"} and ${yearRange.end || "present"}` : ""}.
-Return ONLY a valid JSON array of papers without any markdown formatting.`,
-      prompt: `Find research papers about: ${query}`,
+      system: RAG_AGENT_SYSTEM_PROMPT,
+      prompt: `Find research papers about: ${query}
+Provide ${topK} relevant papers ${yearRange ? `published between ${yearRange.start || "any year"} and ${yearRange.end || "present"}` : ""}.`,
       maxOutputTokens: 2000,
     });
 

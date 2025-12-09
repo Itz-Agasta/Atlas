@@ -6,24 +6,7 @@ const groq = createGroq({
   apiKey: config.groqApiKey,
 });
 
-export type GeneralAgentResult = {
-  success: boolean;
-  response: string;
-  error?: string;
-};
-
-/**
- * General Query Agent
- * Handles casual conversations, greetings, and off-topic queries
- * Provides personalized responses and politely redirects to Atlas Agent's purpose
- */
-export async function executeGeneralAgent(
-  query: string
-): Promise<GeneralAgentResult> {
-  try {
-    const { text } = await generateText({
-      model: groq(config.models.classifier),
-      system: `You are Atlas Agent, a specialized AI assistant for oceanographic research focusing on Argo float data analysis and scientific literature review.
+const GENERAL_AGENT_SYSTEM_PROMPT = `You are Atlas Agent, a specialized AI assistant for oceanographic research focusing on Argo float data analysis and scientific literature review.
 
 YOUR CORE CAPABILITIES:
 1. **Data Analysis**: Query and analyze real-time Argo float oceanographic data (temperature, salinity, pressure profiles, float trajectories)
@@ -44,7 +27,26 @@ RESPONSE GUIDELINES:
 - For off-topic requests (poems, jokes, general chat, coding help): Politely explain you're specialized for oceanographic research and redirect them to your actual capabilities
 - If user introduces themselves by name, use their name in the response
 
-Keep responses SHORT (2-3 sentences max for greetings, 4-5 for explanations). Be conversational and natural.`,
+Keep responses SHORT (2-3 sentences max for greetings, 4-5 for explanations). Be conversational and natural.`;
+
+export type GeneralAgentResult = {
+  success: boolean;
+  response: string;
+  error?: string;
+};
+
+/**
+ * General Query Agent
+ * Handles casual conversations, greetings, and off-topic queries
+ * Provides personalized responses and politely redirects to Atlas Agent's purpose
+ */
+export async function executeGeneralAgent(
+  query: string
+): Promise<GeneralAgentResult> {
+  try {
+    const { text } = await generateText({
+      model: groq(config.models.classifier),
+      system: GENERAL_AGENT_SYSTEM_PROMPT,
       prompt: query,
       maxOutputTokens: 200,
     });
