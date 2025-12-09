@@ -16,7 +16,6 @@ const MAX_EXCERPT_LENGTH = 300;
 const MAX_DUCKDB_ROWS_IN_CONTEXT = 100;
 
 export type AgentResults = {
-  queryType: string;
   originalQuery: string;
   sqlResults?: SQLAgentResult;
   duckdbResults?: DuckDBAgentResult;

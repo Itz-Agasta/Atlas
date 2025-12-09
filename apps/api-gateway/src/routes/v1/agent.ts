@@ -4,10 +4,10 @@ import {
   classifyInputSchema,
   testSQLInputSchema,
 } from "@atlas/api/schemas/agent";
-import { classifyQueryDirect } from "../../agents/classifier";
 import { DuckDBAgent, type DuckDBAgentResult } from "../../agents/duckdb-agent";
 import { executeGeneralAgent } from "../../agents/general-agent";
 import { RAGAgent, type RAGAgentResult } from "../../agents/rag-agent";
+import { routeQuery } from "../../agents/router-agent";
 import { SQLAgent, type SQLAgentResult } from "../../agents/sql-agent";
 import { responseOrchestrator } from "../../middleware/orchestrator";
 
@@ -96,18 +96,24 @@ export const agentRouter = router({
         input;
 
       try {
-        // Step 1: Classify the query
-        const classification = await classifyQueryDirect(query);
+        // Step 1: Route query to appropriate agents
+        const routing = await routeQuery(query);
 
         // Handle general queries without wasting resources
-        if (classification.queryType === "GENERAL") {
+        if (
+          routing.generalAgent &&
+          !routing.sqlAgent &&
+          !routing.duckdbAgent &&
+          !routing.ragAgent
+        ) {
           const generalResponse = await executeGeneralAgent(query);
 
           return {
             success: true,
             query,
-            classification,
+            routing,
             sqlResults: null,
+            duckdbResults: null,
             ragResults: null,
             response: generalResponse.response,
             citations: null,
@@ -118,39 +124,21 @@ export const agentRouter = router({
           };
         }
 
-        // Step 2: Determine which agents to execute based on query type
-        const shouldExecuteSQL =
-          includeSql &&
-          ["METADATA_QUERY", "HYBRID"].includes(classification.queryType);
-
-        const shouldExecuteDuckDB =
-          includeSql &&
-          ["PROFILE_ANALYSIS", "HYBRID", "FORECASTING"].includes(
-            classification.queryType
-          );
-
-        const shouldExecuteRAG =
-          includeRag &&
-          ["LITERATURE_REVIEW", "HYBRID", "METHODOLOGICAL"].includes(
-            classification.queryType
-          );
-
-        // Step 3: Execute agents in parallel
+        // Step 2: Execute agents in parallel based on routing decision
         const [sqlResults, duckdbResults, ragResults] = await Promise.all([
-          shouldExecuteSQL
+          routing.sqlAgent && includeSql
             ? executeSQLAgent({ query, floatId, timeRange })
             : Promise.resolve(undefined),
-          shouldExecuteDuckDB
+          routing.duckdbAgent && includeSql
             ? executeDuckDBAgent({ query, floatId, timeRange })
             : Promise.resolve(undefined),
-          shouldExecuteRAG
+          routing.ragAgent && includeRag
             ? executeRAGAgent(query, yearRange)
             : Promise.resolve(undefined),
         ]);
 
-        // Step 4: Orchestrate the final response
+        // Step 3: Orchestrate the final response
         const finalResponse = await responseOrchestrator({
-          queryType: classification.queryType,
           originalQuery: query,
           sqlResults,
           duckdbResults,
@@ -160,7 +148,7 @@ export const agentRouter = router({
         return {
           success: true,
           query,
-          classification,
+          routing,
           sqlResults: sqlResults || null,
           duckdbResults: duckdbResults || null,
           ragResults: ragResults || null,
@@ -204,15 +192,15 @@ export const agentRouter = router({
     }),
 
   /**
-   * Classify query type without execution
+   * Route query to appropriate agents without execution
    *
    * @URL `POST /trpc/agent.classify`
    */
   classify: publicProcedure
     .input(classifyInputSchema)
     .query(async ({ input }) => {
-      const classification = await classifyQueryDirect(input.query);
-      return classification;
+      const routing = await routeQuery(input.query);
+      return routing;
     }),
 });
 

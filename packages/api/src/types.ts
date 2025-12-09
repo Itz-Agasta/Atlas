@@ -33,23 +33,7 @@ export type ResearchPaperChunk = {
   abstract?: string;
 };
 
-// Query classification types
-export type QueryType =
-  | "METADATA_QUERY"
-  | "PROFILE_ANALYSIS"
-  | "LITERATURE_REVIEW"
-  | "HYBRID"
-  | "METHODOLOGICAL"
-  | "FORECASTING"
-  | "GENERAL";
-
-export type QueryClassification = {
-  queryType: QueryType;
-  confidence: number;
-  reasoning?: string;
-};
-
-// Scientific response types
+// Routing decision for agent activation
 export type DataQuality = {
   floatsAnalyzed: number;
   papersReferenced: number;
