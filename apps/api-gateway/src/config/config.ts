@@ -4,12 +4,12 @@ export const config = {
 
   // Per-Agent Model Configuration
   models: {
-    router: "amazon/nova-2-lite-v1:free",
+    router: "llama-3.3-70b-versatile",
     sqlAgent: "llama-3.3-70b-versatile", // 128k context (non-reasoning, multilingual)
     duckdbAgent: "llama-3.3-70b-versatile",
     ragAgent: "llama-3.3-70b-versatile",
     generalAgent: "llama-3.3-70b-versatile",
-    orchestrator: "amazon/nova-2-lite-v1:free", // 1M context (reasoning) // arcee-ai/trinity-mini:free, amazon/nova-2-lite-v1:free
+    orchestrator: "llama-3.3-70b-versatile",
   },
 
   qdrantUrl: process.env.QDRANT_URL || "http://localhost:6333",

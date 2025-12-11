@@ -65,11 +65,11 @@ RULES — NEVER VIOLATE THESE:
    Upper ocean:  pressure BETWEEN 10 AND 300
    Intermediate: pressure BETWEEN 300 AND 1000
    Deep:         pressure >= 1000
-   Abyssal:      pressure >= 4000
 7. Always LIMIT 10000 unless user explicitly wants full export
 8. Never use INSERT, UPDATE, DELETE, CREATE, DROP, ATTACH
 
 BEST-PRACTICE QUERY TEMPLATES (follow exactly):
+Abyssal:      pressure >= 4000
 
 -- 1. Single vertical profile (T/S vs pressure)
 SELECT 
@@ -118,8 +118,13 @@ export type DuckDBAgentResult = {
   sql?: string;
   data?: Record<string, unknown>[];
   rowCount?: number;
+  tokensUsed?: number | undefined;
+  timings: {
+    llmResponse?: number;
+    dbExecution?: number;
+    total: number;
+  };
   error?: string;
-  executionTimeMs?: number;
 };
 
 export type DuckDBAgentParams = {
@@ -141,34 +146,48 @@ export async function DuckDBAgent(
 ): Promise<DuckDBAgentResult> {
   const { query, floatId, timeRange, dryRun = false } = params;
   const startTime = Date.now();
+  const timings = {
+    dbExecution: 0,
+    llmResponse: 0,
+    total: 0,
+  };
 
   try {
-    const { text: sqlQuery } = await generateText({
-      model: groq(config.models.duckdbAgent),
+    // Generate SQL using LLM
+    const llmStart = Date.now();
+    const { text: sqlQuery, usage } = await generateText({
+      model: groq(config.models.sqlAgent),
       system: DUCKDB_AGENT_SYSTEM_PROMPT,
       prompt: `Generate DuckDB query for: ${query}
 ${floatId ? `\nFloat ID: ${floatId}` : ""}
 ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "now"}` : ""}`,
       maxOutputTokens: 600,
     });
+    timings.llmResponse = Date.now() - llmStart;
+    const tokensUsed = usage.totalTokens;
 
     const { isValid, cleaned: cleanedSQL } = validateSQL(sqlQuery);
 
     if (!isValid) {
+      timings.total = Date.now() - startTime;
       return {
         success: false,
         error: "Generated SQL must be a SELECT or WITH statement",
         sql: cleanedSQL,
+        tokensUsed,
+        timings,
       };
     }
 
     if (dryRun) {
+      timings.total = Date.now() - startTime;
       return {
         success: true,
         sql: cleanedSQL,
         data: [],
         rowCount: 0,
-        executionTimeMs: Date.now() - startTime,
+        tokensUsed,
+        timings,
       };
     }
 
@@ -193,29 +212,33 @@ ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "no
       );
     `);
 
+    const dbStart = Date.now();
     const result = await connection.runAndReadAll(cleanedSQL);
     const rows = result.getRowsJson(); // It returns JSON-compatible data instead of default specialized JS objects. Ref: https://duckdb.org/docs/stable/clients/node_neo/overview#convert-result-data
+    timings.dbExecution = Date.now() - dbStart;
 
     connection.closeSync();
     instance.closeSync();
 
-    const executionTimeMs = Date.now() - startTime;
+    timings.total = Date.now() - startTime; // instanceCreation, duck-dbSetup, cleanup times are included
 
     return {
       success: true,
       sql: cleanedSQL,
       data: rows as unknown as Record<string, unknown>[],
       rowCount: rows.length,
-      executionTimeMs,
+      tokensUsed,
+      timings,
     };
   } catch (error) {
+    timings.total = Date.now() - startTime;
     return {
       success: false,
       error:
         error instanceof Error
           ? error.message
           : "Unknown DuckDB execution error",
-      executionTimeMs: Date.now() - startTime,
+      timings,
     };
   }
 }

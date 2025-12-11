@@ -32,6 +32,7 @@ Keep responses SHORT (2-3 sentences max for greetings, 4-5 for explanations). Be
 export type GeneralAgentResult = {
   success: boolean;
   response: string;
+  tokensUsed?: number | undefined;
   error?: string;
 };
 
@@ -44,7 +45,7 @@ export async function executeGeneralAgent(
   query: string
 ): Promise<GeneralAgentResult> {
   try {
-    const { text } = await generateText({
+    const { text, usage } = await generateText({
       model: groq(config.models.generalAgent),
       system: GENERAL_AGENT_SYSTEM_PROMPT,
       prompt: query,
@@ -54,6 +55,7 @@ export async function executeGeneralAgent(
     return {
       success: true,
       response: text.trim(),
+      tokensUsed: usage.totalTokens,
     };
   } catch (error) {
     return {

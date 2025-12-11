@@ -139,8 +139,13 @@ export type SQLAgentResult = {
   sql?: string;
   data?: Record<string, unknown>[];
   rowCount?: number;
+  tokensUsed?: number | undefined;
+  timings: {
+    llmResponse?: number;
+    dbExecution?: number;
+    total: number;
+  };
   error?: string;
-  executionTimeMs?: number;
 };
 
 export type SQLAgentParams = {
@@ -162,10 +167,16 @@ export async function SQLAgent(
 ): Promise<SQLAgentResult> {
   const { query, floatId, timeRange, dryRun = false } = params;
   const startTime = Date.now();
+  const timings = {
+    llmResponse: 0,
+    dbExecution: 0,
+    total: 0,
+  };
 
   try {
     // Generate SQL query using LLM
-    const { text: sqlQuery } = await generateText({
+    const llmStart = Date.now();
+    const { text: sqlQuery, usage } = await generateText({
       model: groq(config.models.sqlAgent),
       system: SQL_AGENT_SYSTEM_PROMPT,
       prompt: `Generate PostgreSQL query for: ${query}
@@ -173,45 +184,58 @@ ${floatId ? `\nFilter for float_id: ${floatId}` : ""}
 ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "now"}` : ""}`,
       maxOutputTokens: 500,
     });
+    timings.llmResponse = Date.now() - llmStart;
+    const tokensUsed = usage.totalTokens;
 
     const { isValid, cleaned: cleanedSQL } = validateSQL(sqlQuery);
 
     if (!isValid) {
+      timings.total = Date.now() - startTime;
       return {
         success: false,
         error: "Generated SQL must be a SELECT or WITH statement",
         sql: cleanedSQL,
+        tokensUsed,
+        timings,
       };
     }
 
     // If dry run, return SQL without executing
     if (dryRun) {
+      timings.total = Date.now() - startTime;
       return {
         success: true,
         sql: cleanedSQL,
-        data: [],
+        data: [], // No db exceution happend
         rowCount: 0,
-        executionTimeMs: Date.now() - startTime,
+        tokensUsed,
+        timings,
       };
     }
 
     // Execute the SQL query using the database's raw query execution
+    const dbStart = Date.now();
+
     const result = await db.execute(cleanedSQL);
-    const executionTimeMs = Date.now() - startTime;
+
+    timings.dbExecution = Date.now() - dbStart;
+    timings.total = Date.now() - startTime;
 
     return {
       success: true,
       sql: cleanedSQL,
       data: result as unknown as Record<string, unknown>[],
       rowCount: (result as unknown as Record<string, unknown>[]).length,
-      executionTimeMs,
+      tokensUsed,
+      timings,
     };
   } catch (error) {
+    timings.total = Date.now() - startTime;
     return {
       success: false,
       error:
         error instanceof Error ? error.message : "Unknown SQL execution error",
-      executionTimeMs: Date.now() - startTime,
+      timings,
     };
   }
 }
