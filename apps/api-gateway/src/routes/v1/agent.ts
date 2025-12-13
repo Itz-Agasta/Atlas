@@ -4,74 +4,50 @@ import {
   classifyInputSchema,
   testSQLInputSchema,
 } from "@atlas/api/schemas/agent";
-import { DuckDBAgent, type DuckDBAgentResult } from "../../agents/duckdb-agent";
+import { DuckDBAgent } from "../../agents/duckdb-agent";
 import { executeGeneralAgent } from "../../agents/general-agent";
-import { RAGAgent, type RAGAgentResult } from "../../agents/rag-agent";
+import { RAGAgent } from "../../agents/rag-agent";
+import type { RoutingDecision } from "../../agents/router-agent";
 import { routeQuery } from "../../agents/router-agent";
-import { SQLAgent, type SQLAgentResult } from "../../agents/sql-agent";
+import { SQLAgent } from "../../agents/sql-agent";
 import { responseOrchestrator } from "../../middleware/orchestrator";
+import { buildAgentMetrics } from "../../utils/helper";
 
 /**
- * Execute SQL agent with error handling (metadata queries only)
+ * Execute agents in parallel based on routing decision
  */
-async function executeSQLAgent(params: {
+async function executeAgents(params: {
+  routing: RoutingDecision;
+  includeSql: boolean;
+  includeRag: boolean;
   query: string;
   floatId?: number;
   timeRange?: { start?: string; end?: string };
-  dryRun?: boolean;
-}): Promise<SQLAgentResult> {
-  try {
-    return await SQLAgent(params);
-  } catch (error) {
-    return {
-      success: false,
-      error:
-        error instanceof Error ? error.message : "SQL agent execution failed",
-    };
-  }
-}
+  yearRange?: { start?: number; end?: number };
+}) {
+  const {
+    routing,
+    includeSql,
+    includeRag,
+    query,
+    floatId,
+    timeRange,
+    yearRange,
+  } = params;
 
-/**
- * Execute DuckDB agent with error handling (profile data queries)
- */
-async function executeDuckDBAgent(params: {
-  query: string;
-  floatId?: number;
-  timeRange?: { start?: string; end?: string };
-  dryRun?: boolean;
-}): Promise<DuckDBAgentResult> {
-  try {
-    return await DuckDBAgent(params);
-  } catch (error) {
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "DuckDB agent execution failed",
-    };
-  }
-}
+  const [sqlResults, duckdbResults, ragResults] = await Promise.all([
+    routing.sqlAgent && includeSql
+      ? SQLAgent({ query, floatId, timeRange })
+      : Promise.resolve(undefined),
+    routing.duckdbAgent && includeSql
+      ? DuckDBAgent({ query, floatId, timeRange })
+      : Promise.resolve(undefined),
+    routing.ragAgent && includeRag
+      ? RAGAgent({ query, yearRange })
+      : Promise.resolve(undefined),
+  ]);
 
-/**
- * Execute RAG agent with error handling
- */
-async function executeRAGAgent(
-  query: string,
-  yearRange?: { start?: number; end?: number }
-): Promise<RAGAgentResult> {
-  try {
-    return await RAGAgent({
-      query,
-      yearRange,
-    });
-  } catch (error) {
-    return {
-      success: false,
-      error:
-        error instanceof Error ? error.message : "RAG agent execution failed",
-    };
-  }
+  return { sqlResults, duckdbResults, ragResults };
 }
 
 /**
@@ -92,57 +68,76 @@ export const agentRouter = router({
   query: publicProcedure
     .input(agentQueryInputSchema)
     .mutation(async ({ input }) => {
+      const startTime = Date.now();
       const { query, floatId, includeRag, includeSql, timeRange, yearRange } =
         input;
 
       try {
         // Step 1: Route query to appropriate agents
+        const routingStart = Date.now();
         const routing = await routeQuery(query);
+        const routingTime = Date.now() - routingStart; // router agent doest return any total time..
 
-        // Handle general queries without wasting resources
+        // Step 2: Handle general queries (greetings, casual chat)
         if (
           routing.generalAgent &&
           !routing.sqlAgent &&
           !routing.duckdbAgent &&
           !routing.ragAgent
         ) {
-          const generalResponse = await executeGeneralAgent(query);
+          const generalResponse = await executeGeneralAgent(query); // orchestrator agent unused
+          const totalTime = Date.now() - startTime;
 
           return {
             success: true,
             query,
             routing,
-            sqlResults: null,
-            duckdbResults: null,
-            ragResults: null,
             response: generalResponse.response,
             citations: null,
             dataQuality: null,
             timestamp: new Date(),
-            tokensUsed: 0,
-            processingTimeMs: 0,
+            processingTimeMs: totalTime,
+            agentMetrics: buildAgentMetrics({
+              routingTime,
+              generalResult: generalResponse,
+              orchestrationTime: 0,
+              orchestrationTokens: 0,
+              totalTime,
+            }),
           };
         }
 
-        // Step 2: Execute agents in parallel based on routing decision
-        const [sqlResults, duckdbResults, ragResults] = await Promise.all([
-          routing.sqlAgent && includeSql
-            ? executeSQLAgent({ query, floatId, timeRange })
-            : Promise.resolve(undefined),
-          routing.duckdbAgent && includeSql
-            ? executeDuckDBAgent({ query, floatId, timeRange })
-            : Promise.resolve(undefined),
-          routing.ragAgent && includeRag
-            ? executeRAGAgent(query, yearRange)
-            : Promise.resolve(undefined),
-        ]);
+        // Step 3: Execute specialized agents in parallel
+        const { sqlResults, duckdbResults, ragResults } = await executeAgents({
+          routing,
+          includeSql,
+          includeRag,
+          query,
+          floatId,
+          timeRange,
+          yearRange,
+        });
 
-        // Step 3: Orchestrate the final response
+        // Step 4: Orchestrate final response
+        const orchestrationStart = Date.now();
         const finalResponse = await responseOrchestrator({
           originalQuery: query,
           sqlResults,
           duckdbResults,
           ragResults,
+        });
+        const orchestrationTime = Date.now() - orchestrationStart;
+        const totalTime = Date.now() - startTime;
+
+        // Step 5: Collect metrics from all agents (they already tracked their own time/tokens)
+        const agentMetrics = buildAgentMetrics({
+          routingTime,
+          sqlResults,
+          duckdbResults,
+          ragResults,
+          orchestrationTime,
+          orchestrationTokens: finalResponse.tokensUsed || 0,
+          totalTime,
         });
 
         return {
@@ -156,8 +151,8 @@ export const agentRouter = router({
           citations: finalResponse.citations,
           dataQuality: finalResponse.dataQuality,
           timestamp: finalResponse.timestamp,
-          tokensUsed: finalResponse.tokensUsed,
-          processingTimeMs: finalResponse.processingTimeMs,
+          processingTimeMs: totalTime,
+          agentMetrics,
         };
       } catch (error) {
         return {
@@ -179,7 +174,7 @@ export const agentRouter = router({
   testSQL: publicProcedure
     .input(testSQLInputSchema)
     .query(async ({ input }) => {
-      const result = await executeSQLAgent({
+      const result = await SQLAgent({
         ...input,
         dryRun: true,
       });
