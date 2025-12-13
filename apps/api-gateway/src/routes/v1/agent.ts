@@ -98,10 +98,8 @@ export const agentRouter = router({
             timestamp: new Date(),
             processingTimeMs: totalTime,
             agentMetrics: buildAgentMetrics({
-              routingTime,
+              routing: { decision: routing, timeMs: routingTime },
               generalResult: generalResponse,
-              orchestrationTime: 0,
-              orchestrationTokens: 0,
               totalTime,
             }),
           };
@@ -131,12 +129,11 @@ export const agentRouter = router({
 
         // Step 5: Collect metrics from all agents (they already tracked their own time/tokens)
         const agentMetrics = buildAgentMetrics({
-          routingTime,
+          routing: { decision: routing, timeMs: routingTime },
           sqlResults,
           duckdbResults,
           ragResults,
-          orchestrationTime,
-          orchestrationTokens: finalResponse.tokensUsed || 0,
+          orchestration: { result: finalResponse, timeMs: orchestrationTime },
           totalTime,
         });
 
