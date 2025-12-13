@@ -33,6 +33,9 @@ export type GeneralAgentResult = {
   success: boolean;
   response: string;
   tokensUsed?: number | undefined;
+  timings: {
+    total: number;
+  };
   error?: string;
 };
 
@@ -44,6 +47,8 @@ export type GeneralAgentResult = {
 export async function executeGeneralAgent(
   query: string
 ): Promise<GeneralAgentResult> {
+  const startTime = Date.now();
+
   try {
     const { text, usage } = await generateText({
       model: groq(config.models.generalAgent),
@@ -56,11 +61,17 @@ export async function executeGeneralAgent(
       success: true,
       response: text.trim(),
       tokensUsed: usage.totalTokens,
+      timings: {
+        total: Date.now() - startTime,
+      },
     };
   } catch (error) {
     return {
       success: false,
       response: "Server is busy! Please try again later.",
+      timings: {
+        total: Date.now() - startTime,
+      },
       error:
         error instanceof Error ? error.message : "Failed to generate response",
     };
