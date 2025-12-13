@@ -1,3 +1,5 @@
+import type { RoutingDecision, ScientificResponse } from "@atlas/api";
+
 const TRAILING_SEMICOLONS_REGEX = /;+\s*$/;
 const DISALLOWED_KEYWORDS_REGEX =
   /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|BEGIN|COMMIT|ROLLBACK)\b/;
@@ -38,7 +40,10 @@ export function validateSQL(sqlQuery: string): {
  * Each agent returns its own timing and token usage - we just aggregate them
  */
 export function buildAgentMetrics(params: {
-  routingTime: number;
+  routing?: {
+    decision: RoutingDecision;
+    timeMs: number;
+  };
   generalResult?: {
     tokensUsed?: number;
     timings: { total: number };
@@ -56,22 +61,29 @@ export function buildAgentMetrics(params: {
     timings: { total: number };
     papersFound?: number;
   };
-  orchestrationTime: number;
-  orchestrationTokens: number;
+  orchestration?: {
+    result: ScientificResponse;
+    timeMs: number;
+  };
   totalTime: number;
 }) {
   const {
-    routingTime,
+    routing,
     generalResult,
     sqlResults,
     duckdbResults,
     ragResults,
-    orchestrationTime,
-    orchestrationTokens,
+    orchestration,
     totalTime,
   } = params;
 
+  const routingTime = routing?.timeMs || 0;
+  const routingTokens = routing?.decision.tokensUsed || 0;
+  const orchestrationTime = orchestration?.timeMs || 0;
+  const orchestrationTokens = orchestration?.result.tokensUsed || 0;
+
   const totalTokens =
+    routingTokens +
     (generalResult?.tokensUsed || 0) +
     (sqlResults?.tokensUsed || 0) +
     (duckdbResults?.tokensUsed || 0) +
@@ -79,36 +91,11 @@ export function buildAgentMetrics(params: {
     orchestrationTokens;
 
   return {
-    routing: { timeMs: routingTime },
-    general: generalResult
-      ? {
-          timeMs: generalResult.timings.total,
-          tokensUsed: generalResult.tokensUsed || 0,
-        }
-      : null,
-    sql: sqlResults
-      ? {
-          timeMs: sqlResults.timings.total,
-          tokensUsed: sqlResults.tokensUsed || 0,
-          llmTimeMs: sqlResults.timings.llmResponse,
-          dbTimeMs: sqlResults.timings.dbExecution,
-        }
-      : null,
-    duckdb: duckdbResults
-      ? {
-          timeMs: duckdbResults.timings.total,
-          tokensUsed: duckdbResults.tokensUsed || 0,
-          llmTimeMs: duckdbResults.timings.llmResponse,
-          dbTimeMs: duckdbResults.timings.dbExecution,
-        }
-      : null,
-    rag: ragResults
-      ? {
-          timeMs: ragResults.timings.total,
-          tokensUsed: ragResults.tokensUsed || 0,
-          papersFound: ragResults.papersFound || 0,
-        }
-      : null,
+    routing: { timeMs: routingTime, tokensUsed: routingTokens },
+    general: buildGeneralMetrics(generalResult),
+    sql: buildSqlMetrics(sqlResults),
+    duckdb: buildDuckdbMetrics(duckdbResults),
+    rag: buildRagMetrics(ragResults),
     orchestrator: {
       timeMs: orchestrationTime,
       tokensUsed: orchestrationTokens,
@@ -118,4 +105,58 @@ export function buildAgentMetrics(params: {
       tokensUsed: totalTokens,
     },
   };
+}
+
+function buildGeneralMetrics(result?: {
+  tokensUsed?: number;
+  timings: { total: number };
+}) {
+  return result
+    ? {
+        timeMs: result.timings.total,
+        tokensUsed: result.tokensUsed || 0,
+      }
+    : null;
+}
+
+function buildSqlMetrics(result?: {
+  tokensUsed?: number;
+  timings: { total: number; llmResponse?: number; dbExecution?: number };
+}) {
+  return result
+    ? {
+        timeMs: result.timings.total,
+        tokensUsed: result.tokensUsed || 0,
+        llmTimeMs: result.timings.llmResponse,
+        dbTimeMs: result.timings.dbExecution,
+      }
+    : null;
+}
+
+function buildDuckdbMetrics(result?: {
+  tokensUsed?: number;
+  timings: { total: number; llmResponse?: number; dbExecution?: number };
+}) {
+  return result
+    ? {
+        timeMs: result.timings.total,
+        tokensUsed: result.tokensUsed || 0,
+        llmTimeMs: result.timings.llmResponse,
+        dbTimeMs: result.timings.dbExecution,
+      }
+    : null;
+}
+
+function buildRagMetrics(result?: {
+  tokensUsed?: number;
+  timings: { total: number };
+  papersFound?: number;
+}) {
+  return result
+    ? {
+        timeMs: result.timings.total,
+        tokensUsed: result.tokensUsed || 0,
+        papersFound: result.papersFound || 0,
+      }
+    : null;
 }

@@ -17,6 +17,7 @@ export type RoutingDecision = {
   generalAgent: boolean;
   reasoning: string;
   confidence: number;
+  tokensUsed?: number;
 };
 
 const ROUTER_SYSTEM_PROMPT = `You are a strict routing agent that decides which specialized agents should handle a user's query.
@@ -80,7 +81,7 @@ CRITICAL: At least ONE agent must be true. Never return all false.`;
  */
 export async function routeQuery(query: string): Promise<RoutingDecision> {
   try {
-    const { text } = await generateText({
+    const { text, usage } = await generateText({
       model: groq(config.models.sqlAgent),
       system: ROUTER_SYSTEM_PROMPT,
       prompt: `Route this query to appropriate agents: "${query}"
@@ -122,10 +123,14 @@ Respond in this exact JSON format:
         generalAgent: true,
         reasoning: "No agents selected by router, defaulting to general agent",
         confidence: 0.3,
+        tokensUsed: usage.totalTokens,
       };
     }
 
-    return parsed;
+    return {
+      ...parsed,
+      tokensUsed: usage.totalTokens,
+    };
   } catch (error) {
     logger.error("Router agent failed", {
       query,
@@ -140,6 +145,7 @@ Respond in this exact JSON format:
       generalAgent: true,
       reasoning: `Routing failed due to: ${error instanceof Error ? error.message : "Unknown error"}. Defaulting to general agent.`,
       confidence: 0.1,
+      tokensUsed: 0, // No tokens used in fallback
     };
   }
 }
