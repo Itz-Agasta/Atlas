@@ -37,7 +37,10 @@ export type RAGAgentResult = {
   papersFound?: number;
   query?: string;
   error?: string;
-  searchTimeMs?: number;
+  tokensUsed?: number;
+  timings: {
+    total: number;
+  };
 };
 
 export type RAGAgentParams = {
@@ -62,7 +65,7 @@ export async function RAGAgent(
   try {
     // TODO: Integrate with Qdrant vector database
     // For now, use LLM to generate mock research context
-    const { text: summary } = await generateText({
+    const { text: summary, usage } = await generateText({
       model: groq(config.models.ragAgent),
       system: RAG_AGENT_SYSTEM_PROMPT,
       prompt: `Find research papers about: ${query}
@@ -91,26 +94,31 @@ Provide ${topK} relevant papers ${yearRange ? `published between ${yearRange.sta
         success: false,
         error:
           "Failed to retrieve research papers. Server busy, please try again later.",
-        searchTimeMs: Date.now() - startTime,
+        tokensUsed: usage.totalTokens,
+        timings: {
+          total: Date.now() - startTime,
+        },
       };
     }
-
-    const searchTimeMs = Date.now() - startTime;
 
     return {
       success: true,
       papers,
       papersFound: papers.length,
       query,
-      searchTimeMs,
+      tokensUsed: usage.totalTokens,
+      timings: {
+        total: Date.now() - startTime,
+      },
     };
   } catch (error) {
-    const searchTimeMs = Date.now() - startTime;
     return {
       success: false,
       error:
         error instanceof Error ? error.message : "Unknown RAG search error",
-      searchTimeMs,
+      timings: {
+        total: Date.now() - startTime,
+      },
     };
   }
 }

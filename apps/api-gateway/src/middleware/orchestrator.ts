@@ -1,26 +1,79 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import type { Citation, ScientificResponse } from "@atlas/api";
+import { createGroq } from "@ai-sdk/groq";
+import type { ScientificResponse } from "@atlas/api";
 import { generateText } from "ai";
-import type { DuckDBAgentResult } from "../agents/duckdb-agent";
-import type { RAGAgentResult } from "../agents/rag-agent";
-import type { SQLAgentResult } from "../agents/sql-agent";
 import { config } from "../config/config";
+import {
+  type AgentResults,
+  calculateDataQuality,
+  extractCitations,
+  formatAgentContext,
+} from "../utils/orchestrator-utils";
 
-const openrouter = createOpenAI({
-  apiKey: config.openRouterApiKey,
-  baseURL: "https://openrouter.ai/api/v1",
+const groq = createGroq({
+  apiKey: config.groqApiKey,
 });
 
-// Constants
-const MAX_EXCERPT_LENGTH = 300;
-const MAX_DUCKDB_ROWS_IN_CONTEXT = 100;
+const SYSTEM_PROMPT = `You are an expert oceanographer and scientific communicator specialized in Argo float data.
+Your role is to deliver clear, accurate, and engaging answers based on the provided query and data context.
 
-export type AgentResults = {
-  originalQuery: string;
-  sqlResults?: SQLAgentResult;
-  duckdbResults?: DuckDBAgentResult;
-  ragResults?: RAGAgentResult;
-};
+RESPONSE STYLE GUIDELINES (adapt automatically):
+
+**For simple queries** (location, status, current conditions, battery, etc.):
+- Be direct and concise.
+- Lead with the most important fact.
+- Always describe location with geographic context:
+  - Name the ocean basin or sea (e.g., Bay of Bengal, Southern Ocean, North Atlantic Gyre).
+  - Add a meaningful nearby reference when possible (e.g., "off the coast of Western Australia", "south of Madagascar", "in the Labrador Sea").
+  - Then give precise coordinates in standard format: 12.3°N, 65.4°E (or °S/°W).
+- State status clearly: "currently active", "inactive since [date]", or "no recent data".
+- Include relevant details like last update time, current cycle, or battery level naturally.
+- Example:
+  "Float 2902235 is currently active in the southern Bay of Bengal, approximately 400 km southeast of Sri Lanka (8.2°N, 84.5°E). Its last profile was recorded 2 days ago at cycle 127."
+
+**For analytical queries** (trends, anomalies, comparisons, depth profiles):
+- Use a clear scientific structure:
+  1. **Key Findings** — 2–4 bullet points summarizing the main results.
+  2. **Detailed Analysis** — Explain patterns, statistics, and depth/time behavior.
+  3. **Oceanographic Context** — Connect to broader circulation, seasonality, or known features.
+  4. **Conclusion** — Implications or next steps.
+- Use precise but accessible language — avoid jargon unless necessary.
+
+**For mixed queries**:
+- Start with the direct answer (status/location), then flow naturally into analysis.
+
+CRITICAL RULES — NEVER VIOLATE:
+1. **Never expose internal tools or systems**:
+   - Do NOT mention DuckDB, PostgreSQL, SQL, RAG, agents, queries, or data sources.
+   - If no profile data exists: "No measurement data is currently available for this float."
+   - If no recent location: "The float's last known position was..."
+2. **Geographic accuracy is non-negotiable**:
+   - Use provided latitude/longitude to determine correct ocean region.
+   - Common regions to recognize:
+     • Indian Ocean: 20°E–120°E, 30°N–60°S
+     • Bay of Bengal: >80°E, >5°N
+     • Arabian Sea: <75°E, >5°N
+     • Southern Ocean: south of 50°S
+     • Equatorial Pacific: ±5° latitude, 140°E–80°W
+     • Subpolar gyres, marginal seas, etc.
+3. **Coordinate formatting**:
+   - Always use °N/°S, °E/°W with one decimal place unless more precision is meaningful.
+   - Example: 12.4°S, 95.7°E (not -12.4, 95.7)
+4. **Citations**:
+   - If research papers are provided in context, cite naturally: (Smith et al., 2023)
+   - Only cite when directly supporting a claim.
+5. **Tone**:
+   - Professional, confident, and engaging.
+   - Conversational when appropriate ("This float has been remarkably stable...").
+   - Avoid hedging unless uncertainty is real.
+
+DATA YOU MAY RECEIVE:
+- Current status and location (from metadata)
+- Historical measurements (temperature, salinity, pressure vs depth/time)
+- Latest surface values
+- Deployment history
+- Relevant scientific literature
+
+Answer only what is asked. Be truthful. If data is missing or ambiguous, say so clearly and helpfully.`;
 
 /**
  * Response Orchestrator
@@ -33,35 +86,8 @@ export async function responseOrchestrator(
 
   try {
     const { text, usage } = await generateText({
-      model: openrouter(config.models.orchestrator), // NOTE: Uses massive context window model for orchestration
-      system: `You are an expert oceanographer and scientific writer specialized in Argo float data analysis.
-
-Your task is to generate a comprehensive, well-cited response combining:
-1. Float metadata analysis (locations, status, deployment info) from PostgreSQL - if available
-2. Profile data analysis (temperature/salinity measurements, depth profiles) from DuckDB - if available
-3. Supporting research from peer-reviewed literature - if available
-4. Statistical rigor and uncertainty quantification
-5. Proper academic citations
-
-RESPONSE FORMAT:
-- Start with key findings from the data analysis (metadata or profile data)
-- Provide statistical context (mean, std dev, ranges, trends)
-- Explain significance of the findings
-- Connect to relevant research literature with citations
-- Discuss limitations of the analysis
-- Suggest future research directions
-
-CITATION FORMAT:
-- Use [Author et al., Year] format in text
-- Be specific about which findings come from which papers
-- Only cite papers that are actually relevant to the query
-
-IMPORTANT:
-- Be precise and quantitative when data is available
-- Acknowledge uncertainties and limitations
-- Use scientific terminology appropriately
-- Keep response concise but comprehensive (200-500 words)
-- If no data or papers are available, state this clearly`,
+      model: groq(config.models.orchestrator),
+      system: SYSTEM_PROMPT,
 
       prompt: formatAgentContext(results),
       maxOutputTokens: 2000,
@@ -83,173 +109,4 @@ IMPORTANT:
       `Orchestration failed: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
-}
-
-function formatAgentContext(results: AgentResults): string {
-  let context = `ORIGINAL QUERY: ${results.originalQuery}\n\n`;
-
-  context += formatSQLContext(results.sqlResults);
-  context += formatDuckDBContext(results.duckdbResults);
-  context += formatRAGContext(results.ragResults);
-  context += formatNoDataWarning(results);
-
-  return context;
-}
-
-function formatSQLContext(sqlResults?: SQLAgentResult): string {
-  if (!sqlResults) {
-    return "";
-  }
-
-  if (sqlResults.success && sqlResults.data) {
-    let context = "ARGO FLOAT METADATA ANALYSIS (PostgreSQL):\n";
-    context += `SQL Query Executed:\n${sqlResults.sql}\n\n`;
-    context += `Results (${sqlResults.rowCount} rows):\n`;
-    context += JSON.stringify(sqlResults.data, null, 2);
-    context += "\n\n";
-    return context;
-  }
-
-  if (sqlResults.error) {
-    return `METADATA QUERY ERROR: ${sqlResults.error}\n\n`;
-  }
-
-  return "";
-}
-
-function formatDuckDBContext(duckdbResults?: DuckDBAgentResult): string {
-  if (!duckdbResults) {
-    return "";
-  }
-
-  if (duckdbResults.success && duckdbResults.data) {
-    let context = "ARGO PROFILE DATA ANALYSIS (DuckDB on Parquet):\n";
-    context += `DuckDB Query Executed:\n${duckdbResults.sql}\n\n`;
-    context += `Results (${duckdbResults.rowCount} rows):\n`;
-    context += JSON.stringify(
-      duckdbResults.data.slice(0, MAX_DUCKDB_ROWS_IN_CONTEXT),
-      null,
-      2
-    );
-    if (
-      duckdbResults.rowCount &&
-      duckdbResults.rowCount > MAX_DUCKDB_ROWS_IN_CONTEXT
-    ) {
-      context += `\n... (showing first ${MAX_DUCKDB_ROWS_IN_CONTEXT} of ${duckdbResults.rowCount} rows)\n`;
-    }
-    context += "\n\n";
-    return context;
-  }
-
-  if (duckdbResults.error) {
-    return `PROFILE DATA QUERY ERROR: ${duckdbResults.error}\n\n`;
-  }
-
-  return "";
-}
-
-function formatRAGContext(ragResults?: RAGAgentResult): string {
-  if (!ragResults) {
-    return "";
-  }
-
-  if (ragResults.success && ragResults.papers) {
-    let context = "RELEVANT RESEARCH PAPERS:\n\n";
-    for (const [idx, paper] of ragResults.papers.entries()) {
-      context += formatPaperCitation(idx + 1, paper);
-    }
-    return context;
-  }
-
-  if (ragResults.error) {
-    return `LITERATURE SEARCH ERROR: ${ragResults.error}\n\n`;
-  }
-
-  return "";
-}
-
-function formatPaperCitation(
-  index: number,
-  paper: {
-    title: string;
-    authors: string[];
-    year: number;
-    journal?: string;
-    doi?: string;
-    url?: string;
-    score: number;
-    chunk: string;
-  }
-): string {
-  let citation = `${index}. "${paper.title}"\n`;
-  citation += `   Authors: ${paper.authors.join(", ")}\n`;
-  citation += `   Year: ${paper.year}`;
-  if (paper.journal) {
-    citation += `, Journal: ${paper.journal}`;
-  }
-  citation += "\n";
-  if (paper.doi) {
-    citation += `   DOI: ${paper.doi}\n`;
-  }
-  if (paper.url) {
-    citation += `   URL: ${paper.url}\n`;
-  }
-  citation += `   Relevance Score: ${paper.score.toFixed(2)}\n`;
-  citation += `   Relevant Excerpt: "${paper.chunk.substring(0, MAX_EXCERPT_LENGTH)}..."\n\n`;
-  return citation;
-}
-
-function formatNoDataWarning(results: AgentResults): string {
-  const hasNoSQL = !results.sqlResults?.success;
-  const hasNoDuckDB = !results.duckdbResults?.success;
-  const hasNoRAG = !results.ragResults?.success;
-
-  if (hasNoSQL && hasNoDuckDB && hasNoRAG) {
-    return "Note: No data or literature was successfully retrieved. Provide a general response based on oceanographic knowledge.\n";
-  }
-  return "";
-}
-
-function extractCitations(ragResults?: RAGAgentResult): Citation[] {
-  if (!ragResults?.papers) {
-    return [];
-  }
-
-  return ragResults.papers.map((paper) => ({
-    paperId: paper.paperId,
-    title: paper.title,
-    authors: paper.authors,
-    doi: paper.doi,
-    year: paper.year,
-    url: paper.url,
-    journal: paper.journal,
-    relevanceScore: paper.score,
-  }));
-}
-
-function calculateDataQuality(results: AgentResults) {
-  const floatsAnalyzed =
-    (results.sqlResults?.rowCount || 0) +
-    (results.duckdbResults?.rowCount || 0);
-  const papersReferenced = results.ragResults?.papersFound || 0;
-  const sqlQueriesExecuted = results.sqlResults?.success ? 1 : 0;
-  const duckdbQueriesExecuted = results.duckdbResults?.success ? 1 : 0;
-  const ragSearchesPerformed = results.ragResults?.success ? 1 : 0;
-
-  let averageCitationRelevance: number | undefined;
-  if (results.ragResults?.papers && results.ragResults.papers.length > 0) {
-    const totalScore = results.ragResults.papers.reduce(
-      (sum, paper) => sum + paper.score,
-      0
-    );
-    averageCitationRelevance = totalScore / results.ragResults.papers.length;
-  }
-
-  return {
-    floatsAnalyzed,
-    papersReferenced,
-    sqlQueriesExecuted: sqlQueriesExecuted + duckdbQueriesExecuted,
-    ragSearchesPerformed,
-    averageCitationRelevance,
-  };
 }
