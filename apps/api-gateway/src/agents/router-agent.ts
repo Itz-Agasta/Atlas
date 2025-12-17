@@ -82,7 +82,7 @@ CRITICAL: At least ONE agent must be true. Never return all false.`;
 export async function routeQuery(query: string): Promise<RoutingDecision> {
   try {
     const { text, usage } = await generateText({
-      model: groq(config.models.sqlAgent),
+      model: groq(config.models.router),
       system: ROUTER_SYSTEM_PROMPT,
       prompt: `Route this query to appropriate agents: "${query}"
 

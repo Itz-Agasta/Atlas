@@ -70,14 +70,20 @@ export function calculateStats(data: number[]): DataStats {
   if (data.length === 0) {
     return { mean: 0, min: 0, max: 0, median: 0, count: 0 };
   }
-
   const sorted = [...data].sort((a, b) => a - b);
   const sum = data.reduce((acc, val) => acc + val, 0);
   const mean = sum / data.length;
-  const median = sorted[Math.floor(sorted.length / 2)];
-
+  const len = sorted.length;
+  const mid = Math.floor(len / 2);
+  let median: number;
+  if (len % 2 === 0) {
+    const a = sorted[mid - 1] ?? 0;
+    const b = sorted[mid] ?? 0;
+    median = (a + b) / 2;
+  } else {
+    median = sorted[mid] ?? 0;
+  }
   const precision = SUMMARIZATION_CONSTANTS.DECIMAL_PRECISION;
-
   return {
     mean: Number(mean.toFixed(precision)),
     min: Number((sorted[0] ?? 0).toFixed(precision)),

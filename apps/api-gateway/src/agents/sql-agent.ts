@@ -206,7 +206,7 @@ ${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "no
       return {
         success: true,
         sql: cleanedSQL,
-        data: [], // No db exceution happend
+        data: [], // No db execution happened
         rowCount: 0,
         tokensUsed,
         timings,

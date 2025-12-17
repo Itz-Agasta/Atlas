@@ -1,4 +1,5 @@
-import type { RoutingDecision, ScientificResponse } from "@atlas/api";
+import type { ScientificResponse } from "@atlas/api";
+import type { RoutingDecision } from "../agents/router-agent";
 
 const TRAILING_SEMICOLONS_REGEX = /;+\s*$/;
 const DISALLOWED_KEYWORDS_REGEX =
