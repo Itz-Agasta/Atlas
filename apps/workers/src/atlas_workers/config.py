@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     # Data Configuration
     ARGO_DAC: str = "incois"  # Data Assembly Center (incois, aoml, coriolis, etc.)
     LOCAL_CACHE_PATH: Path = Path("./data/argo_cache")
+    LOCAL_STAGE_PATH: Path = Path("./data/argo_cache")
     ENABLE_INCREMENTAL_SYNC: bool = True
 
     # Use aggregate _prof.nc files only (skip individual profile downloads)

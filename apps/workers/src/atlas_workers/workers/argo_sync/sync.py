@@ -106,7 +106,9 @@ class ArgoSyncWorker:
                 return False
 
         async with httpx.AsyncClient(timeout=settings.HTTP_TIMEOUT) as client:
-            results = await asyncio.gather(*[_download_file(client, f) for f in files]) # Ref: https://stackoverflow.com/a/61550673/28193141
+            results = await asyncio.gather(
+                *[_download_file(client, f) for f in files]
+            )  # Ref: https://stackoverflow.com/a/61550673/28193141
 
         success_count = sum(results)
         logger.info("Float sync completed", float_id=float_id, downloaded=success_count)
