@@ -50,63 +50,85 @@ async def sync(
     }
 
     start_time = time.time()
-    db: PgClient | None = None
     processed_count = 0
     failed_count = 0
     float_ids_to_process: list[str] = []
 
+    sync_worker = ArgoSyncWorker()
+
+    # 1. Download phase
+    download_start = time.time()
+
+    if sync_all:
+        if not skip_download:
+            logger.info("Staring full sync...")
+            sync_result = await sync_worker.syncAll()
+            logger.info(
+                "SyncAll download completed",
+                total=sync_result["total"],
+                downloaded=sync_result["downloaded"],
+                new=sync_result["new"],
+                failed=sync_result["failed"],
+            )
+            failed_count = sync_result["failed"]
+
+        manifest = sync_worker._load_manifest()
+        float_ids_to_process = manifest.get("downloaded", [])
+    else:
+        assert float_id is not None
+        if not skip_download:
+            logger.info("Starting single float sync...")
+            download_success = await sync_worker.sync(float_id)  # single float download
+            if not download_success:
+                return {
+                    "success": False,
+                    "float_id": float_id,
+                    "error": f"Failed to download any files for float {float_id}",
+                    "failed": 1,
+                }
+        float_ids_to_process = [float_id]
+
+    timing["download_time"] = time.time() - download_start
+
+    if not float_ids_to_process:
+        timing["total_time"] = time.time() - start_time
+        return {
+            "success": True,
+            "float_id": float_id,
+            "total": 0,
+            "processed": 0,
+            "failed": failed_count,
+            "timing": timing,
+        }
+
+    # 2. Process and upload phase - create clients once outside loop
     try:
-        sync_worker = ArgoSyncWorker()
-
-        # 1. Download phase - only difference between single and all
-        download_start = time.time()
-
-        if sync_all:
-            # Sync all floats from DAC
-            if not skip_download:
-                sync_result = await sync_worker.syncAll()
-                logger.info(
-                    "SyncAll download completed",
-                    total=sync_result["total"],
-                    downloaded=sync_result["downloaded"],
-                    new=sync_result["new"],
-                    failed=sync_result["failed"],
-                )
-                failed_count = sync_result["failed"]
-
-            # Get list of downloaded floats from manifest
-            manifest = sync_worker._load_manifest()
-            float_ids_to_process = manifest.get("downloaded", [])
-
-        else:
-            # Single float sync - float_id is guaranteed to be set here
-            assert float_id is not None
-            if not skip_download:
-                download_success = await sync_worker.sync(float_id)
-                if not download_success:
-                    raise ValueError(
-                        f"Failed to download any files for float {float_id}"
-                    )
-            float_ids_to_process = [float_id]
-
-        timing["download_time"] = time.time() - download_start
-
-        # 2. Process and upload phase - same for both single and all
         db = PgClient()
-        operation = "SYNC_ALL" if sync_all else "SYNC"
+        s3_client = S3Client()
+        parser = NetCDFParserWorker()
+    except Exception as e:
+        logger.error("Failed to initialize clients", error=str(e))
+        return {
+            "success": False,
+            "float_id": float_id,
+            "error": f"Client initialization failed: {e}",
+            "failed": len(float_ids_to_process),
+        }
 
-        parse_time_total = 0.0
-        upload_time_total = 0.0
+    operation = "SYNC_ALL" if sync_all else "SYNC"
+    parse_time_total = 0.0
+    upload_time_total = 0.0
 
+    try:
         for fid in float_ids_to_process:
             try:
                 # Parse NetCDF files
                 parse_start = time.time()
-                parser = NetCDFParserWorker()
-                result = parser.process_directory(fid) # FIXME: currently we are itterating through each float. we will do this operation concurrently later.
+                result = parser.process_directory(
+                    fid
+                )  # FIXME: currently we are itterating through each float. we will do this operation concurrently later.
                 parse_time_total += time.time() - parse_start
 
-                # Check if parser returned an error
                 if "error" in result:
                     raise ValueError(f"NetCDF parsing failed: {result['error']}")
 
@@ -129,7 +151,6 @@ async def sync(
                 parquet_path = result.get("parquet_path")
                 if parquet_path:
                     try:
-                        s3_client = S3Client()
                         s3_client.upload_file(
                             float_id=fid,
                             local_path=Path(parquet_path),
@@ -141,48 +162,52 @@ async def sync(
 
                 upload_time_total += time.time() - upload_start
 
-                # Log success with total processing time (download + parse + upload)
-                total_processing_time_ms = int((time.time() - start_time) * 1000)
+                # Log success - total time from start (includes download)
+                total_time_ms = int((time.time() - start_time) * 1000)
                 db.log_processing(
                     float_id=int(fid),
                     operation=operation,
                     status="SUCCESS",
-                    processing_time_ms=total_processing_time_ms,
+                    processing_time_ms=total_time_ms,
                 )
                 processed_count += 1
 
-                # Commit every 10 floats for safety (batch mode)
-                if sync_all and processed_count % 10 == 0:
-                    db.conn.commit()
-
             except Exception as e:
                 logger.error("Failed to process float", float_id=fid, error=str(e))
-                total_processing_time_ms = int((time.time() - start_time) * 1000)
+                total_time_ms = int((time.time() - start_time) * 1000)
+                # log the failure into db
                 db.log_processing(
                     float_id=int(fid) if fid.isdigit() else None,
                     operation=operation,
                     status="FAILED",
-                    processing_time_ms=total_processing_time_ms,
+                    processing_time_ms=total_time_ms,
                     error_details={"error": str(e)},
                 )
-                db.conn.commit()  # Commit the error log before re-raising
                 failed_count += 1
 
-                # For single float, re-raise with a flag to skip outer logging
+                # For single float, return failure immediately
                 if not sync_all:
-                    raise RuntimeError(f"Float {fid} processing failed: {e}") from None
+                    db.conn.commit()
+                    return {
+                        "success": False,
+                        "float_id": float_id,
+                        "error": str(e),
+                        "failed": 1,
+                    }
+
+            # Commit every 10 floats for safety (batch mode)
+            if sync_all and (processed_count + failed_count) % 10 == 0:
+                db.conn.commit()
 
         timing["parse_time"] = parse_time_total
         timing["upload_time"] = upload_time_total
         timing["total_time"] = time.time() - start_time
-        timing["process_time"] = timing["parse_time"] + timing["upload_time"]
 
-        # Final commit
         db.conn.commit()
 
         if sync_all:
             logger.info(
-                "SyncAll completed",
+                "Full float sync completed",
                 total=len(float_ids_to_process) + failed_count,
                 processed=processed_count,
                 failed=failed_count,
@@ -202,7 +227,7 @@ async def sync(
             }
         else:
             logger.info(
-                "Float processing completed",
+                "Single float sync completed",
                 float_id=float_id,
                 download_time=f"{timing['download_time']:.2f}s",
                 parse_time=f"{timing['parse_time']:.2f}s",
@@ -215,61 +240,14 @@ async def sync(
                 "timing": timing,
             }
 
-    except RuntimeError as e:
-        # RuntimeError is raised from inner loop after logging - don't log again
-        error_msg = str(e)
-        logger.error("Sync failed", float_id=float_id, error=error_msg)
-
-        return {
-            "success": False,
-            "float_id": float_id,
-            "error": error_msg,
-            "failed": failed_count,
-        }
-
-    except Exception as e:
-        # Unexpected error (e.g., download failure) - log to DB
-        error_msg = str(e)
-        logger.exception(
-            "Sync failed",
-            float_id=float_id,
-            sync_all=sync_all,
-            error=error_msg,
-        )
-
-        # Log failure to processing_log
-        if db is None:
-            try:
-                db = PgClient()
-            except Exception:
-                pass
-
-        if db is not None:
-            processing_time_ms = int((time.time() - start_time) * 1000)
-            db.log_processing(
-                float_id=int(float_id) if float_id and float_id.isdigit() else None,
-                operation="SYNC_ALL" if sync_all else "SYNC",
-                status="FAILED",
-                processing_time_ms=processing_time_ms,
-                error_details={"error": error_msg},
-            )
-            db.conn.commit()
-            db.conn.close()
-
-        return {
-            "success": False,
-            "float_id": float_id,
-            "error": error_msg,
-            "failed": failed_count,
-        }
-
     finally:
-        if db is not None:
-            db.conn.close()
+        db.conn.close()
+
 
 # corn job - upadtes the db w.r.t argo repo
 def update():
-    pass # TODO: will implement using update method form argo worker
+    pass  # TODO: will implement using update method form argo worker
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -294,12 +272,11 @@ def main() -> int:
     parser.add_argument(
         "--skip-download",
         action="store_true",
-        help="Skip download, use cached files only", # TODO: Make it skip upload not downlaod
+        help="Skip download, use cached files only",  # TODO: Make a skip upload too
     )
 
     args = parser.parse_args()
 
-    # Run sync with appropriate args
     result = asyncio.run(
         sync(
             float_id=args.float_id,
@@ -312,7 +289,7 @@ def main() -> int:
 
     if result.get("success"):
         if args.sync_all:
-            print("\n✓ SyncAll completed")
+            print("\n SyncAll completed")
             print(f"  Total floats:  {result.get('total', 0)}")
             print(f"  Downloaded:    {result.get('downloaded', 0)}")
             print(f"  Processed:     {result.get('processed', 0)}")
@@ -322,19 +299,16 @@ def main() -> int:
             print(f"  Upload time:   {timing.get('upload_time', 0.0):.2f}s")
             print(f"  Total time:    {timing.get('total_time', 0.0):.2f}s")
         else:
-            print(f"\n✓ Success: Float {args.float_id} processed")
+            print(f"\n Success: Float {args.float_id} processed")
             print(f"  Download:   {timing.get('download_time', 0.0):.2f}s")
             print(f"  Parse:      {timing.get('parse_time', 0.0):.2f}s")
             print(f"  Upload:     {timing.get('upload_time', 0.0):.2f}s")
             print(f"  Total:      {timing.get('total_time', 0.0):.2f}s")
         return 0
     else:
-        error_msg = result.get("error") or "Unknown error"
-        print(f"\n✗ Failed: {error_msg}")
+        print(f"\n Failed: {result.get('error', 'Unknown error')}")
         return 1
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
-

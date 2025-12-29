@@ -10,8 +10,8 @@ help:
 	@echo "  make format           Format code"
 	@echo "  make type-check       Run type checking"
 	@echo "  make clean            Clean build artifacts"
-	@echo "  make run-single       Run ARGO loader (single float)"
-	@echo "  make run-batch        Run ARGO loader (batch mode)"
+	@echo "  make run-sync         Sync single float (FLOAT_ID=xxx)"
+	@echo "  make run-sync-all     Sync all floats from DAC"
 
 install:
 	uv sync
@@ -40,12 +40,12 @@ clean:
 	rm -rf .coverage || true
 	rm -rf dist/ build/ *.egg-info/ || true
 
-run-single:
-	@echo "Running ARGO loader (single float: $(FLOAT_ID))..."
+run-sync:
+	@echo "Running ARGO sync (single float: $(FLOAT_ID))..."
 	infisical run --path="/worker" -- uv run python -m src.atlas_workers.main \
-		--float-id $(FLOAT_ID)
+		--id=$(FLOAT_ID)
 
-run-batch:
-	@echo "Running ARGO loader (batch mode)..."
-	infisical run --env=dev -- uv run python -m src.atlas_workers.main \
-		--batch
+run-sync-all:
+	@echo "Running ARGO sync (all floats)..."
+	infisical run --path="/worker" -- uv run python -m src.atlas_workers.main \
+		--all
