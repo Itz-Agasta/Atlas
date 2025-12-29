@@ -69,7 +69,7 @@ class ArgoSyncWorker:
     # sync a single float - Concurrently downloads 4 files for that one float using `gather`.
     async def sync(self, float_id: str) -> bool:
         """Sync the 4 core ARGO files for a specific float concurrently."""
-        logger.info("Starting sync for float", float_id=float_id)
+        logger.debug("Starting float download", float_id=float_id)
 
         files = [
             f"{float_id}_meta.nc",
@@ -111,7 +111,7 @@ class ArgoSyncWorker:
             )  # Ref: https://stackoverflow.com/a/61550673/28193141
 
         success_count = sum(results)
-        logger.info("Float sync completed", float_id=float_id, downloaded=success_count)
+        logger.debug("Float download completed", float_id=float_id, downloaded=success_count)
         return success_count >= 1  # At least one file downloaded
 
     # Sync All floats - Concurrently sync multiple floats, each running their own `sync` (with semaphore to cap total concurrency).
@@ -160,7 +160,7 @@ class ArgoSyncWorker:
                     success = await self.sync(float_id)
                     return float_id, success
                 except Exception as e:
-                    logger.error("Float sync failed", float_id=float_id, error=str(e))
+                    logger.error("Float download failed", float_id=float_id, error=str(e))
                     return float_id, False
 
         # Run all downloads concurrently
@@ -205,6 +205,7 @@ class ArgoSyncWorker:
             "failed": failed_downloads,
         }
 
+# TODO: will run upadte() as a corn job every weekly -- downalod the weekly prof extract the floats and insert into the db. Thats all
     async def update(self, db_url: Optional[str] = None) -> dict:
         """Cron update - compares ar_index_this_week_prof.txt with DB and syncs new floats.
 

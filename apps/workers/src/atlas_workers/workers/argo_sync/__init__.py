@@ -1,3 +1,3 @@
-from .argo_sync import ArgoSyncWorker
+from .sync import ArgoSyncWorker
 
 __all__ = ["ArgoSyncWorker"]
