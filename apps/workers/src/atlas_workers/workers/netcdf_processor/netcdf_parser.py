@@ -15,8 +15,8 @@ logger = get_logger(__name__)
 class NetCDFParserWorker:
     """Extract ARGO metadata and status for PostgreSQL."""
 
-    def __init__(self, cache_path: Path | None = None):
-        self.cache_path = Path(cache_path or settings.LOCAL_CACHE_PATH)
+    def __init__(self, stage_path: Path | None = None):
+        self.stage_path = Path(stage_path or settings.LOCAL_STAGE_PATH)
 
     def process_directory(self, float_id: str) -> dict[str, Any]:
         """Main Gateway: Extract metadata and status for a specific float.
@@ -27,7 +27,7 @@ class NetCDFParserWorker:
         Returns:
             Stats Dict containing metadata, status, parquet path, and processing stats
         """
-        float_dir = self.cache_path / settings.ARGO_DAC / float_id
+        float_dir = self.stage_path / float_id
         if not float_dir.exists():
             logger.warning("Float directory not found", float_id=float_id)
             return {"float_id": float_id, "error": "Directory not found"}
@@ -49,7 +49,7 @@ class NetCDFParserWorker:
         parquet_path = converter.convert(prof_file, float_id)
         if parquet_path:
             stats["parquet_path"] = parquet_path
-            logger.info(
+            logger.debug(
                 "Parquet file conversion done!", float_id=float_id, path=parquet_path
             )
 
@@ -84,7 +84,7 @@ class NetCDFParserWorker:
                     stats["status"] = status_summary
                     latest_profile_time = status_summary.get("profile_time")
                     stats["files_processed"] += 1
-                    logger.info(
+                    logger.debug(
                         "Profile status extracted",
                         float_id=float_id,
                         cycle=status_summary.get("cycle_number"),
@@ -105,7 +105,7 @@ class NetCDFParserWorker:
                 stats["metadata"] = parse_metadata_file(meta_file, latest_profile_time)
                 stats["files_processed"] += 1
                 if stats["metadata"]:
-                    logger.info(
+                    logger.debug(
                         "Metadata extracted",
                         float_id=float_id,
                         status=stats["metadata"].status,
@@ -127,7 +127,7 @@ class NetCDFParserWorker:
                 if status_summary:
                     stats["status"] = status_summary
                     if "battery_percent" in status_summary:
-                        logger.info(
+                        logger.debug(
                             "Battery estimation completed",
                             float_id=float_id,
                             battery_percent=status_summary["battery_percent"],

@@ -65,13 +65,13 @@ class S3Client:
             return False
 
         # Use Hive-style partitioning: profiles/float_id/data.parquet
-        s3_key = f"profiles/{float_id}/data.parquet"
+        s3_key = f"profiles/{float_id}/data.parquet"   # TODO: will chnage it later - atlas/{DAC-name}/{float-id}/data.parquet
 
         try:
             file_size = local_path.stat().st_size
             self.client.upload_file(str(local_path), self.bucket_name, s3_key)
 
-            logger.info(
+            logger.debug(
                 "file uploaded to bucket",
                 float_id=float_id,
                 s3_key=s3_key,
