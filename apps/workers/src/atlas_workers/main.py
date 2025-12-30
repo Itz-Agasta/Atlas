@@ -27,6 +27,7 @@ class ProcessResult(TypedDict, total=False):
 async def sync(
     float_id: str | None = None,
     sync_all: bool = False,
+    update: bool = False,
     skip_download: bool = False,
 ) -> ProcessResult:
     """Sync and process ARGO float(s): download, parse, upload to DB.
@@ -39,8 +40,8 @@ async def sync(
     Returns:
         ProcessResult with success status and timing info
     """
-    if not float_id and not sync_all:
-        raise ValueError("Either float_id or sync_all must be provided")
+    if not float_id and not sync_all and not update:
+        raise ValueError("Either float_id or sync_all or upadte must be provided")
 
     timing: dict[str, float] = {
         "download_time": 0.0,
@@ -74,6 +75,25 @@ async def sync(
 
         manifest = sync_worker._load_manifest()
         float_ids_to_process = manifest.get("downloaded", [])
+
+    elif update:
+        logger.info("Starting weekly update sync...")
+        sync_result = await sync_worker.update()
+        logger.info(
+            "Weekly update completed",
+            total=sync_result["total"],
+            downloaded=sync_result["downloaded"],
+            new=sync_result["new"],
+            failed=sync_result["failed"],
+        )
+        failed_count = sync_result["failed"]
+
+        # Only process newly downloaded floats from the weekly update
+        manifest = (
+            sync_worker._load_manifest()
+        )  # NOTE: syncALL and upadte uses same manifest file track.
+        float_ids_to_process = manifest.get("downloaded", [])
+
     else:
         assert float_id is not None
         if not skip_download:
@@ -115,7 +135,12 @@ async def sync(
             "failed": len(float_ids_to_process),
         }
 
-    operation = "SYNC_ALL" if sync_all else "SYNC"
+    if sync_all:
+        operation = "SYNC_ALL"
+    elif update:
+        operation = "WEEKLY_UPDATE"
+    else:
+        operation = "SYNC"
     parse_time_total = 0.0
     upload_time_total = 0.0
     successful_float_ids: list[int] = []
@@ -175,8 +200,8 @@ async def sync(
                     failed_float_ids_list.append(int(fid))
                 failed_count += 1
 
-                # For single float, return failure immediately
-                if not sync_all:
+                # For single float, return failure immediately (but continue for sync_all or update)
+                if not sync_all and not update:
                     # Log the single failure
                     total_time_ms = int((time.time() - start_time) * 1000)
                     db.log_processing(
@@ -196,7 +221,7 @@ async def sync(
                     }
 
             # Commit every 10 floats for safety (batch mode)
-            if sync_all and (processed_count + failed_count) % 10 == 0:
+            if (sync_all or update) and (processed_count + failed_count) % 10 == 0:
                 db.conn.commit()
 
         timing["parse_time"] = parse_time_total
@@ -217,9 +242,10 @@ async def sync(
 
         db.conn.commit()
 
-        if sync_all:
+        if sync_all or update:
+            label = "Weekly update" if update else "Full float sync"
             logger.info(
-                "Full float sync completed",
+                f"{label} completed",
                 total=len(float_ids_to_process) + failed_count,
                 processed=processed_count,
                 failed=failed_count,
@@ -228,8 +254,9 @@ async def sync(
                 upload_time=f"{timing['upload_time']:.2f}s",
                 total_time=f"{timing['total_time']:.2f}s",
             )
+            # Consider success if at least some floats processed (don't fail entire batch for one bad float)
             return {
-                "success": True,
+                "success": processed_count > 0 or failed_count == 0,
                 "float_id": None,
                 "total": len(float_ids_to_process) + failed_count,
                 "downloaded": len(float_ids_to_process),
@@ -256,17 +283,12 @@ async def sync(
         db.conn.close()
 
 
-# corn job - upadtes the db w.r.t argo repo
-def update():
-    pass  # TODO: will implement using update method form argo worker
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="ARGO Float Sync Worker - Download and process ARGO float data"
     )
 
-    # Mutually exclusive: either --id or --all
+    # Mutually exclusive: either --id, --all, or --update
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "--id",
@@ -279,6 +301,12 @@ def main() -> int:
         action="store_true",
         dest="sync_all",
         help="Sync all floats from the DAC",
+    )
+    group.add_argument(
+        "--update",
+        action="store_true",
+        dest="update",
+        help="Run weekly update sync (downloads floats from ar_index_this_week_prof.txt)",
     )
 
     parser.add_argument(
@@ -293,6 +321,7 @@ def main() -> int:
         sync(
             float_id=args.float_id,
             sync_all=args.sync_all,
+            update=args.update,
             skip_download=args.skip_download,
         )
     )
@@ -300,8 +329,9 @@ def main() -> int:
     timing = result.get("timing") or {}
 
     if result.get("success"):
-        if args.sync_all:
-            print("\n SyncAll completed")
+        if args.sync_all or args.update:
+            label = "Weekly Update" if args.update else "SyncAll"
+            print(f"\n {label} completed")
             print(f"  Total floats:  {result.get('total', 0)}")
             print(f"  Downloaded:    {result.get('downloaded', 0)}")
             print(f"  Processed:     {result.get('processed', 0)}")
@@ -325,6 +355,7 @@ def main() -> int:
 if __name__ == "__main__":
     sys.exit(main())
 
-# TODO: Fix the upadte fun -> so its go and downalod whats in this week file
-# TODO: update the db process log table. so we can pass a array of floats in SynAll. --done
-# TODO: Track what floas are uploaded to db uncessfull . log them too  [oparation, sucess, uncuess, error]-- done
+
+# python -m atlas_workers.main --id=2902224    # Single float
+# python -m atlas_workers.main --all            # Full sync
+# python -m atlas_workers.main --update         # Weekly update
