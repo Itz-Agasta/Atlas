@@ -1,4 +1,4 @@
-.PHONY: help install test lint format type-check clean dev run-single run-batch deploy-aws
+.PHONY: help install test lint format type-check clean dev run-sync run-sync-all run-update
 
 help:
 	@echo "ARGO Workers - Makefile Commands"
@@ -12,6 +12,7 @@ help:
 	@echo "  make clean            Clean build artifacts"
 	@echo "  make run-sync         Sync single float (FLOAT_ID=xxx)"
 	@echo "  make run-sync-all     Sync all floats from DAC"
+	@echo "  make run-update       Update floats from DAC (weekly index)"
 
 install:
 	uv sync
@@ -49,3 +50,8 @@ run-sync-all:
 	@echo "Running ARGO sync (all floats)..."
 	infisical run --path="/worker" -- uv run python -m src.atlas_workers.main \
 		--all
+
+run-update:
+	@echo "Running ARGO weekly update..."
+	infisical run --path="/worker" -- uv run python -m src.atlas_workers.main \
+		--update

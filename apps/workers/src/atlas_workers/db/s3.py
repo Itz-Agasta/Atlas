@@ -65,7 +65,7 @@ class S3Client:
             return False
 
         # Use Hive-style partitioning: profiles/float_id/data.parquet
-        s3_key = f"profiles/{float_id}/data.parquet"   # TODO: will chnage it later - atlas/{DAC-name}/{float-id}/data.parquet
+        s3_key = f"profiles/{float_id}/data.parquet"  # TODO: will chnage it later - atlas/{DAC-name}/{float-id}/data.parquet
 
         try:
             file_size = local_path.stat().st_size
