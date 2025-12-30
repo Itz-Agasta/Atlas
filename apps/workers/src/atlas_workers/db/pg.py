@@ -1,7 +1,9 @@
-from typing import Optional
+import json
+import time
+from datetime import UTC, datetime
+from typing import Any, Literal, Optional
 
 import psycopg2
-import psycopg2.pool
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,8 +22,7 @@ class DatabaseSettings(BaseSettings):
     )
 
     PG_WRITE_URL: str = Field(default="", description="PostgreSQL connection string")
-    DB_TIMEOUT: int = Field(30, description="Connection timeout in seconds")
-    DB_COMMAND_TIMEOUT: int = Field(300, description="Command timeout in seconds")
+    DB_TIMEOUT: int = 30
 
 
 class PgClient:
@@ -46,7 +47,7 @@ class PgClient:
         self,
         metadata: FloatMetadata,
         status: FloatStatus,
-        float_id: int,
+        float_id: int,  # only used for logging
     ) -> bool:
         """Batch upload metadata and status in a SINGLE transaction.
         Atomic all-or-nothing guarantee.
@@ -58,9 +59,6 @@ class PgClient:
         NOTE: Caller must still commit the transaction.
         """
         try:
-            import time
-            from datetime import UTC, datetime
-
             start_time = time.perf_counter()
 
             # Prepare metadata
@@ -140,4 +138,58 @@ class PgClient:
             self.conn.rollback()
             return False
 
-    # TODO: Add a function for processing_log table insert
+    def log_processing(
+        self,
+        operation: Literal["SYNC", "SYNC_ALL", "WEEKLY_UPDATE"],
+        status: Literal["SUCCESS", "FAILED"],
+        successful_float_ids: Optional[list[int]] = None,
+        failed_float_ids: Optional[list[int]] = None,
+        processing_time_ms: Optional[int] = None,
+        error_details: Optional[dict[str, Any]] = None,
+    ) -> bool:
+        """Log a processing event to the processing_log table.
+
+        Args:
+            operation: Type of operation (SYNC, SYNC_ALL, WEEKLY_UPDATE)
+            status: Result status (SUCCESS, FAILED)
+            successful_float_ids: List of successfully processed float IDs
+            failed_float_ids: List of failed float IDs
+            processing_time_ms: Processing time in milliseconds
+            error_details: Optional error details as JSON
+
+        Returns:
+            True if logging succeeded, False otherwise
+        """
+        try:
+            query = """
+                INSERT INTO processing_log (operation, status, successful_float_ids, failed_float_ids, processing_time_ms, error_details)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            self.cur.execute(
+                query,
+                (
+                    operation,
+                    status,
+                    successful_float_ids or [],
+                    failed_float_ids or [],
+                    processing_time_ms,
+                    json.dumps(error_details) if error_details else None,
+                ),
+            )
+            logger.info(
+                "Processing log entry created",
+                extra={
+                    "operation": operation,
+                    "status": status,
+                    "successful_count": len(successful_float_ids or []),
+                    "failed_count": len(failed_float_ids or []),
+                },
+            )
+            return True
+
+        except Exception as e:
+            logger.error(
+                "Failed to log processing event",
+                extra={"operation": operation, "error": str(e)},
+            )
+            return False

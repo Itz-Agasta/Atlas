@@ -1,0 +1,314 @@
+{
+  "id": "4801c3c8-dd43-45d5-9028-1c794987880e",
+  "prevId": "165e085f-453e-42c6-8f76-117e5840bb78",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.argo_float_metadata": {
+      "name": "argo_float_metadata",
+      "schema": "",
+      "columns": {
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "wmo_number": {
+          "name": "wmo_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'UNKNOWN'"
+        },
+        "float_type": {
+          "name": "float_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'unknown'"
+        },
+        "data_centre": {
+          "name": "data_centre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_name": {
+          "name": "project_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operating_institution": {
+          "name": "operating_institution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pi_name": {
+          "name": "pi_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "platform_type": {
+          "name": "platform_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "platform_maker": {
+          "name": "platform_maker",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "float_serial_no": {
+          "name": "float_serial_no",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "launch_date": {
+          "name": "launch_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "launch_lat": {
+          "name": "launch_lat",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "launch_lon": {
+          "name": "launch_lon",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_mission_date": {
+          "name": "start_mission_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_mission_date": {
+          "name": "end_mission_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "argo_float_metadata_wmo_number_unique": {
+          "name": "argo_float_metadata_wmo_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "wmo_number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.argo_float_status": {
+      "name": "argo_float_status",
+      "schema": "",
+      "columns": {
+        "float_id": {
+          "name": "float_id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "location": {
+          "name": "location",
+          "type": "geometry(point)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cycle_number": {
+          "name": "cycle_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "battery_percent": {
+          "name": "battery_percent",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_update": {
+          "name": "last_update",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_depth": {
+          "name": "last_depth",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_temp": {
+          "name": "last_temp",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_salinity": {
+          "name": "last_salinity",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {
+        "spatial_index": {
+          "name": "spatial_index",
+          "columns": [
+            {
+              "expression": "location",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "argo_float_status_float_id_argo_float_metadata_float_id_fk": {
+          "name": "argo_float_status_float_id_argo_float_metadata_float_id_fk",
+          "tableFrom": "argo_float_status",
+          "tableTo": "argo_float_metadata",
+          "columnsFrom": [
+            "float_id"
+          ],
+          "columnsTo": [
+            "float_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.processing_log": {
+      "name": "processing_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operation": {
+          "name": "operation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "successful_float_ids": {
+          "name": "successful_float_ids",
+          "type": "bigint[]",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::bigint[]"
+        },
+        "failed_float_ids": {
+          "name": "failed_float_ids",
+          "type": "bigint[]",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::bigint[]"
+        },
+        "error_details": {
+          "name": "error_details",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processing_time_ms": {
+          "name": "processing_time_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

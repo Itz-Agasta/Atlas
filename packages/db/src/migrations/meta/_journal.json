@@ -36,6 +36,27 @@
       "when": 1764535669385,
       "tag": "0004_yummy_salo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1767078320816,
+      "tag": "0005_curved_wolfpack",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1767078693539,
+      "tag": "0006_blue_mattie_franklin",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1767079104754,
+      "tag": "0007_slow_silvermane",
+      "breakpoints": true
     }
   ]
 }

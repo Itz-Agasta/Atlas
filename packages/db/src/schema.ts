@@ -4,7 +4,7 @@ import {
   geometry,
   index,
   integer,
-  jsonb,
+  json,
   pgTable,
   real,
   serial,
@@ -63,10 +63,15 @@ export const argo_float_status = pgTable(
 
 export const processing_log = pgTable("processing_log", {
   id: serial("id").primaryKey(),
-  float_id: bigint("float_id", { mode: "number" }),
-  operation: text("operation"), // "FULL SYNC", "STATUS UPDATE"
-  status: text("status"), // "SUCCESS", "ERROR"
-  error_details: jsonb("error_details"),
+  operation: text("operation").notNull(), // "FULL SYNC", "SYNC", "UPDATE"
+  status: text("status").$type<"success" | "failed">().notNull(), // "success", "failed"
+  successful_ids: bigint("successful_float_ids", { mode: "number" })
+    .array()
+    .default(sql`'{}'::bigint[]`),
+  failed_ids: bigint("failed_float_ids", { mode: "number" })
+    .array()
+    .default(sql`'{}'::bigint[]`),
+  error_details: json("error_details"),
   processing_time_ms: integer("processing_time_ms"),
   created_at: timestamp("created_at").default(sql`NOW()`),
 });
