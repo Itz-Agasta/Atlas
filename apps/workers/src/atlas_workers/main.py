@@ -19,7 +19,8 @@ class ProcessResult(TypedDict, total=False):
     total: int
     downloaded: int
     processed: int
-    failed: int
+    download_failed: int
+    process_failed: int
     timing: dict[str, float]
     error: str
 
@@ -52,8 +53,10 @@ async def sync(
 
     start_time = time.time()
     processed_count = 0
-    failed_count = 0
+    download_failed = 0
+    process_failed = 0
     float_ids_to_process: list[str] = []
+    total_floats = 0
 
     sync_worker = ArgoSyncWorker()
 
@@ -71,7 +74,11 @@ async def sync(
                 new=sync_result["new"],
                 failed=sync_result["failed"],
             )
-            failed_count = sync_result["failed"]
+            download_failed = sync_result["failed"]
+            total_floats = sync_result["total"]
+        else:
+            manifest = sync_worker._load_manifest()
+            total_floats = len(manifest.get("downloaded", []))
 
         manifest = sync_worker._load_manifest()
         float_ids_to_process = manifest.get("downloaded", [])
@@ -86,7 +93,8 @@ async def sync(
             new=sync_result["new"],
             failed=sync_result["failed"],
         )
-        failed_count = sync_result["failed"]
+        download_failed = sync_result["failed"]
+        total_floats = sync_result["total"]
 
         # Only process newly downloaded floats from the weekly update
         manifest = (
@@ -104,9 +112,11 @@ async def sync(
                     "success": False,
                     "float_id": float_id,
                     "error": f"Failed to download any files for float {float_id}",
-                    "failed": 1,
+                    "download_failed": 1,
+                    "process_failed": 0,
                 }
         float_ids_to_process = [float_id]
+        total_floats = 1
 
     timing["download_time"] = time.time() - download_start
 
@@ -117,7 +127,8 @@ async def sync(
             "float_id": float_id,
             "total": 0,
             "processed": 0,
-            "failed": failed_count,
+            "download_failed": download_failed,
+            "process_failed": process_failed,
             "timing": timing,
         }
 
@@ -132,7 +143,8 @@ async def sync(
             "success": False,
             "float_id": float_id,
             "error": f"Client initialization failed: {e}",
-            "failed": len(float_ids_to_process),
+            "download_failed": 0,
+            "process_failed": len(float_ids_to_process),
         }
 
     if sync_all:
@@ -174,6 +186,8 @@ async def sync(
                 if not upload_success:
                     raise ValueError("Database upload failed")
 
+                # TODO: process the floats into both db in parallel
+
                 # Upload Parquet to R2
                 parquet_path = result.get("parquet_path")
                 if parquet_path:
@@ -198,7 +212,7 @@ async def sync(
                 # Track failure
                 if fid.isdigit():
                     failed_float_ids_list.append(int(fid))
-                failed_count += 1
+                process_failed += 1
 
                 # For single float, return failure immediately (but continue for sync_all or update)
                 if not sync_all and not update:
@@ -217,11 +231,12 @@ async def sync(
                         "success": False,
                         "float_id": float_id,
                         "error": str(e),
-                        "failed": 1,
+                        "download_failed": 0,
+                        "process_failed": 1,
                     }
 
             # Commit every 10 floats for safety (batch mode)
-            if (sync_all or update) and (processed_count + failed_count) % 10 == 0:
+            if (sync_all or update) and (processed_count + process_failed) % 10 == 0:
                 db.conn.commit()
 
         timing["parse_time"] = parse_time_total
@@ -230,14 +245,20 @@ async def sync(
 
         # Log batch results to database
         total_time_ms = int(timing["total_time"] * 1000)
-        status = "SUCCESS" if failed_float_ids_list == [] else "FAILED"
+        total_failed = download_failed + process_failed
+        status = "SUCCESS" if total_failed == 0 else "FAILED"
         db.log_processing(
             operation=operation,
             status=status,
             successful_float_ids=successful_float_ids,
             failed_float_ids=failed_float_ids_list,
             processing_time_ms=total_time_ms,
-            error_details={"failed_count": failed_count} if failed_count > 0 else None,
+            error_details={
+                "download_failed": download_failed,
+                "process_failed": process_failed,
+            }
+            if total_failed > 0
+            else None,
         )
 
         db.conn.commit()
@@ -246,9 +267,10 @@ async def sync(
             label = "Weekly update" if update else "Full float sync"
             logger.info(
                 f"{label} completed",
-                total=len(float_ids_to_process) + failed_count,
+                total=total_floats,
                 processed=processed_count,
-                failed=failed_count,
+                download_failed=download_failed,
+                process_failed=process_failed,
                 download_time=f"{timing['download_time']:.2f}s",
                 parse_time=f"{timing['parse_time']:.2f}s",
                 upload_time=f"{timing['upload_time']:.2f}s",
@@ -256,12 +278,13 @@ async def sync(
             )
             # Consider success if at least some floats processed (don't fail entire batch for one bad float)
             return {
-                "success": processed_count > 0 or failed_count == 0,
+                "success": processed_count > 0 or total_failed == 0,
                 "float_id": None,
-                "total": len(float_ids_to_process) + failed_count,
+                "total": total_floats,
                 "downloaded": len(float_ids_to_process),
                 "processed": processed_count,
-                "failed": failed_count,
+                "download_failed": download_failed,
+                "process_failed": process_failed,
                 "timing": timing,
             }
         else:
@@ -281,6 +304,9 @@ async def sync(
 
     finally:
         db.conn.close()
+
+
+# TODO: Add a @retry so we can process the failed floats again
 
 
 def main() -> int:
@@ -335,7 +361,8 @@ def main() -> int:
             print(f"  Total floats:  {result.get('total', 0)}")
             print(f"  Downloaded:    {result.get('downloaded', 0)}")
             print(f"  Processed:     {result.get('processed', 0)}")
-            print(f"  Failed:        {result.get('failed', 0)}")
+            print(f"  Download failed: {result.get('download_failed', 0)}")
+            print(f"  Process failed:  {result.get('process_failed', 0)}")
             print(f"  Download time: {timing.get('download_time', 0.0):.2f}s")
             print(f"  Parse time:    {timing.get('parse_time', 0.0):.2f}s")
             print(f"  Upload time:   {timing.get('upload_time', 0.0):.2f}s")
@@ -355,7 +382,4 @@ def main() -> int:
 if __name__ == "__main__":
     sys.exit(main())
 
-
-# python -m atlas_workers.main --id=2902224    # Single float
-# python -m atlas_workers.main --all            # Full sync
-# python -m atlas_workers.main --update         # Weekly update
+# TODO: There is an sProf.nc file in some floats (eg. 7902250). The NetCDFParser worker doesn't process it currently. We need to investigate and make it compatible if needed.

@@ -143,18 +143,23 @@ class ArgoSyncWorker:
                     logger.error("Float sync failed", float_id=float_id, error=str(e))
                     return float_id, False
 
-        tasks = [download_with_limit(fid) for fid in float_ids]
+        # Convert to list to maintain order for zip
+        float_ids_list = list(float_ids)
+        tasks = [download_with_limit(fid) for fid in float_ids_list]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        for result in results:
+        for fid, result in zip(float_ids_list, results):
             if isinstance(result, BaseException):
-                failed.append(str(result))
+                logger.error(
+                    "Float sync raised exception", float_id=fid, error=str(result)
+                )
+                failed.append(fid)
                 continue
-            float_id, success = result
+            _, success = result
             if success:
-                successful.append(float_id)
+                successful.append(fid)
             else:
-                failed.append(float_id)
+                failed.append(fid)
 
         return successful, failed
 
