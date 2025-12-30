@@ -303,13 +303,17 @@ class ArgoSyncWorker:
             try:
                 rows = await conn.fetch(
                     """
-                    SELECT DISTINCT float_id::text
+                    SELECT successful_float_ids
                     FROM processing_log
                     WHERE status = 'SUCCESS'
-                    AND operation IN ('FULL SYNC', 'WEEKLY UPDATE')
+                    AND operation IN ('SYNC', 'SYNC_ALL', 'WEEKLY_UPDATE')
                     """
                 )
-                return {row["float_id"] for row in rows if row["float_id"]}
+                synced = set()
+                for row in rows:
+                    if row["successful_float_ids"]:
+                        synced.update(str(fid) for fid in row["successful_float_ids"])
+                return synced
             finally:
                 await conn.close()
         except Exception as e:
@@ -321,14 +325,17 @@ class ArgoSyncWorker:
         try:
             conn = await asyncpg.connect(db_url)
             try:
-                await conn.executemany(
+                # Convert string IDs to integers
+                int_float_ids = [int(fid) for fid in float_ids if fid.isdigit()]
+
+                await conn.execute(
                     """
-                    INSERT INTO processing_log (float_id, operation, status)
-                    VALUES ($1::bigint, 'WEEKLY UPDATE', 'SUCCESS')
+                    INSERT INTO processing_log (operation, status, successful_float_ids)
+                    VALUES ('WEEKLY_UPDATE', 'SUCCESS', $1::bigint[])
                     """,
-                    [(int(fid),) for fid in float_ids if fid.isdigit()],
+                    int_float_ids,
                 )
-                logger.info("Logged sync to database", count=len(float_ids))
+                logger.info("Logged sync to database", count=len(int_float_ids))
             finally:
                 await conn.close()
         except Exception as e:

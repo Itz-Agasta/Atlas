@@ -140,18 +140,20 @@ class PgClient:
 
     def log_processing(
         self,
-        float_id: Optional[int],
         operation: Literal["SYNC", "SYNC_ALL", "WEEKLY_UPDATE"],
-        status: Literal["SUCCESS", "FAILED", "PENDING"],
+        status: Literal["SUCCESS", "FAILED"],
+        successful_float_ids: Optional[list[int]] = None,
+        failed_float_ids: Optional[list[int]] = None,
         processing_time_ms: Optional[int] = None,
         error_details: Optional[dict[str, Any]] = None,
     ) -> bool:
         """Log a processing event to the processing_log table.
 
         Args:
-            float_id: Float ID (can be None for batch operations)
             operation: Type of operation (SYNC, SYNC_ALL, WEEKLY_UPDATE)
-            status: Result status (SUCCESS, FAILED, PENDING)
+            status: Result status (SUCCESS, FAILED)
+            successful_float_ids: List of successfully processed float IDs
+            failed_float_ids: List of failed float IDs
             processing_time_ms: Processing time in milliseconds
             error_details: Optional error details as JSON
 
@@ -160,15 +162,16 @@ class PgClient:
         """
         try:
             query = """
-                INSERT INTO processing_log (float_id, operation, status, processing_time_ms, error_details)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO processing_log (operation, status, successful_float_ids, failed_float_ids, processing_time_ms, error_details)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """
             self.cur.execute(
                 query,
                 (
-                    float_id,
                     operation,
                     status,
+                    successful_float_ids or [],
+                    failed_float_ids or [],
                     processing_time_ms,
                     json.dumps(error_details) if error_details else None,
                 ),
@@ -176,9 +179,10 @@ class PgClient:
             logger.info(
                 "Processing log entry created",
                 extra={
-                    "float_id": float_id,
                     "operation": operation,
                     "status": status,
+                    "successful_count": len(successful_float_ids or []),
+                    "failed_count": len(failed_float_ids or []),
                 },
             )
             return True
@@ -186,6 +190,6 @@ class PgClient:
         except Exception as e:
             logger.error(
                 "Failed to log processing event",
-                extra={"float_id": float_id, "error": str(e)},
+                extra={"operation": operation, "error": str(e)},
             )
             return False

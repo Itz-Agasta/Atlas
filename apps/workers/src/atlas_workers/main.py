@@ -118,6 +118,8 @@ async def sync(
     operation = "SYNC_ALL" if sync_all else "SYNC"
     parse_time_total = 0.0
     upload_time_total = 0.0
+    successful_float_ids: list[int] = []
+    failed_float_ids_list: list[int] = []
 
     try:
         for fid in float_ids_to_process:
@@ -162,31 +164,29 @@ async def sync(
 
                 upload_time_total += time.time() - upload_start
 
-                # Log success - total time from start (includes download)
-                total_time_ms = int((time.time() - start_time) * 1000)
-                db.log_processing(
-                    float_id=int(fid),
-                    operation=operation,
-                    status="SUCCESS",
-                    processing_time_ms=total_time_ms,
-                )
+                # Track success
+                successful_float_ids.append(int(fid))
                 processed_count += 1
 
             except Exception as e:
                 logger.error("Failed to process float", float_id=fid, error=str(e))
-                total_time_ms = int((time.time() - start_time) * 1000)
-                # log the failure into db
-                db.log_processing(
-                    float_id=int(fid) if fid.isdigit() else None,
-                    operation=operation,
-                    status="FAILED",
-                    processing_time_ms=total_time_ms,
-                    error_details={"error": str(e)},
-                )
+                # Track failure
+                if fid.isdigit():
+                    failed_float_ids_list.append(int(fid))
                 failed_count += 1
 
                 # For single float, return failure immediately
                 if not sync_all:
+                    # Log the single failure
+                    total_time_ms = int((time.time() - start_time) * 1000)
+                    db.log_processing(
+                        operation=operation,
+                        status="FAILED",
+                        successful_float_ids=[],
+                        failed_float_ids=[int(fid)] if fid.isdigit() else [],
+                        processing_time_ms=total_time_ms,
+                        error_details={"error": str(e)},
+                    )
                     db.conn.commit()
                     return {
                         "success": False,
@@ -202,6 +202,18 @@ async def sync(
         timing["parse_time"] = parse_time_total
         timing["upload_time"] = upload_time_total
         timing["total_time"] = time.time() - start_time
+
+        # Log batch results to database
+        total_time_ms = int(timing["total_time"] * 1000)
+        status = "SUCCESS" if failed_float_ids_list == [] else "FAILED"
+        db.log_processing(
+            operation=operation,
+            status=status,
+            successful_float_ids=successful_float_ids,
+            failed_float_ids=failed_float_ids_list,
+            processing_time_ms=total_time_ms,
+            error_details={"failed_count": failed_count} if failed_count > 0 else None,
+        )
 
         db.conn.commit()
 
@@ -312,3 +324,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# TODO: Fix the upadte fun -> so its go and downalod whats in this week file
+# TODO: update the db process log table. so we can pass a array of floats in SynAll. --done
+# TODO: Track what floas are uploaded to db uncessfull . log them too  [oparation, sucess, uncuess, error]-- done
