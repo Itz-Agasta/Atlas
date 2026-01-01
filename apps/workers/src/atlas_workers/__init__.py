@@ -11,8 +11,3 @@ __all__ = [
     "FloatMetadata",
     "FloatStatus",
 ]
-
-
-# # TODO_DUCKDB: Export profile models when implemented
-# # from .models import ProfileData
-# # __all__ += ["ProfileData"]
