@@ -26,7 +26,7 @@ This Terraform module **focuses on the Workers deployment** - the serverless dat
 | ----------------- | ------------------------ |
 | **Function Name** | `atlas-worker`           |
 | **Region**        | `ap-south-1`             |
-| **Memory**        | 1 GB                     |
+| **Memory**        | 512 mb (default)         |
 | **Timeout**       | 15 minutes               |
 | **Package Type**  | Container Image (Docker) |
 

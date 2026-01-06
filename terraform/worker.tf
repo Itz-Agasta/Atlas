@@ -58,7 +58,7 @@ module "eventbridge" {
   rules = {
     weekly_sync = {
       description         = "Trigger ARGO float weekly sync"
-      schedule_expression = "rate(7 days)"
+      schedule_expression = var.schedule_expression
     }
   }
 
