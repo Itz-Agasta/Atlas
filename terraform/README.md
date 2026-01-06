@@ -68,6 +68,8 @@ Test the scheduled weekly synchronization:
 aws lambda invoke \
   --function-name atlas-worker \
   --cli-binary-format raw-in-base64-out \
+  --cli-read-timeout 900 \
+  --cli-connect-timeout 900 \
   --payload '{"operation": "update"}' \
   response.json
 
