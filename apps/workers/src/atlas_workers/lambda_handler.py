@@ -1,7 +1,18 @@
 import asyncio
 import json
+import shutil
 from typing import Any, Dict
+from .config import settings
 from .main import sync
+
+
+def cleanup_tmp():
+    """Remove all staging directories
+
+    AWS Lambda execution environments are reused across multiple invocations for performance reasons, so the tmp directory does not automatically reset after each run."""
+    for path in [settings.LOCAL_STAGE_PATH, settings.PARQUET_STAGING_PATH]:
+        if path.exists():
+            shutil.rmtree(path)
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -22,6 +33,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     - Test single float: {"operation": "sync", "float_id": "2902224"}
     - Weekly update: {"operation": "update"}
     """
+    cleanup_tmp()
+
     try:
         operation = event.get("operation", "update")
 
@@ -51,3 +64,5 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "statusCode": 500,
             "body": json.dumps({"success": False, "error": str(e)}),
         }
+    finally:
+        cleanup_tmp()
