@@ -65,10 +65,10 @@ export const processing_log = pgTable("processing_log", {
   id: serial("id").primaryKey(),
   operation: text("operation").notNull(), // "FULL SYNC", "SYNC", "UPDATE"
   status: text("status").$type<"success" | "failed">().notNull(), // "success", "failed"
-  successful_ids: bigint("successful_float_ids", { mode: "number" })
+  successful_float_ids: bigint("successful_float_ids", { mode: "number" })
     .array()
     .default(sql`'{}'::bigint[]`),
-  failed_ids: bigint("failed_float_ids", { mode: "number" })
+  failed_float_ids: bigint("failed_float_ids", { mode: "number" })
     .array()
     .default(sql`'{}'::bigint[]`),
   error_details: json("error_details"),

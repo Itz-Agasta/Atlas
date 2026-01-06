@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,14 +21,14 @@ class Settings(BaseSettings):
 
     # Data Configuration
     ARGO_DAC: str = "incois"  # Data Assembly Center (incois, aoml, coriolis, etc.)
-    LOCAL_STAGE_PATH: Path = Path("./data/argo_cache")
+    LOCAL_STAGE_PATH: Path = Path("/tmp/raw_staging")
+    PARQUET_STAGING_PATH: Path = Path("/tmp/parquet_staging")
+
+    # Environment (prod or dev)
+    ENVIRONMENT: str = "prod"
 
     # Logging
-    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
-    LOG_FORMAT: Literal["json", "text"] = "text"  # json for production
-
-    # Environment
-    ENVIRONMENT: str = "development"  # development, production
+    LOG_LEVEL: str = "INFO"
 
     # Database (PostgreSQL for metadata, DuckDB for profiles)
     PG_WRITE_URL: Optional[str] = None
@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     S3_REGION: str = "auto"
 
     # Parquet Conversion (NetCDF -> Parquet for DuckDB)
-    PARQUET_STAGING_PATH: Path = Path("./data/parquet_staging")
+    # PARQUET_STAGING_PATH: Path = Path("./data/parquet_staging")
     PARQUET_COMPRESSION: str = "snappy"  # snappy, gzip, brotli
 
 

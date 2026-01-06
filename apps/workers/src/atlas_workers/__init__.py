@@ -3,16 +3,15 @@ __author__ = "Agasta"
 
 from .config import settings
 from .models import FloatMetadata, FloatStatus
-from .utils import get_logger
+from .utils import get_logger, setup_logging
+
+# Initialize logging on module import
+setup_logging()
 
 __all__ = [
     "settings",
     "get_logger",
+    "setup_logging",
     "FloatMetadata",
     "FloatStatus",
 ]
-
-
-# # TODO_DUCKDB: Export profile models when implemented
-# # from .models import ProfileData
-# # __all__ += ["ProfileData"]

@@ -1,5 +1,4 @@
 import sys
-from pathlib import Path
 
 from loguru import logger
 
@@ -17,7 +16,7 @@ def setup_logging() -> None:
 
     # Configure based on environment and log format
     # Development always gets colored output for better readability
-    if settings.ENVIRONMENT == "development":
+    if settings.ENVIRONMENT == "dev":
         # Development: Colored console output
         logger.add(
             sys.stdout,
@@ -26,14 +25,14 @@ def setup_logging() -> None:
             colorize=True,
             enqueue=True,
         )
-    elif settings.LOG_FORMAT == "json" or settings.ENVIRONMENT == "production":
+    elif settings.ENVIRONMENT == "prod":
         # Production: JSON structured logging for OpenTelemetry/Grafana/Loki
         logger.add(
             sys.stdout,
             format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} | {message}",
             serialize=True,  # JSON output
             level=log_level,
-            enqueue=True,  # Async logging for better performance
+            enqueue=False,  # Ref: https://github.com/Delgan/loguru/issues/418
         )
     else:
         # Fallback: Colored console output
@@ -42,21 +41,6 @@ def setup_logging() -> None:
             format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>",
             level=log_level,
             colorize=True,
-            enqueue=True,
-        )
-
-    # Add file logging for errors in production
-    if settings.ENVIRONMENT == "production":
-        log_file = Path("./logs/atlas_workers.log")
-        log_file.parent.mkdir(exist_ok=True)
-
-        logger.add(
-            log_file,
-            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} | {message}",
-            serialize=True,
-            level="WARNING",
-            rotation="10 MB",
-            retention="1 week",
             enqueue=True,
         )
 
