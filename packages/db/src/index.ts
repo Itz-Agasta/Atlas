@@ -11,7 +11,7 @@ if (!connectionString) {
 let processedConnectionString = connectionString;
 if (connectionString.includes("postgres:postgres@supabase_db_")) {
   const url = new URL(connectionString);
-  url.hostname = url.hostname.split("_")[1];
+  url.hostname = url.hostname.replace("supabase_db_", "");
   processedConnectionString = url.href;
 }
 
