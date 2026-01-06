@@ -8,35 +8,37 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     AWS Lambda handler for Atlas Worker.
 
+    Supports two operations:
+    1. "sync" - Download and process a single float (for testing)
+    2. "update" - Weekly sync to download NEW floats from weekly index (for production)
+
     Expected event format:
     {
-        "operation": "sync" | "sync_all" | "update",
-        "float_id": "2902224",  # optional, only for single sync
+        "operation": "sync" | "update",
+        "float_id": "2902224"  # Required for sync operation
     }
 
-    NOTE: No --skip-downlaod, --skip-upload avalible for cloud env
+    Examples:
+    - Test single float: {"operation": "sync", "float_id": "2902224"}
+    - Weekly update: {"operation": "update"}
     """
     try:
-        operation = event.get("operation", "sync_all")
+        operation = event.get("operation", "update")
 
         if operation == "sync":
+            # Single float sync (for testing)
             float_id = event.get("float_id")
             if not float_id:
                 raise ValueError("float_id required for sync operation")
-            result = asyncio.run(
-                sync(
-                    float_id=float_id,
-                )
-            )
 
-        elif operation == "sync_all":
-            result = asyncio.run(sync(sync_all=True))
+            result = asyncio.run(sync(float_id=float_id))
 
         elif operation == "update":
+            # Weekly update (downloads only NEW floats)
             result = asyncio.run(sync(update=True))
 
         else:
-            raise ValueError(f"Unknown operation: {operation}")
+            raise ValueError(f"Invalid operation: {operation}. Use 'sync' or 'update'")
 
         # Convert result to JSON-serializable format
         return {

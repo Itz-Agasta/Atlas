@@ -21,7 +21,8 @@ class Settings(BaseSettings):
 
     # Data Configuration
     ARGO_DAC: str = "incois"  # Data Assembly Center (incois, aoml, coriolis, etc.)
-    LOCAL_STAGE_PATH: Path = Path("./data/argo_cache")
+    LOCAL_STAGE_PATH: Path = Path("/tmp/data/test_cache")
+    PARQUET_STAGING_PATH: Path = Path("/tmp/data/parquet_staging")
 
     # Logging
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
@@ -42,7 +43,7 @@ class Settings(BaseSettings):
     S3_REGION: str = "auto"
 
     # Parquet Conversion (NetCDF -> Parquet for DuckDB)
-    PARQUET_STAGING_PATH: Path = Path("./data/parquet_staging")
+    # PARQUET_STAGING_PATH: Path = Path("./data/parquet_staging")
     PARQUET_COMPRESSION: str = "snappy"  # snappy, gzip, brotli
 
 
