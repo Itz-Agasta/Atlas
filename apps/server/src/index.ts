@@ -1,10 +1,8 @@
 import "dotenv/config";
-import { createContext } from "@atlas/api/context";
-import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import logger from "./config/logger";
-import { appRouter } from "./routes/index";
+import { apiRouter } from "./routes/index";
 import { logStartupDiagnostics } from "./utils/startup";
 
 const app = new Hono();
@@ -21,15 +19,10 @@ app.use(
 
 logger.info("Middleware configured: CORS, Logger");
 
-app.use(
-  "/trpc/*",
-  trpcServer({
-    router: appRouter,
-    createContext: (_opts, context) => createContext({ context }),
-  })
-);
+// Mount API routes
+app.route("/api", apiRouter);
 
-logger.info("tRPC router mounted at /trpc");
+logger.info("API routes mounted at /api");
 
 app.get("/", (c) => {
   c.header("Content-Type", "text/plain");

@@ -30,6 +30,7 @@ export const agentQueryInputSchema = z.object({
 
 export const testSQLInputSchema = z.object({
   query: z.string().min(1, "Query cannot be empty"),
+  agent: z.literal(["pg", "duckdb"]),
   floatId: z.number().optional(),
   timeRange: z
     .object({
@@ -39,11 +40,6 @@ export const testSQLInputSchema = z.object({
     .optional(),
 });
 
-export const classifyInputSchema = z.object({
-  query: z.string().min(1, "Query cannot be empty"),
-});
-
 // Export inferred types for use across the monorepo
 export type AgentQueryInput = z.infer<typeof agentQueryInputSchema>;
 export type TestSQLInput = z.infer<typeof testSQLInputSchema>;
-export type ClassifyInput = z.infer<typeof classifyInputSchema>;

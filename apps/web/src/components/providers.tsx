@@ -1,10 +1,17 @@
 "use client";
 
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { queryClient } from "@/utils/trpc";
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "./ui/sonner";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Blh blh blh fix it saswata
+    },
+  },
+});
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (

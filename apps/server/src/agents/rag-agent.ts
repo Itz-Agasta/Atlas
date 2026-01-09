@@ -1,11 +1,25 @@
 import { createGroq } from "@ai-sdk/groq";
-import type { ResearchPaperChunk } from "@atlas/api";
 import { generateText } from "ai";
 import { config } from "../config/config";
 
 const groq = createGroq({
   apiKey: config.groqApiKey,
 });
+
+export type ResearchPaperChunk = {
+  paperId: string;
+  title: string;
+  authors: string[];
+  doi?: string;
+  year: number;
+  url?: string;
+  journal?: string;
+  chunk: string;
+  chunkIndex: number;
+  score: number;
+  keywords?: string[];
+  abstract?: string;
+};
 
 // Constants
 const DEFAULT_TOP_K = 5;
