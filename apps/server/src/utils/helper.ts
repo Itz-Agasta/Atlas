@@ -1,5 +1,35 @@
-import type { ScientificResponse } from "@atlas/api";
 import type { RoutingDecision } from "../agents/router-agent";
+
+// FIXME: All tehse types should be infer from zod schema
+export type ScientificResponse = {
+  response: string;
+  citations: Citation[];
+  dataQuality: DataQuality;
+  timestamp: Date;
+  tokensUsed?: number;
+  processingTimeMs?: number;
+  limitations?: string;
+  futureResearch?: string;
+};
+
+export type DataQuality = {
+  floatsAnalyzed: number;
+  papersReferenced: number;
+  sqlQueriesExecuted: number;
+  ragSearchesPerformed: number;
+  averageCitationRelevance?: number;
+};
+
+export type Citation = {
+  paperId: string;
+  title: string;
+  authors: string[];
+  doi?: string;
+  year: number;
+  url?: string;
+  journal?: string;
+  relevanceScore?: number;
+};
 
 const TRAILING_SEMICOLONS_REGEX = /;+\s*$/;
 const DISALLOWED_KEYWORDS_REGEX =

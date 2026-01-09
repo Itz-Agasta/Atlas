@@ -1,5 +1,4 @@
 import { createGroq } from "@ai-sdk/groq";
-import type { ScientificResponse } from "@atlas/api";
 import { generateText } from "ai";
 import { config } from "../config/config";
 import {
@@ -12,6 +11,38 @@ import {
 const groq = createGroq({
   apiKey: config.groqApiKey,
 });
+
+// FIXME: make these zeod schema and infar the types form  pakage/schemas
+export type ScientificResponse = {
+  response: string;
+  citations: Citation[];
+  dataQuality: DataQuality;
+  timestamp: Date;
+  tokensUsed?: number;
+  processingTimeMs?: number;
+  limitations?: string;
+  futureResearch?: string;
+}; // helper.ts uses same sci. reposense too.
+
+export type Citation = {
+  paperId: string;
+  title: string;
+  authors: string[];
+  doi?: string;
+  year: number;
+  url?: string;
+  journal?: string;
+  relevanceScore?: number;
+};
+
+// Remove the dataquality parms form reposnse. we dont need it
+export type DataQuality = {
+  floatsAnalyzed: number;
+  papersReferenced: number;
+  sqlQueriesExecuted: number;
+  ragSearchesPerformed: number;
+  averageCitationRelevance?: number;
+};
 
 const SYSTEM_PROMPT = `You are an expert oceanographer and scientific communicator specialized in Argo float data.
 Your role is to deliver clear, accurate, and engaging answers based on the provided query and data context.
