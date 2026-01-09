@@ -1,10 +1,9 @@
-import { publicProcedure, router } from "@atlas/api";
+import { Hono } from "hono";
 import { agentRouter } from "./v1/agent";
 
-// Import and combine routers
-export const appRouter = router({
-  healthCheck: publicProcedure.query(() => "OK"),
-  agent: agentRouter,
-});
+const apiRouter = new Hono();
 
-export type AppRouter = typeof appRouter;
+// Mount v1 routes
+apiRouter.route("/v1/agent", agentRouter);
+
+export { apiRouter };

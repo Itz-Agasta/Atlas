@@ -12,11 +12,10 @@
   "dependencies": {
     "@ai-sdk/groq": "^2.0.29",
     "@ai-sdk/openai": "^2.0.68",
-    "@atlas/api": "workspace:*",
     "@atlas/db": "workspace:*",
+    "@atlas/schema": "workspace:*",
     "@duckdb/node-api": "^1.4.2-r.1",
-    "@hono/trpc-server": "^0.4.0",
-    "@trpc/server": "catalog:",
+    "@hono/zod-validator": "^0.7.6",
     "ai": "^5.0.94",
     "date-fns": "^4.1.0",
     "dotenv": "catalog:",

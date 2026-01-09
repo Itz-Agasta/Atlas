@@ -1,0 +1,23 @@
+{
+  "name": "@atlas/schema",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc -b"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "tsdown": "catalog:"
+  }
+}

@@ -42,7 +42,6 @@ export default function UserMenu() {
           <DropdownMenuSeparator />
           <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
           <DropdownMenuItem
-            variant="destructive"
             onClick={() => {
               authClient.signOut({
                 fetchOptions: {
@@ -52,6 +51,7 @@ export default function UserMenu() {
                 },
               });
             }}
+            variant="destructive"
           >
             Sign Out
           </DropdownMenuItem>

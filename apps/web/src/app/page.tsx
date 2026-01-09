@@ -1,9 +1,12 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { trpc } from "@/utils/trpc";
+import { apiClient } from "@/lib/api-client";
 
 export default function Home() {
-  const healthCheck = useQuery(trpc.healthCheck.queryOptions());
+  const healthCheck = useQuery({
+    queryKey: ["health"],
+    queryFn: () => apiClient.healthCheck(),
+  });
 
   let status: string;
   if (healthCheck.isLoading) {
