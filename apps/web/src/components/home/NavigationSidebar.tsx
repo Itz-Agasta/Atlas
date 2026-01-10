@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Waves, Ship, Wind, TrendingUp } from "lucide-react";
+import { Calendar, Waves, Ship, Wind, TrendingUp, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
 interface HomeSidebarFilters {
@@ -69,6 +69,7 @@ export function NavigationSidebar({
   className,
   onFiltersChange,
 }: NavigationSidebarProps) {
+  const [isOpen, setIsOpen] = useState(true);
   const [filters, setFilters] = useState<HomeSidebarFilters>({
     timePeriod: "all",
     datasets: {
@@ -117,6 +118,23 @@ export function NavigationSidebar({
     }
   };
 
+  // When sidebar is closed, show the open button
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed left-4 top-4 z-50 p-2 rounded-md transition-colors"
+        style={{
+          backgroundColor: "var(--sidebar)",
+          color: "var(--sidebar-foreground)",
+        }}
+        aria-label="Open sidebar"
+      >
+        <PanelLeftOpen className="h-6 w-6" />
+      </button>
+    );
+  }
+
   return (
     <div
       className={`fixed left-0 top-0 h-full flex flex-col z-50 overflow-hidden ${className || ""}`}
@@ -126,6 +144,24 @@ export function NavigationSidebar({
       }}
     >
       <div className="flex flex-col h-full w-full overflow-y-auto">
+        {/* Header with Logo and Close Button */}
+        <div className="px-4 pt-6 pb-2 flex items-start justify-between">
+          <h1
+            className="text-5xl font-bold tracking-tight font-sans"
+            style={{ color: "var(--primary)" }}
+          >
+            Atlas
+          </h1>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-1.5 rounded-md hover:bg-[var(--sidebar-accent)] transition-colors"
+            style={{ color: "var(--sidebar-foreground)" }}
+            aria-label="Close sidebar"
+          >
+            <PanelLeftClose className="h-5 w-5" />
+          </button>
+        </div>
+
         <div className="px-4 py-6 space-y-8">
           {filterData.map((section) => (
             <div key={section.title}>
