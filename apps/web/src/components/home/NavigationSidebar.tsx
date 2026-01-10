@@ -123,7 +123,7 @@ export function NavigationSidebar({
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed left-4 top-4 z-50 p-2 rounded-md transition-colors"
+        className="fixed left-4 top-4 z-[100] p-2 rounded-md transition-colors"
         style={{
           backgroundColor: "var(--sidebar)",
           color: "var(--sidebar-foreground)",
@@ -137,7 +137,7 @@ export function NavigationSidebar({
 
   return (
     <div
-      className={`fixed left-0 top-0 h-full flex flex-col z-50 overflow-hidden ${className || ""}`}
+      className={`fixed left-0 top-0 h-full flex flex-col z-[100] overflow-hidden ${className || ""}`}
       style={{
         backgroundColor: "var(--sidebar)",
         width: "280px",

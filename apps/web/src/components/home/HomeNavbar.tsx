@@ -39,7 +39,7 @@ const navItems = [
 
 export function HomeNavbar() {
   return (
-    <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2">
+    <div className="fixed bottom-8 left-1/2 z-[100] -translate-x-1/2">
       <FloatingDock items={navItems} />
     </div>
   );
