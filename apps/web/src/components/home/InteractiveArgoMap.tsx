@@ -84,7 +84,7 @@ function ArgoMarker({
         {/* Outer glow ring */}
         <div
           className={`absolute inset-0 rounded-full ${
-            isSelected ? "bg-yellow-400" : "bg-blue-400"
+            isSelected ? "bg-white" : "bg-green-400"
           } opacity-30 animate-ping`}
         />
 
@@ -92,8 +92,8 @@ function ArgoMarker({
         <div
           className={`relative w-6 h-6 rounded-full border-2 ${
             isSelected
-              ? "bg-yellow-500 border-yellow-700"
-              : "bg-blue-500 border-blue-700"
+              ? "bg-white border-gray-300"
+              : "bg-green-500 border-green-700"
           } shadow-lg flex items-center justify-center`}
         >
           {/* Inner dot */}
@@ -201,6 +201,7 @@ export default function InteractiveArgoMap({
       <Starfield isVisible={isGlobe} />
 
       <MapboxMap
+        key={isGlobe ? "globe" : "mercator"}
         initialViewState={
           bounds || {
             longitude: 75,
@@ -212,7 +213,7 @@ export default function InteractiveArgoMap({
         mapStyle={mapStyle}
         mapboxAccessToken={MAPBOX_TOKEN}
         interactiveLayerIds={[]}
-        projection={isGlobe ? "globe" : "mercator"}
+        projection={{ name: isGlobe ? "globe" : "mercator" }}
         onClick={() => {
           // Close popup when clicking on map
           setSelectedFloat(null);
@@ -222,10 +223,10 @@ export default function InteractiveArgoMap({
         }}
       >
         {/* Map Controls */}
-        <GeolocateControl position="top-left" />
-        <FullscreenControl position="top-left" />
-        <NavigationControl position="top-left" />
-        <ScaleControl position="bottom-left" />
+        <GeolocateControl position="top-right" />
+        <FullscreenControl position="top-right" />
+        <NavigationControl position="top-right" />
+        <ScaleControl position="top-right" />
 
         {/* Argo Float Markers */}
         {floats.map((float) => (

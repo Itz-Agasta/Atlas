@@ -1,5 +1,5 @@
 "use client";
-
+// map libre gl component for alternative options
 import { Map, MapControls, MapMarker, MarkerContent } from "@/components/ui/map";
 import type { StyleSpecification } from "maplibre-gl";
 

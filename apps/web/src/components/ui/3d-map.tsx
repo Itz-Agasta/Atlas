@@ -1,5 +1,5 @@
 "use client";
-
+//maplibre gl component for alternative options
 import { useEffect, useRef, useMemo } from "react";
 import MapLibreGL from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";

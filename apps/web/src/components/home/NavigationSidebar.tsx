@@ -147,8 +147,8 @@ export function NavigationSidebar({
         {/* Header with Logo and Close Button */}
         <div className="px-4 pt-6 pb-2 flex items-start justify-between">
           <h1
-            className="text-5xl font-bold tracking-tight font-sans"
-            style={{ color: "var(--primary)" }}
+            className="text-2xl font-bold tracking-tight font-sans"
+            style={{ color: "var(--primary-foreground)" }}
           >
             Atlas
           </h1>

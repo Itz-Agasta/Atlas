@@ -1,10 +1,11 @@
 "use client";
 
+import { Satellite, Moon, Mountain, Map, Globe, Settings } from "lucide-react";
 import { argoFloatsData } from "@/data/argoFloats";
 
 // Map style options
 const MAP_STYLES = {
-  satellite: "mapbox://styles/mapbox/satellite-streets-v12", // Dusky satellite with labels
+  satellite: "mapbox://styles/mapbox/satellite-streets-v12",
   dark: "mapbox://styles/mapbox/dark-v11",
   outdoors: "mapbox://styles/mapbox/outdoors-v11",
 };
@@ -27,127 +28,198 @@ export default function MapControlPanel({
   setIsOpen,
 }: MapControlPanelProps) {
   return (
-    <div className="absolute bottom-4 left-4 z-10">
-      {/* Hamburger Menu Button */}
+    <div className="fixed bottom-4 right-4 z-10 flex flex-col items-end">
+      {/* Control Panel (slides up when open) */}
+      {isOpen && (
+        <div
+          className="mb-2 rounded-lg p-4 backdrop-blur-sm"
+          style={{
+            backgroundColor: "var(--sidebar)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div className="min-w-[240px]">
+            <h3
+              className="font-semibold mb-4 text-sm uppercase tracking-wide"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              Map Controls
+            </h3>
+
+            {/* Map Style Toggle */}
+            <div className="mb-5">
+              <div
+                className="text-xs font-medium mb-2 uppercase tracking-wide"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                Map Style
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMapStyle(MAP_STYLES.satellite)}
+                  className="flex flex-col items-center gap-1.5 px-3 py-2.5 text-xs rounded-md transition-all duration-200"
+                  style={{
+                    backgroundColor:
+                      mapStyle === MAP_STYLES.satellite
+                        ? "var(--sidebar-accent)"
+                        : "transparent",
+                    color:
+                      mapStyle === MAP_STYLES.satellite
+                        ? "var(--sidebar-accent-foreground)"
+                        : "var(--sidebar-foreground)",
+                    border: "1px solid",
+                    borderColor:
+                      mapStyle === MAP_STYLES.satellite
+                        ? "var(--primary)"
+                        : "var(--border)",
+                  }}
+                >
+                  <Satellite className="h-4 w-4" />
+                  <span>Satellite</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapStyle(MAP_STYLES.dark)}
+                  className="flex flex-col items-center gap-1.5 px-3 py-2.5 text-xs rounded-md transition-all duration-200"
+                  style={{
+                    backgroundColor:
+                      mapStyle === MAP_STYLES.dark
+                        ? "var(--sidebar-accent)"
+                        : "transparent",
+                    color:
+                      mapStyle === MAP_STYLES.dark
+                        ? "var(--sidebar-accent-foreground)"
+                        : "var(--sidebar-foreground)",
+                    border: "1px solid",
+                    borderColor:
+                      mapStyle === MAP_STYLES.dark
+                        ? "var(--primary)"
+                        : "var(--border)",
+                  }}
+                >
+                  <Moon className="h-4 w-4" />
+                  <span>Dark</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapStyle(MAP_STYLES.outdoors)}
+                  className="flex flex-col items-center gap-1.5 px-3 py-2.5 text-xs rounded-md transition-all duration-200"
+                  style={{
+                    backgroundColor:
+                      mapStyle === MAP_STYLES.outdoors
+                        ? "var(--sidebar-accent)"
+                        : "transparent",
+                    color:
+                      mapStyle === MAP_STYLES.outdoors
+                        ? "var(--sidebar-accent-foreground)"
+                        : "var(--sidebar-foreground)",
+                    border: "1px solid",
+                    borderColor:
+                      mapStyle === MAP_STYLES.outdoors
+                        ? "var(--primary)"
+                        : "var(--border)",
+                  }}
+                >
+                  <Mountain className="h-4 w-4" />
+                  <span>Outdoors</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2D/Globe Toggle */}
+            <div className="mb-5">
+              <div
+                className="text-xs font-medium mb-2 uppercase tracking-wide"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                View Mode
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsGlobe(false)}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs rounded-md transition-all duration-200"
+                  style={{
+                    backgroundColor: !isGlobe
+                      ? "var(--sidebar-accent)"
+                      : "transparent",
+                    color: !isGlobe
+                      ? "var(--sidebar-accent-foreground)"
+                      : "var(--sidebar-foreground)",
+                    border: "1px solid",
+                    borderColor: !isGlobe ? "var(--primary)" : "var(--border)",
+                  }}
+                >
+                  <Map className="h-4 w-4" />
+                  <span>2D</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsGlobe(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs rounded-md transition-all duration-200"
+                  style={{
+                    backgroundColor: isGlobe
+                      ? "var(--sidebar-accent)"
+                      : "transparent",
+                    color: isGlobe
+                      ? "var(--sidebar-accent-foreground)"
+                      : "var(--sidebar-foreground)",
+                    border: "1px solid",
+                    borderColor: isGlobe ? "var(--primary)" : "var(--border)",
+                  }}
+                >
+                  <Globe className="h-4 w-4" />
+                  <span>Globe</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div
+              className="text-xs pt-3"
+              style={{
+                borderTop: "1px solid var(--border)",
+                color: "var(--muted-foreground)",
+              }}
+            >
+              <p className="mb-2 font-medium">
+                {argoFloatsData.length} Argo floats in the Indian Ocean
+              </p>
+              <div className="flex items-center mb-1">
+                <div
+                  className="w-2.5 h-2.5 rounded-full mr-2"
+                  style={{ backgroundColor: "var(--primary)" }}
+                />
+                <span>Active Float</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full mr-2" />
+                <span>Selected Float</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-background/95 dark:bg-background/95 rounded-xl p-3 shadow-xl hover:bg-background transition-all duration-200 mb-2 border border-border backdrop-blur-sm"
+        className="p-3 rounded-lg transition-all duration-200 backdrop-blur-sm"
+        style={{
+          backgroundColor: isOpen ? "var(--sidebar-accent)" : "var(--sidebar)",
+          color: isOpen
+            ? "var(--sidebar-accent-foreground)"
+            : "var(--sidebar-foreground)",
+          border: "1px solid var(--border)",
+        }}
         aria-label="Toggle map controls"
       >
-        <div className="space-y-1">
-          <div
-            className={`w-5 h-0.5 bg-foreground transition-transform duration-200 ${isOpen ? "rotate-45 translate-y-1.5" : ""}`}
-          />
-          <div
-            className={`w-5 h-0.5 bg-foreground transition-opacity duration-200 ${isOpen ? "opacity-0" : ""}`}
-          />
-          <div
-            className={`w-5 h-0.5 bg-foreground transition-transform duration-200 ${isOpen ? "-rotate-45 -translate-y-1.5" : ""}`}
-          />
-        </div>
+        <Settings
+          className={`h-5 w-5 transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`}
+        />
       </button>
-
-      {/* Control Panel (slides up when open) */}
-      <div
-        className={`bg-background/95 dark:bg-background/95 rounded-xl shadow-xl transition-all duration-300 overflow-hidden backdrop-blur-sm border border-border ${
-          isOpen ? "max-h-96 p-4" : "max-h-0 p-0"
-        }`}
-      >
-        <div className="min-w-[250px]">
-          <h3 className="font-bold text-foreground mb-3 text-sm">
-            Map Controls
-          </h3>
-
-          {/* Map Style Toggle */}
-          <div className="mb-4">
-            <div className="block text-xs font-medium text-muted-foreground mb-2">
-              Map Style
-            </div>
-            <div className="grid grid-cols-2 gap-1">
-              <button
-                type="button"
-                onClick={() => setMapStyle(MAP_STYLES.satellite)}
-                className={`px-3 py-2 text-xs rounded-lg border transition-all duration-200 ${
-                  mapStyle === MAP_STYLES.satellite
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-cyan-400 shadow-lg shadow-cyan-500/25"
-                    : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
-                }`}
-              >
-                🛰️ Satellite
-              </button>
-              <button
-                type="button"
-                onClick={() => setMapStyle(MAP_STYLES.dark)}
-                className={`px-3 py-2 text-xs rounded-lg border transition-all duration-200 ${
-                  mapStyle === MAP_STYLES.dark
-                    ? "bg-gradient-to-r from-slate-600 to-slate-800 text-white border-slate-500 shadow-lg shadow-slate-500/25"
-                    : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
-                }`}
-              >
-                🌙 Dark
-              </button>
-              <button
-                type="button"
-                onClick={() => setMapStyle(MAP_STYLES.outdoors)}
-                className={`px-3 py-2 text-xs rounded-lg border transition-all duration-200 ${
-                  mapStyle === MAP_STYLES.outdoors
-                    ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/25"
-                    : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
-                }`}
-              >
-                🏔️ Outdoors
-              </button>
-            </div>
-          </div>
-
-          {/* 2D/Globe Toggle */}
-          <div className="mb-4">
-            <div className="block text-xs font-medium text-slate-700 mb-2">
-              View Mode
-            </div>
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={() => setIsGlobe(false)}
-                className={`px-4 py-2 text-xs rounded-lg border transition-all duration-200 ${
-                  !isGlobe
-                    ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400 shadow-lg shadow-indigo-500/25"
-                    : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400"
-                }`}
-              >
-                🗺️ 2D
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsGlobe(true)}
-                className={`px-4 py-2 text-xs rounded-lg border transition-all duration-200 ${
-                  isGlobe
-                    ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white border-violet-400 shadow-lg shadow-violet-500/25"
-                    : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400"
-                }`}
-              >
-                🌍 Globe
-              </button>
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="text-xs text-slate-600">
-            <p className="mb-2 font-medium">
-              {argoFloatsData.length} Argo floats in the Indian Ocean
-            </p>
-            <div className="flex items-center mb-1">
-              <div className="w-3 h-3 bg-blue-500 rounded-full mr-2 shadow-sm"></div>
-              <span>Active Float</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2 shadow-sm"></div>
-              <span>Selected Float</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
