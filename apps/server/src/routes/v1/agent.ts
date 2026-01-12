@@ -1,4 +1,4 @@
-import { agentQueryInputSchema, testSQLInputSchema } from "@atlas/schema/agent";
+import { agentQueryInputSchema, testSQLSchema } from "@atlas/schema/api/agent";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { DuckDBAgent } from "../../agents/duckdb-agent";
@@ -17,33 +17,14 @@ const HTTP_STATUS_INTERNAL_ERROR = 500;
  */
 async function executeAgents(params: {
   routing: RoutingDecision;
-  includeSql: boolean;
-  includeRag: boolean;
   query: string;
-  floatId?: number;
-  timeRange?: { start?: string; end?: string };
-  yearRange?: { start?: number; end?: number };
 }) {
-  const {
-    routing,
-    includeSql,
-    includeRag,
-    query,
-    floatId,
-    timeRange,
-    yearRange,
-  } = params;
+  const { routing, query } = params;
 
   const [sqlResults, duckdbResults, ragResults] = await Promise.all([
-    routing.sqlAgent && includeSql
-      ? SQLAgent({ query, floatId, timeRange })
-      : Promise.resolve(undefined),
-    routing.duckdbAgent && includeSql
-      ? DuckDBAgent({ query, floatId, timeRange })
-      : Promise.resolve(undefined),
-    routing.ragAgent && includeRag
-      ? RAGAgent({ query, yearRange })
-      : Promise.resolve(undefined),
+    routing.sqlAgent ? SQLAgent({ query }) : Promise.resolve(undefined),
+    routing.duckdbAgent ? DuckDBAgent({ query }) : Promise.resolve(undefined),
+    routing.ragAgent ? RAGAgent({ query }) : Promise.resolve(undefined),
   ]);
 
   return { sqlResults, duckdbResults, ragResults };
@@ -55,6 +36,9 @@ export const agentRouter = new Hono();
  * Main query endpoint for the multi-agent system that intelligently routes queries
  * through classifier, SQL agent, RAG agent, and response orchestrator.
  *
+ * All query parameters (floatId, timeRange, etc.) are automatically extracted by agents
+ * from the natural language query itself.
+ *
  * @URL `POST /api/v1/agent/query`
  */
 agentRouter.post(
@@ -63,14 +47,13 @@ agentRouter.post(
   async (c) => {
     const startTime = Date.now();
     const input = c.req.valid("json");
-    const { query, floatId, includeRag, includeSql, timeRange, yearRange } =
-      input;
+    const { query } = input;
 
     try {
       // Step 1: Route query to appropriate agents
       const routingStart = Date.now();
       const routing = await routeQuery(query);
-      const routingTime = Date.now() - routingStart; // router agent doest return any total time..
+      const routingTime = Date.now() - routingStart;
 
       // Step 2: Handle general queries (greetings, casual chat)
       if (
@@ -79,7 +62,7 @@ agentRouter.post(
         !routing.duckdbAgent &&
         !routing.ragAgent
       ) {
-        const generalResponse = await executeGeneralAgent(query); // orchestrator agent unused
+        const generalResponse = await executeGeneralAgent(query);
         const totalTime = Date.now() - startTime;
 
         return c.json({
@@ -88,9 +71,7 @@ agentRouter.post(
           routing,
           response: generalResponse.response,
           citations: null,
-          dataQuality: null,
           timestamp: new Date(),
-          processingTimeMs: totalTime,
           agentMetrics: buildAgentMetrics({
             routing: { decision: routing, timeMs: routingTime },
             generalResult: generalResponse,
@@ -102,12 +83,7 @@ agentRouter.post(
       // Step 3: Execute specialized agents in parallel
       const { sqlResults, duckdbResults, ragResults } = await executeAgents({
         routing,
-        includeSql,
-        includeRag,
         query,
-        floatId,
-        timeRange,
-        yearRange,
       });
 
       // Step 4: Orchestrate final response
@@ -131,6 +107,7 @@ agentRouter.post(
         totalTime,
       });
 
+      // FIXME: Its kinda useless to return this much data to the frontend. Find a way (zod maybe) so we can only return the `response` to frontend.
       return c.json({
         success: true,
         query,
@@ -140,9 +117,7 @@ agentRouter.post(
         ragResults: ragResults || null,
         response: finalResponse.response,
         citations: finalResponse.citations,
-        dataQuality: finalResponse.dataQuality,
         timestamp: finalResponse.timestamp,
-        processingTimeMs: totalTime,
         agentMetrics,
       });
     } catch (error) {
@@ -166,20 +141,16 @@ agentRouter.post(
  *
  * @URL `GET /api/v1/agent/test-sql`
  */
-agentRouter.get(
-  "/test-sql",
-  zValidator("query", testSQLInputSchema),
-  async (c) => {
-    const input = c.req.valid("query");
-    const result =
-      input.agent === "pg"
-        ? await SQLAgent({ query: input.query, dryRun: true })
-        : await DuckDBAgent({ query: input.query, dryRun: true });
+agentRouter.get("/test-sql", zValidator("query", testSQLSchema), async (c) => {
+  const input = c.req.valid("query");
+  const result =
+    input.agent === "pg"
+      ? await SQLAgent({ query: input.query, dryRun: true })
+      : await DuckDBAgent({ query: input.query, dryRun: true });
 
-    return c.json({
-      success: result.success,
-      sql: result.sql,
-      error: result.error,
-    });
-  }
-);
+  return c.json({
+    success: result.success,
+    sql: result.sql,
+    error: result.error,
+  });
+});

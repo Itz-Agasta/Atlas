@@ -152,6 +152,6 @@ jobs:
             echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
             echo "uv run ruff check --fix # Lint & auto-fix" >> $GITHUB_STEP_SUMMARY
             echo "uv run ruff format      # Format" >> $GITHUB_STEP_SUMMARY
-            echo "uv run pyrefly check src/      # Type check" >> $GITHUB_STEP_SUMMARY
+            echo "uv run ty check         # Type check" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi

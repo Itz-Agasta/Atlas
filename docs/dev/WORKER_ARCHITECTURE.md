@@ -1,20 +1,19 @@
 # ARGO Workers Architecture
 
 > Technical reference for the ARGO data processing pipeline.  
-> Last updated: November 2025
+> **Last Updated**: January 2026  
+> **Status**: Active and maintained
 
 ## Overview
 
-The workers package downloads ARGO oceanographic float data from IFREMER, parses NetCDF files, and uploads to Neon PostgreSQL. Optimized for throughput with aggregate file parsing and batch database operations.
-
-![worker](../imgs/worker_arch.png)
+The workers package (located at `apps/workers/`) downloads ARGO oceanographic float data from IFREMER, parses NetCDF files into Parquet format, uploads metadata to PostgreSQL, and stores time-series data in S3. Optimized for throughput with concurrent HTTPS downloads and vectorized NetCDF parsing.
 
 **End-to-end benchmark** (float 2902232, 348 profiles):
 
-- Download: 4.0s (concurrent HTTPS)
-- Parse: 0.5s
-- Upload: 18.9s
-- **Total: ~24s**
+- Download: 2.40s (concurrent HTTPS)
+- Parse: 0.18s (xarray vectorized)
+- Upload: 1.57s (PostgreSQL metadata + S3 Parquet)
+- **Total: ~4.15s per float**
 
 ## Key Design Decisions
 
@@ -30,7 +29,7 @@ IFREMER provides data via both FTP (`ftp.ifremer.fr`) and HTTPS (`data-argo.ifre
 | HTTPS (sequential)     | 9.0s       | 4.5 Mbps      | -          | 2.6x faster than FTP     |
 | **HTTPS (concurrent)** | **4.0s**   | **10.2 Mbps** | -          | **5.8x faster than FTP** |
 
-**Decision**: Use HTTPS with concurrent downloads. Why:
+**Decision**: Use HTTPS with concurrent downloads via `httpx.AsyncClient`. Why:
 
 1. **Speed**: 5-6x faster than FTP with concurrent requests
 2. **Reliability**: HTTP has better error handling, retries, CDN caching
@@ -41,215 +40,185 @@ IFREMER provides data via both FTP (`ftp.ifremer.fr`) and HTTPS (`data-argo.ifre
 
 IFREMER provides two formats:
 
-- **Individual**: `profiles/D{float_id}_{cycle}.nc` (one file per profile)
-- **Aggregate**: `{float_id}_prof.nc` (ALL profiles in single file)
+- **Individual**: `profiles/D{float_id}_{cycle}.nc` (one file per profile, ~14KB each)
+- **Aggregate**: `{float_id}_prof.nc` (ALL profiles in single file, ~5MB)
 
 | Approach      | Files     | Parse Time | Notes                                  |
 | ------------- | --------- | ---------- | -------------------------------------- |
-| Individual    | 358 files | 12s        | One HTTP request per file              |
+| Individual    | 348 files | 12s        | One HTTP request per file              |
 | **Aggregate** | 1 file    | **0.5s**   | Single 5MB download, xarray batch read |
 
-**Decision**: Use aggregate files exclusively. 25x faster parsing.
+**Decision**: Use aggregate files exclusively. ~24x faster parsing via xarray vectorized operations.
 
-### 3. JSONB Storage for Measurements
+### 3. Data Storage Strategy
 
-Each profile contains ~240 depth levels with temperature, salinity, oxygen, etc.
+Current hybrid approach:
 
-| Approach   | Rows        | Upload Time | Query Flexibility |
-| ---------- | ----------- | ----------- | ----------------- |
-| Normalized | 87,000 rows | 23s         | Standard SQL      |
-| **JSONB**  | 359 rows    | **19s**     | JSON operators    |
+- **PostgreSQL**: Float metadata (`argo_float_metadata` table) and status (`argo_float_status`)
+- **S3 (Parquet)**: Time-series profiles in denormalized "long" format at `s3://atlas/profiles/{float_id}/data.parquet`
 
-**Decision**: Store measurements as pre-serialized JSONB (~28KB per profile).
+This separation allows:
 
-Why JSONB wins:
+- Fast metadata queries via SQL (for router agent)
+- Efficient time-series analysis via DuckDB (no network latency, fast predicate pushdown)
+- Cost-effective storage (Parquet compression is 5-10x better than normalized PostgreSQL tables)
 
-- Row count overhead of normalized table (~87K) matches JSONB parsing cost
-- JSONB enables flexible queries: `measurements->'depth_levels'->0->>'temperature'`
-- Simpler schema, fewer JOINs
-- Better compression (JSONB is stored binary internally)
+| Approach   | Storage          | Query Speed | Cost/1M rows |
+| ---------- | ---------------- | ----------- | ------------ |
+| Normalized | PostgreSQL       | Fast (SQL)  | ~$100        |
+| **Hybrid** | **PG + Parquet** | **Fast**    | **~$20**     |
+| JSONB      | PostgreSQL only  | Medium      | ~$80         |
 
-### 4. Database Upload Method
+**Decision**: Hybrid approach for scalability.
 
-Benchmarked approaches for 359 profiles with JSONB:
+### 4. Parquet Schema Design
 
-| Method             | Time   | Complexity | Notes                        |
-| ------------------ | ------ | ---------- | ---------------------------- |
-| **execute_values** | 19.35s | Low        | Single multi-row INSERT      |
-| COPY protocol      | 18.96s | Medium     | Temp table + INSERT SELECT   |
-| Apache Arrow       | 20.52s | High       | Extra serialization overhead |
-| Individual INSERT  | ~60s   | Low        | N round trips                |
+Data stored in denormalized "long" format (one row = one measurement at one depth):
 
-**Decision**: Use `psycopg2.extras.execute_values` with pre-serialized JSON.
+```
+float_id (BIGINT) | cycle_number (INT) | level (INT) | pressure (DOUBLE) |
+temperature (DOUBLE) | salinity (DOUBLE) | oxygen (DOUBLE) | ...
+```
 
-The bottleneck is **server-side JSONB parsing** (~15s of 20s total), not client serialization or network. More complex approaches don't help because PostgreSQL must parse JSON strings into binary JSONB format regardless of transfer method.
+This enables:
 
-### 5. Pre-serialized JSON
+- **Efficient compression**: Repetitive metadata (float_id, cycle) compresses via dictionary encoding
+- **Fast DuckDB queries**: Predicate pushdown on pressure, temperature, etc.
+- **Memory efficient**: Can process 1000s of profiles without loading into RAM
 
-Measurements are serialized to JSON strings during parsing, not during upload:
+## Processing Pipeline
+
+### Phase 1: Download (2s)
 
 ```python
-# During NetCDF parsing (0.5s phase)
-profile.measurements_json = json.dumps(measurements_list)
-
-# During upload (reuses string)
-execute_values(cursor, query, [(float_id, cycle, measurements_json, ...)])
+# Concurrent HTTPS download using httpx
+async with httpx.AsyncClient() as client:
+    tasks = [
+        client.get(f"https://data-argo.ifremer.fr/{float_id}_prof.nc"),
+        client.get(f"https://data-argo.ifremer.fr/{float_id}_meta.nc"),
+        client.get(f"https://data-argo.ifremer.fr/{float_id}_tech.nc"),
+    ]
+    responses = await asyncio.gather(*tasks)
 ```
 
-This moves JSON serialization into the faster parsing phase and avoids re-serializing during upload.
+### Phase 2: Parse (0.5s)
 
-## Database Schema
-
-```sql
--- Float metadata (1 row per float)
-CREATE TABLE argo_float_metadata (
-    float_id INTEGER PRIMARY KEY,
-    wmo_number TEXT,
-    float_type TEXT,
-    deployment_date TIMESTAMPTZ,
-    deployment_lat REAL,
-    deployment_lon REAL,
-    status TEXT DEFAULT 'ACTIVE'
-);
-
--- Profiles (1 row per profile, ~350 per float)
-CREATE TABLE argo_profiles (
-    float_id INTEGER NOT NULL,
-    cycle INTEGER NOT NULL,
-    profile_time TIMESTAMPTZ,
-    surface_lat REAL,
-    surface_lon REAL,
-    max_depth REAL,
-    quality_flag TEXT,
-    measurements JSONB,  -- ~28KB per row
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (float_id, cycle)
-);
-
--- Current positions (1 row per float, updated on each upload)
-CREATE TABLE argo_float_positions (
-    float_id INTEGER PRIMARY KEY,
-    current_lat REAL,
-    current_lon REAL,
-    cycle_number INTEGER,
-    last_update TIMESTAMPTZ
-);
-```
-
-### JSONB Measurements Structure
-
-```json
-{
-  "depth_levels": [
-    {
-      "pressure": 5.0,
-      "temperature": 28.5,
-      "salinity": 34.2,
-      "oxygen": 210.5,
-      "qc_flags": { "temp": 1, "sal": 1, "oxy": 1 }
-    }
-    // ... ~240 levels per profile
-  ],
-  "stats": {
-    "min_depth": 5.0,
-    "max_depth": 2000.0,
-    "surface_temp": 28.5
-  }
-}
-```
-
-## Performance Breakdown
-
-### Parsing Phase (0.5s)
+xarray-based vectorized extraction followed by loop-based row denormalization:
 
 ```python
 # xarray reads all profiles at once
 ds = xr.open_dataset(f"{float_id}_prof.nc")
 
-# Vectorized extraction (no Python loops)
+# Vectorized extraction (NumPy operations)
 temperatures = ds['TEMP'].values  # (n_profiles, n_levels) array
 salinities = ds['PSAL'].values
 pressures = ds['PRES'].values
 
-# Pre-serialize during extraction
-for i in range(n_profiles):
-    measurements_json = json.dumps(build_measurements(i, ds))
+# Build denormalized rows (one row per depth level)
+rows = []
+for cycle_idx in range(n_profiles):
+    for level_idx in range(n_levels):
+        rows.append({
+            'float_id': float_id,
+            'cycle_number': cycle_idx,
+            'level': level_idx,
+            'pressure': pressures[cycle_idx, level_idx],
+            'temperature': temperatures[cycle_idx, level_idx],
+            'salinity': salinities[cycle_idx, level_idx],
+            # ... additional fields
+        })
 ```
 
-### Upload Phase (19s)
+### Phase 3: Upload (2s)
 
-Timing breakdown:
-
-- Connection setup: ~0.5s (Neon cold start avoided with transaction reuse)
-- Network transfer: ~4s
-- **JSONB parsing: ~15s** (server-side, unavoidable)
+Parallel uploads to PostgreSQL and S3:
 
 ```python
-# Single transaction for all operations
-db.start_transaction()
-try:
-    uploader.upload_float_metadata(metadata)      # <1s
-    uploader.bulk_upload_profiles(profiles)       # ~18s (JSONB bottleneck)
-    uploader.upload_float_position(latest)        # <1s
-    db.commit_transaction()
-except:
-    db.rollback_transaction()
+# Write to PostgreSQL (metadata)
+db.execute_values(
+    "INSERT INTO argo_float_metadata (float_id, wmo_number, ...) VALUES (%s, %s, ...)",
+    metadata
+)
+
+# Write to S3 (time-series)
+table = pa.Table.from_pylist(rows)
+pq.write_table(table, f"s3://atlas/profiles/{float_id}/data.parquet")
 ```
 
-## Future Optimizations
+## Database Schema
 
-### Already Tried (No Improvement)
+### PostgreSQL Tables
 
-- **COPY protocol**: Same ~19s. JSONB parsing is server-side.
-- **Apache Arrow**: Actually slower (20.5s). Extra serialization step.
-- **Normalized tables**: Slower (23s). 87K rows overhead.
+```sql
+-- Float metadata (1 row per float)
+CREATE TABLE argo_float_metadata (
+    float_id BIGINT PRIMARY KEY,
+    wmo_number TEXT UNIQUE NOT NULL,
+    float_type TEXT,
+    status TEXT DEFAULT 'UNKNOWN',
+    data_centre TEXT NOT NULL,
+    project_name TEXT,
+    operating_institution TEXT,
+    platform_type TEXT,
+    platform_maker TEXT,
+    pi_name TEXT,
+    launch_date TIMESTAMPTZ,
+    launch_lat REAL,
+    launch_lon REAL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-### Could Try
+CREATE INDEX idx_status ON argo_float_metadata(status);
+CREATE INDEX idx_project ON argo_float_metadata(project_name);
 
-1. **Parallel uploads**: Process multiple floats concurrently (different transactions)
-2. **Read replicas**: Offload queries to replicas, keep writes on primary
-3. **Materialized views**: Pre-compute common aggregations
-4. **Partitioning**: Partition profiles by year or float_id range
+-- Current position (1 row per float, updated frequently)
+CREATE TABLE argo_float_status (
+    float_id BIGINT PRIMARY KEY REFERENCES argo_float_metadata,
+    location GEOMETRY(POINT, 4326),  -- PostGIS spatial index
+    cycle_number INT,
+    battery_percent INT,
+    last_update TIMESTAMPTZ DEFAULT NOW()
+);
 
-### Won't Help
+CREATE INDEX idx_location ON argo_float_status USING GIST(location);
+```
 
-- Client-side compression: Neon handles SSL compression
-- Connection pooling: Single transaction pattern already optimal
-- Prepared statements: execute_values already efficient
+### Parquet Schema (S3)
 
-## File Reference
+Located at: `s3://atlas/profiles/{float_id}/data.parquet`
 
-| File                                                  | Purpose                                    |
-| ----------------------------------------------------- | ------------------------------------------ |
-| `main.py`                                             | CLI entry point, argument parsing          |
-| `operations.py`                                       | Orchestrates download → parse → upload     |
-| `config.py`                                           | Pydantic settings, environment variables   |
-| `db/connector.py`                                     | NeonDBConnector, execute_values wrapper    |
-| `db/operations.py`                                    | ArgoDataUploader class                     |
-| `models/argo.py`                                      | FloatMetadata, ProfileData Pydantic models |
-| `workers/ftp_sync/`                                   | HTTPS download from IFREMER                |
-| `workers/netcdf_processor/netcdf_parser.py`           | Parser interface                           |
-| `workers/netcdf_processor/netcdf_aggregate_parser.py` | Aggregate file parsing                     |
+**Fields** (denormalized "long" format):
 
-## Benchmarks Reference
+- `float_id` (BIGINT) - dictionary compressed
+- `cycle_number` (DOUBLE) - dictionary + delta compressed
+- `level` (BIGINT) - 0 to N_LEVELS-1
+- `profile_timestamp` (TIMESTAMP WITH TIME ZONE) - delta encoded
+- `latitude` (DOUBLE) - dictionary + delta
+- `longitude` (DOUBLE)
+- `pressure` (DOUBLE) - dbar (≈ meters)
+- `temperature` (DOUBLE) - °C
+- `salinity` (DOUBLE) - PSU
+- `temperature_adj` (DOUBLE) - adjusted (delayed-mode)
+- `salinity_adj` (DOUBLE)
+- `oxygen` (DOUBLE) - µmol/kg
+- `chlorophyll` (DOUBLE)
+- `nitrate` (DOUBLE)
+- Quality flags (VARCHAR): `pres_qc`, `temp_qc`, `psal_qc`, etc.
+- `data_mode` (VARCHAR) - 'R','D','A'
 
-Full benchmarks from November 2025 testing:
+**Compression**: Parquet default (snappy). Typical compression ratio: 8:1
+
+## Performance Analysis
+
+### Current Timing (January 2026)
 
 ```
-Float: 2902232 (348 profiles)
+Float: 2902232 (348 profiles, ~87K rows per profile)
 
-Phase 1: Download
-  - Aggregate files: 4 requests, 5.2MB, 5.2s
-  - (Individual would be: 352 requests, 11MB, ~15s)
-
-Phase 2: Parse
-  - Aggregate parsing: 0.5s
-  - (Individual would be: 12s)
-
-Phase 3: Upload
-  - execute_values: 19.35s
-  - COPY protocol: 18.96s
-  - Arrow + COPY: 20.52s
-
-Total: 22s (down from ~50s with individual files)
+Download:  2.40s  (concurrent HTTPS)
+Parse:     0.18s  (xarray vectorized)
+Upload:   1.57s  (PostgreSQL + S3 Parquet)
+─────────────────
+Total:    4.15s per float ~Avg (2-5 sec/float)
 ```

@@ -30,7 +30,7 @@ format:
 	uv run ruff format src/ tests/
 
 type-check:
-	uv run pyrefly check src/atlas_workers
+	uv run ty check
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + || true

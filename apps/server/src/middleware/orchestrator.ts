@@ -1,9 +1,9 @@
 import { createGroq } from "@ai-sdk/groq";
+import type { ScientificResponse } from "@atlas/schema/api/agent";
 import { generateText } from "ai";
 import { config } from "../config/config";
 import {
   type AgentResults,
-  calculateDataQuality,
   extractCitations,
   formatAgentContext,
 } from "../utils/orchestrator-utils";
@@ -12,40 +12,18 @@ const groq = createGroq({
   apiKey: config.groqApiKey,
 });
 
-// FIXME: make these zeod schema and infar the types form  pakage/schemas
-export type ScientificResponse = {
-  response: string;
-  citations: Citation[];
-  dataQuality: DataQuality;
-  timestamp: Date;
-  tokensUsed?: number;
-  processingTimeMs?: number;
-  limitations?: string;
-  futureResearch?: string;
-}; // helper.ts uses same sci. reposense too.
-
-export type Citation = {
-  paperId: string;
-  title: string;
-  authors: string[];
-  doi?: string;
-  year: number;
-  url?: string;
-  journal?: string;
-  relevanceScore?: number;
-};
-
-// Remove the dataquality parms form reposnse. we dont need it
-export type DataQuality = {
-  floatsAnalyzed: number;
-  papersReferenced: number;
-  sqlQueriesExecuted: number;
-  ragSearchesPerformed: number;
-  averageCitationRelevance?: number;
-};
-
 const SYSTEM_PROMPT = `You are an expert oceanographer and scientific communicator specialized in Argo float data.
 Your role is to deliver clear, accurate, and engaging answers based on the provided query and data context.
+
+FORMATTING REQUIREMENT:
+- **Always use proper Markdown formatting** in your responses:
+  - Use **bold** for emphasis and section headers
+  - Use *italics* for scientific terms when appropriate
+  - Use bullet points (- or *) for lists
+  - Use numbered lists (1., 2., etc.) for sequential steps
+  - Use \`code\` for specific values, measurements, or technical terms
+  - Use ## for major section headers if needed
+  - Use > for important callouts or quotes
 
 RESPONSE STYLE GUIDELINES (adapt automatically):
 
@@ -59,10 +37,10 @@ RESPONSE STYLE GUIDELINES (adapt automatically):
 - State status clearly: "currently active", "inactive since [date]", or "no recent data".
 - Include relevant details like last update time, current cycle, or battery level naturally.
 - Example:
-  "Float 2902235 is currently active in the southern Bay of Bengal, approximately 400 km southeast of Sri Lanka (8.2°N, 84.5°E). Its last profile was recorded 2 days ago at cycle 127."
+  "Float 2902235 is **currently active** in the southern Bay of Bengal, approximately 400 km southeast of Sri Lanka (\`8.2°N, 84.5°E\`). Its last profile was recorded 2 days ago at cycle 127."
 
 **For analytical queries** (trends, anomalies, comparisons, depth profiles):
-- Use a clear scientific structure:
+- Use a clear scientific structure with Markdown:
   1. **Key Findings** — 2–4 bullet points summarizing the main results.
   2. **Detailed Analysis** — Explain patterns, statistics, and depth/time behavior.
   3. **Oceanographic Context** — Connect to broader circulation, seasonality, or known features.
@@ -88,7 +66,7 @@ CRITICAL RULES — NEVER VIOLATE:
      • Subpolar gyres, marginal seas, etc.
 3. **Coordinate formatting**:
    - Always use °N/°S, °E/°W with one decimal place unless more precision is meaningful.
-   - Example: 12.4°S, 95.7°E (not -12.4, 95.7)
+   - Example: \`12.4°S, 95.7°E\` (not -12.4, 95.7)
 4. **Citations**:
    - If research papers are provided in context, cite naturally: (Smith et al., 2023)
    - Only cite when directly supporting a claim.
@@ -113,8 +91,6 @@ Answer only what is asked. Be truthful. If data is missing or ambiguous, say so 
 export async function responseOrchestrator(
   results: AgentResults
 ): Promise<ScientificResponse> {
-  const startTime = Date.now();
-
   try {
     const { text, usage } = await generateText({
       model: groq(config.models.orchestrator),
@@ -125,15 +101,12 @@ export async function responseOrchestrator(
     });
 
     const citations = extractCitations(results.ragResults);
-    const dataQuality = calculateDataQuality(results);
 
     return {
       response: text,
       citations,
-      dataQuality,
       timestamp: new Date(),
       tokensUsed: usage?.totalTokens,
-      processingTimeMs: Date.now() - startTime,
     };
   } catch (error) {
     throw new Error(

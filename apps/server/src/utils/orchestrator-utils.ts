@@ -315,33 +315,3 @@ export function extractCitations(ragResults?: RAGAgentResult) {
     relevanceScore: paper.score,
   }));
 }
-
-/**
- * Calculate data quality metrics from all agents
- */
-export function calculateDataQuality(results: AgentResults) {
-  const floatsAnalyzed =
-    (results.sqlResults?.rowCount || 0) +
-    (results.duckdbResults?.rowCount || 0);
-  const papersReferenced = results.ragResults?.papersFound || 0;
-  const sqlQueriesExecuted = results.sqlResults?.success ? 1 : 0;
-  const duckdbQueriesExecuted = results.duckdbResults?.success ? 1 : 0;
-  const ragSearchesPerformed = results.ragResults?.success ? 1 : 0;
-
-  let averageCitationRelevance: number | undefined;
-  if (results.ragResults?.papers && results.ragResults.papers.length > 0) {
-    const totalScore = results.ragResults.papers.reduce(
-      (sum: number, paper: Paper) => sum + paper.score,
-      0
-    );
-    averageCitationRelevance = totalScore / results.ragResults.papers.length;
-  }
-
-  return {
-    floatsAnalyzed,
-    papersReferenced,
-    sqlQueriesExecuted: sqlQueriesExecuted + duckdbQueriesExecuted,
-    ragSearchesPerformed,
-    averageCitationRelevance,
-  };
-}
