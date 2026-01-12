@@ -150,11 +150,6 @@ export type SQLAgentResult = {
 
 export type SQLAgentParams = {
   query: string;
-  floatId?: number;
-  timeRange?: {
-    start?: string;
-    end?: string;
-  };
   dryRun?: boolean; // To generates SQL without executing it
 };
 
@@ -165,7 +160,7 @@ export type SQLAgentParams = {
 export async function SQLAgent(
   params: SQLAgentParams
 ): Promise<SQLAgentResult> {
-  const { query, floatId, timeRange, dryRun = false } = params;
+  const { query, dryRun = false } = params;
   const startTime = Date.now();
   const timings = {
     llmResponse: 0,
@@ -179,9 +174,7 @@ export async function SQLAgent(
     const { text: sqlQuery, usage } = await generateText({
       model: groq(config.models.sqlAgent),
       system: SQL_AGENT_SYSTEM_PROMPT,
-      prompt: `Generate PostgreSQL query for: ${query}
-${floatId ? `\nFilter for float_id: ${floatId}` : ""}
-${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "now"}` : ""}`,
+      prompt: `Generate PostgreSQL query for: ${query}`,
       maxOutputTokens: 500,
     });
     timings.llmResponse = Date.now() - llmStart;
