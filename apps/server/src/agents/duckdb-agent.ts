@@ -129,11 +129,6 @@ export type DuckDBAgentResult = {
 
 export type DuckDBAgentParams = {
   query: string;
-  floatId?: number;
-  timeRange?: {
-    start?: string;
-    end?: string;
-  };
   dryRun?: boolean;
 };
 
@@ -144,7 +139,7 @@ export type DuckDBAgentParams = {
 export async function DuckDBAgent(
   params: DuckDBAgentParams
 ): Promise<DuckDBAgentResult> {
-  const { query, floatId, timeRange, dryRun = false } = params;
+  const { query, dryRun = false } = params;
   const startTime = Date.now();
   const timings = {
     dbExecution: 0,
@@ -158,9 +153,7 @@ export async function DuckDBAgent(
     const { text: sqlQuery, usage } = await generateText({
       model: groq(config.models.sqlAgent),
       system: DUCKDB_AGENT_SYSTEM_PROMPT,
-      prompt: `Generate DuckDB query for: ${query}
-${floatId ? `\nFloat ID: ${floatId}` : ""}
-${timeRange?.start ? `\nTime range: ${timeRange.start} to ${timeRange.end || "now"}` : ""}`,
+      prompt: `Generate DuckDB query for: ${query}`,
       maxOutputTokens: 600,
     });
     timings.llmResponse = Date.now() - llmStart;

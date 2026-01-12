@@ -6,6 +6,7 @@ const groq = createGroq({
   apiKey: config.groqApiKey,
 });
 
+// FIX: move it zod schema and infer it
 export type ResearchPaperChunk = {
   paperId: string;
   title: string;
@@ -60,20 +61,16 @@ export type RAGAgentResult = {
 export type RAGAgentParams = {
   query: string;
   topK?: number;
-  yearRange?: {
-    start?: number;
-    end?: number;
-  };
 };
 
 /**
  * RAG Agent for Research Paper Retrieval
- * Currently uses mock data - integrate with Qdrant for production
+ * @NOTE: Currently uses mock data - integrate with Qdrant for production
  */
 export async function RAGAgent(
   params: RAGAgentParams
 ): Promise<RAGAgentResult> {
-  const { query, topK = DEFAULT_TOP_K, yearRange } = params;
+  const { query, topK = DEFAULT_TOP_K } = params;
   const startTime = Date.now();
 
   try {
@@ -83,7 +80,7 @@ export async function RAGAgent(
       model: groq(config.models.ragAgent),
       system: RAG_AGENT_SYSTEM_PROMPT,
       prompt: `Find research papers about: ${query}
-Provide ${topK} relevant papers ${yearRange ? `published between ${yearRange.start || "any year"} and ${yearRange.end || "present"}` : ""}.`,
+Provide ${topK} relevant papers.`,
       maxOutputTokens: 2000,
     });
 
