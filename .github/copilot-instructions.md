@@ -178,7 +178,7 @@ For Python files, this project uses **Ruff** for fast linting and formatting, an
 ### Quick Reference (Python)
 
 - **Format and lint code**: `uv run ruff check --fix`
-- **Type check**: `uv run ty .`
+- **Type check**: `uv run ty check`
 - **Format code only**: `uv run ruff format`
 
 ### Python Best Practices

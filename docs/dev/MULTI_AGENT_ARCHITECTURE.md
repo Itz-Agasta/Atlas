@@ -89,7 +89,6 @@ A specialized LLM call that synthesizes raw data from all agents. It is responsi
 
 - Synthesizing findings from different sources (SQL metadata + DuckDB time-series + RAG papers)
 - Adding citations and references (e.g., "[Smith et al., 2023]")
-- Calculating data quality metrics
 - Formatting output for human readability
 
 **Output Structure**:
@@ -231,9 +230,6 @@ Q: "What methodology do researchers use for Argo calibration?"
      }
    }
    ```
-6. **Response Orchestrator**:
-   - Receives both datasets.
-   - Generates: "Float 2902226 is currently active in the Indian Ocean (-10.5, 75.2). Analysis of its temperature profile shows a slight cooling trend..."
 
 ## Extending the System
 

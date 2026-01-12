@@ -22,26 +22,26 @@ Contains fixed float information that rarely changes.
 
 **Columns**:
 
-| Column                  | Type                     | Constraints       | Notes                                |
-| ----------------------- | ------------------------ | ----------------- | ------------------------------------ |
-| `float_id`              | BIGINT                   | PRIMARY KEY       | Unique identifier per float          |
-| `wmo_number`            | TEXT                     | UNIQUE NOT NULL   | Official IFREMER ID (e.g., "2902235" |
-| `status`                | TEXT                     | DEFAULT 'UNKNOWN' | ACTIVE, INACTIVE, DEAD, UNKNOWN      |
-| `float_type`            | TEXT                     |                   | core, oxygen, biogeochemical, deep   |
-| `data_centre`           | TEXT                     | NOT NULL          | Data center code (e.g., "IN", "GE")  |
-| `project_name`          | TEXT                     |                   | e.g., "Argo India", "OceanSITES"     |
-| `operating_institution` | TEXT                     |                   | e.g., "INCOIS", "MIO-OD"             |
-| `pi_name`               | TEXT                     |                   | Principal investigator name          |
-| `platform_type`         | TEXT                     |                   | e.g., "ARVOR", "APEX", "NEMO"        |
-| `platform_maker`        | TEXT                     |                   | Manufacturer (e.g., "NKE")           |
-| `float_serial_no`       | TEXT                     |                   | Serial number                        |
-| `launch_date`           | TIMESTAMP WITH TIME ZONE |                   | Deployment date                      |
-| `launch_lat`            | REAL                     |                   | Deployment latitude                  |
-| `launch_lon`            | REAL                     |                   | Deployment longitude                 |
-| `start_mission_date`    | TIMESTAMP WITH TIME ZONE |                   | Mission start                        |
-| `end_mission_date`      | TIMESTAMP WITH TIME ZONE |                   | Mission end (nullable if ongoing)    |
-| `created_at`            | TIMESTAMP WITH TIME ZONE | DEFAULT NOW()     | When added to Atlas                  |
-| `updated_at`            | TIMESTAMP WITH TIME ZONE | DEFAULT NOW()     | Last metadata update                 |
+| Column                  | Type                     | Constraints       | Notes                                 |
+| ----------------------- | ------------------------ | ----------------- | ------------------------------------- |
+| `float_id`              | BIGINT                   | PRIMARY KEY       | Unique identifier per float           |
+| `wmo_number`            | TEXT                     | UNIQUE NOT NULL   | Official IFREMER ID (e.g., "2902235") |
+| `status`                | TEXT                     | DEFAULT 'UNKNOWN' | ACTIVE, INACTIVE, DEAD, UNKNOWN       |
+| `float_type`            | TEXT                     |                   | core, oxygen, biogeochemical, deep    |
+| `data_centre`           | TEXT                     | NOT NULL          | Data center code (e.g., "IN", "GE")   |
+| `project_name`          | TEXT                     |                   | e.g., "Argo India", "OceanSITES"      |
+| `operating_institution` | TEXT                     |                   | e.g., "INCOIS", "MIO-OD"              |
+| `pi_name`               | TEXT                     |                   | Principal investigator name           |
+| `platform_type`         | TEXT                     |                   | e.g., "ARVOR", "APEX", "NEMO"         |
+| `platform_maker`        | TEXT                     |                   | Manufacturer (e.g., "NKE")            |
+| `float_serial_no`       | TEXT                     |                   | Serial number                         |
+| `launch_date`           | TIMESTAMP WITH TIME ZONE |                   | Deployment date                       |
+| `launch_lat`            | REAL                     |                   | Deployment latitude                   |
+| `launch_lon`            | REAL                     |                   | Deployment longitude                  |
+| `start_mission_date`    | TIMESTAMP WITH TIME ZONE |                   | Mission start                         |
+| `end_mission_date`      | TIMESTAMP WITH TIME ZONE |                   | Mission end (nullable if ongoing)     |
+| `created_at`            | TIMESTAMP WITH TIME ZONE | DEFAULT NOW()     | When added to Atlas                   |
+| `updated_at`            | TIMESTAMP WITH TIME ZONE | DEFAULT NOW()     | Last metadata update                  |
 
 **Indexes**:
 

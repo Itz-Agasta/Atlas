@@ -10,10 +10,10 @@ The workers package (located at `apps/workers/`) downloads ARGO oceanographic fl
 
 **End-to-end benchmark** (float 2902232, 348 profiles):
 
-- Download: 4.0s (concurrent HTTPS)
-- Parse: 0.5s (xarray vectorized)
-- Upload: 19s (PostgreSQL metadata + S3 Parquet)
-- **Total: ~24s per float**
+- Download: 2.40s (concurrent HTTPS)
+- Parse: 0.18s (xarray vectorized)
+- Upload: 1.57s (PostgreSQL metadata + S3 Parquet)
+- **Total: ~4.15s per float**
 
 ## Key Design Decisions
 
@@ -48,7 +48,7 @@ IFREMER provides two formats:
 | Individual    | 348 files | 12s        | One HTTP request per file              |
 | **Aggregate** | 1 file    | **0.5s**   | Single 5MB download, xarray batch read |
 
-**Decision**: Use aggregate files exclusively. 25x faster parsing via xarray vectorized operations.
+**Decision**: Use aggregate files exclusively. ~24x faster parsing via xarray vectorized operations.
 
 ### 3. Data Storage Strategy
 
@@ -103,7 +103,7 @@ async with httpx.AsyncClient() as client:
 
 ### Phase 2: Parse (0.5s)
 
-xarray-based vectorized parsing (no loops):
+xarray-based vectorized extraction followed by loop-based row denormalization:
 
 ```python
 # xarray reads all profiles at once
