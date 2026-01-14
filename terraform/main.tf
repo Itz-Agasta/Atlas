@@ -15,6 +15,10 @@ terraform {
       source  = "kreuzwerker/docker"
       version = "~> 3.0"
     }
+    supabase = {
+      source  = "supabase/supabase"
+      version = "1.6.1"
+    }
   }
   required_version = ">=1.2"
 }
@@ -29,4 +33,8 @@ provider "aws" {
       ManagedBY   = "Terraform"
     }
   }
+}
+
+provider "supabase" {
+  access_token = var.supabase_provider_token
 }
