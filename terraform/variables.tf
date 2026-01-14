@@ -78,7 +78,8 @@ variable "image_tag" {
 
 // Supabase
 variable "supabase_provider_token" {
-  type = string
+  type      = string
+  sensitive = true
 }
 
 variable "linked_project" {
