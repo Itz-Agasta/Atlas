@@ -5,14 +5,14 @@ import { NavigationSidebar } from "@/components/home/NavigationSidebar";
 
 export default function Home() {
   return (
-    <div className="relative w-full h-screen overflow-hidden">
+    <div className="relative h-screen w-full overflow-hidden">
       {/* Map Layer */}
       <div className="fixed inset-0 z-10">
         <InteractiveArgoMap />
       </div>
 
       {/* Navigation Sidebar - high z-index to be above map */}
-      <NavigationSidebar className="z-[100]" />
+      <NavigationSidebar className="z-100" />
 
       {/* Floating Dock Navbar - high z-index to be above map */}
       <HomeNavbar />

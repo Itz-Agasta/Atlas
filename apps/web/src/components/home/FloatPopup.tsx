@@ -25,7 +25,7 @@ export default function FloatPopup({
 }: InlineFloatPopupProps) {
   const router = useRouter();
 
-  if (!data || !position || !visible) {
+  if (!(data && position && visible)) {
     return null;
   }
 
@@ -87,7 +87,7 @@ export default function FloatPopup({
 
   return (
     <Card
-      className="fixed z-50 shadow-lg border animate-in fade-in zoom-in duration-200"
+      className="fade-in zoom-in fixed z-50 animate-in border shadow-lg duration-200"
       style={getPopupStyle()}
     >
       <CardHeader className="pb-3">
@@ -96,15 +96,15 @@ export default function FloatPopup({
             <h3 className="font-semibold text-base leading-none">
               Float {data.floatNumber}
             </h3>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-muted-foreground text-sm">
               Cycle {data.cycle}
             </p>
           </div>
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
             className="h-8 w-8 p-0"
+            onClick={onClose}
+            size="sm"
+            variant="ghost"
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
@@ -137,10 +137,10 @@ export default function FloatPopup({
 
         {/* Sensors */}
         <div>
-          <p className="text-sm font-medium mb-2">Sensors</p>
+          <p className="mb-2 font-medium text-sm">Sensors</p>
           <div className="flex flex-wrap gap-1">
             {data.sensors.map((sensor) => (
-              <Badge key={sensor} variant="secondary" className="text-xs">
+              <Badge className="text-xs" key={sensor} variant="secondary">
                 {sensor}
               </Badge>
             ))}
@@ -152,17 +152,17 @@ export default function FloatPopup({
         {/* Actions */}
         <div className="flex gap-2">
           <Button
-            onClick={() => handleActionClick("Profile")}
             className="flex-1"
+            onClick={() => handleActionClick("Profile")}
             size="sm"
           >
             Profile
           </Button>
           <Button
-            onClick={() => handleActionClick("Trajectory")}
-            variant="outline"
             className="flex-1"
+            onClick={() => handleActionClick("Trajectory")}
             size="sm"
+            variant="outline"
           >
             Trajectory
           </Button>

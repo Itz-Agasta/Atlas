@@ -1,3 +1,4 @@
+// FIXME: its migrated
 export interface ArgoFloat {
   id: string; // Format: AL032017_20170619180000
   floatNumber: string; // Format: 2902203

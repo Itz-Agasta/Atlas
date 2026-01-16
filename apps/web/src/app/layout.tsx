@@ -32,9 +32,9 @@ export default function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="light" // We will change it to system later. cuz our dark mode it not aesthetic currently
-          enableSystem
+          defaultTheme="light" // TODO: We will change it to system later. cuz our dark mode it not aesthetic currently
           disableTransitionOnChange
+          enableSystem
         >
           <SidebarProvider>{children}</SidebarProvider>
         </ThemeProvider>

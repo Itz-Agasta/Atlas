@@ -1,7 +1,15 @@
 "use client";
 
+import {
+  Calendar,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Ship,
+  TrendingUp,
+  Waves,
+  Wind,
+} from "lucide-react";
 import { useState } from "react";
-import { Calendar, Waves, Ship, Wind, TrendingUp, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
 interface HomeSidebarFilters {
@@ -47,20 +55,64 @@ const filterData: FilterSection[] = [
   {
     title: "Dataset Filters",
     items: [
-      { id: "argoCore", label: "Argo Core", icon: <Waves className="h-4 w-4" />, key: "argoCore" },
-      { id: "argoBGC", label: "Argo BGC", icon: <Waves className="h-4 w-4" />, key: "argoBGC" },
-      { id: "argoDeep", label: "Argo Deep", icon: <Waves className="h-4 w-4" />, key: "argoDeep" },
-      { id: "woce", label: "WOCE", icon: <Ship className="h-4 w-4" />, key: "woce" },
-      { id: "goShip", label: "GO-SHIP", icon: <Ship className="h-4 w-4" />, key: "goShip" },
-      { id: "otherShips", label: "Other Ships", icon: <Ship className="h-4 w-4" />, key: "otherShips" },
-      { id: "drifters", label: "Drifters", icon: <Wind className="h-4 w-4" />, key: "drifters" },
-      { id: "tropicalCyclones", label: "Tropical Cyclones", icon: <Wind className="h-4 w-4" />, key: "tropicalCyclones" },
+      {
+        id: "argoCore",
+        label: "Argo Core",
+        icon: <Waves className="h-4 w-4" />,
+        key: "argoCore",
+      },
+      {
+        id: "argoBGC",
+        label: "Argo BGC",
+        icon: <Waves className="h-4 w-4" />,
+        key: "argoBGC",
+      },
+      {
+        id: "argoDeep",
+        label: "Argo Deep",
+        icon: <Waves className="h-4 w-4" />,
+        key: "argoDeep",
+      },
+      {
+        id: "woce",
+        label: "WOCE",
+        icon: <Ship className="h-4 w-4" />,
+        key: "woce",
+      },
+      {
+        id: "goShip",
+        label: "GO-SHIP",
+        icon: <Ship className="h-4 w-4" />,
+        key: "goShip",
+      },
+      {
+        id: "otherShips",
+        label: "Other Ships",
+        icon: <Ship className="h-4 w-4" />,
+        key: "otherShips",
+      },
+      {
+        id: "drifters",
+        label: "Drifters",
+        icon: <Wind className="h-4 w-4" />,
+        key: "drifters",
+      },
+      {
+        id: "tropicalCyclones",
+        label: "Tropical Cyclones",
+        icon: <Wind className="h-4 w-4" />,
+        key: "tropicalCyclones",
+      },
     ],
   },
   {
     title: "Deployment Period",
     items: [
-      { id: "deploymentYears", label: "Deployment Years", icon: <TrendingUp className="h-4 w-4" /> },
+      {
+        id: "deploymentYears",
+        label: "Deployment Years",
+        icon: <TrendingUp className="h-4 w-4" />,
+      },
     ],
   },
 ];
@@ -95,7 +147,9 @@ export function NavigationSidebar({
     handleFilterUpdate({ timePeriod });
   };
 
-  const handleDatasetChange = (datasetKey: keyof HomeSidebarFilters["datasets"]) => {
+  const handleDatasetChange = (
+    datasetKey: keyof HomeSidebarFilters["datasets"]
+  ) => {
     const updatedDatasets = {
       ...filters.datasets,
       [datasetKey]: !filters.datasets[datasetKey],
@@ -122,13 +176,13 @@ export function NavigationSidebar({
   if (!isOpen) {
     return (
       <button
+        aria-label="Open sidebar"
+        className="fixed top-4 left-4 z-[100] rounded-md p-2 transition-colors"
         onClick={() => setIsOpen(true)}
-        className="fixed left-4 top-4 z-[100] p-2 rounded-md transition-colors"
         style={{
           backgroundColor: "var(--sidebar)",
           color: "var(--sidebar-foreground)",
         }}
-        aria-label="Open sidebar"
       >
         <PanelLeftOpen className="h-6 w-6" />
       </button>
@@ -137,37 +191,37 @@ export function NavigationSidebar({
 
   return (
     <div
-      className={`fixed left-0 top-0 h-full flex flex-col z-[100] overflow-hidden ${className || ""}`}
+      className={`fixed top-0 left-0 z-[100] flex h-full flex-col overflow-hidden ${className || ""}`}
       style={{
         backgroundColor: "var(--sidebar)",
         width: "280px",
       }}
     >
-      <div className="flex flex-col h-full w-full overflow-y-auto">
+      <div className="flex h-full w-full flex-col overflow-y-auto">
         {/* Header with Logo and Close Button */}
-        <div className="px-4 pt-6 pb-2 flex items-start justify-between">
+        <div className="flex items-start justify-between px-4 pt-6 pb-2">
           <h1
-            className="text-2xl font-bold tracking-tight font-sans"
+            className="font-bold font-sans text-2xl tracking-tight"
             style={{ color: "var(--primary-foreground)" }}
           >
             Atlas
           </h1>
           <button
-            onClick={() => setIsOpen(false)}
-            className="p-1.5 rounded-md hover:bg-[var(--sidebar-accent)] transition-colors"
-            style={{ color: "var(--sidebar-foreground)" }}
             aria-label="Close sidebar"
+            className="rounded-md p-1.5 transition-colors hover:bg-[var(--sidebar-accent)]"
+            onClick={() => setIsOpen(false)}
+            style={{ color: "var(--sidebar-foreground)" }}
           >
             <PanelLeftClose className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="px-4 py-6 space-y-8">
+        <div className="space-y-8 px-4 py-6">
           {filterData.map((section) => (
             <div key={section.title}>
               {/* Section Header */}
               <h3
-                className="text-xs font-medium mb-4 uppercase tracking-wide"
+                className="mb-4 font-medium text-xs uppercase tracking-wide"
                 style={{
                   color: "var(--muted-foreground)",
                   letterSpacing: "0.05em",
@@ -189,9 +243,9 @@ export function NavigationSidebar({
                   if (item.id === "deploymentYears") {
                     const currentYear = new Date().getFullYear();
                     return (
-                      <div key={item.id} className="space-y-3">
+                      <div className="space-y-3" key={item.id}>
                         <div
-                          className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium"
+                          className="flex w-full items-center gap-3 px-3 py-2 font-medium text-sm"
                           style={{
                             backgroundColor: "transparent",
                             borderRadius: "var(--radius)",
@@ -215,22 +269,31 @@ export function NavigationSidebar({
                             {item.label}
                           </span>
                         </div>
-                        <div className="px-3 space-y-2">
-                          <div className="flex justify-between items-center text-xs" style={{ color: "var(--muted-foreground)" }}>
+                        <div className="space-y-2 px-3">
+                          <div
+                            className="flex items-center justify-between text-xs"
+                            style={{ color: "var(--muted-foreground)" }}
+                          >
                             <span>{filters.deploymentYears.start}</span>
                             <span>{filters.deploymentYears.end}</span>
                           </div>
                           <div className="px-1">
                             <Slider
-                              value={[filters.deploymentYears.start, filters.deploymentYears.end]}
-                              onValueChange={handleDeploymentYearsChange}
-                              min={2000}
-                              max={currentYear}
-                              step={1}
                               className="w-full [&_[data-slot=slider-track]]:bg-primary-foreground"
+                              max={currentYear}
+                              min={2000}
+                              onValueChange={handleDeploymentYearsChange}
+                              step={1}
+                              value={[
+                                filters.deploymentYears.start,
+                                filters.deploymentYears.end,
+                              ]}
                             />
                           </div>
-                          <div className="flex justify-between text-xs" style={{ color: "var(--muted-foreground)" }}>
+                          <div
+                            className="flex justify-between text-xs"
+                            style={{ color: "var(--muted-foreground)" }}
+                          >
                             <span>2000</span>
                             <span>{currentYear}</span>
                           </div>
@@ -241,17 +304,21 @@ export function NavigationSidebar({
 
                   return (
                     <div
+                      className="flex w-full items-center justify-between gap-3 px-3 py-2 font-medium text-sm"
                       key={item.id}
-                      className="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm font-medium"
                       style={{
-                        backgroundColor: isActive ? "var(--sidebar-accent)" : "transparent",
+                        backgroundColor: isActive
+                          ? "var(--sidebar-accent)"
+                          : "transparent",
                         borderRadius: "var(--radius)",
                       }}
                     >
-                      <div className="flex items-center gap-3 flex-1">
+                      <div className="flex flex-1 items-center gap-3">
                         <span
                           style={{
-                            color: isActive ? "var(--sidebar-accent-foreground)" : "var(--sidebar-foreground)",
+                            color: isActive
+                              ? "var(--sidebar-accent-foreground)"
+                              : "var(--sidebar-foreground)",
                             display: "flex",
                             alignItems: "center",
                           }}
@@ -260,7 +327,9 @@ export function NavigationSidebar({
                         </span>
                         <span
                           style={{
-                            color: isActive ? "var(--sidebar-accent-foreground)" : "var(--sidebar-foreground)",
+                            color: isActive
+                              ? "var(--sidebar-accent-foreground)"
+                              : "var(--sidebar-foreground)",
                             fontWeight: isActive ? 600 : 400,
                           }}
                         >
@@ -268,21 +337,29 @@ export function NavigationSidebar({
                         </span>
                       </div>
                       <button
+                        className="h-5 w-10 shrink-0 rounded-full transition-none focus:outline-none"
                         onClick={(e) => handleToggleClick(item, e)}
-                        className="shrink-0 w-10 h-5 rounded-full transition-none focus:outline-none"
                         style={{
-                          backgroundColor: isActive ? "var(--primary)" : "var(--primary-foreground)",
+                          backgroundColor: isActive
+                            ? "var(--primary)"
+                            : "var(--primary-foreground)",
                           border: "1px solid",
-                          borderColor: isActive ? "var(--primary)" : "var(--border)",
+                          borderColor: isActive
+                            ? "var(--primary)"
+                            : "var(--border)",
                           cursor: "pointer",
                           position: "relative",
                         }}
                       >
                         <span
-                          className="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full transition-none"
+                          className="absolute top-0.5 left-0.5 h-3.5 w-3.5 rounded-full transition-none"
                           style={{
-                            backgroundColor: isActive ? "var(--primary-foreground)" : "var(--primary)",
-                            transform: isActive ? "translateX(20px)" : "translateX(0)",
+                            backgroundColor: isActive
+                              ? "var(--primary-foreground)"
+                              : "var(--primary)",
+                            transform: isActive
+                              ? "translateX(20px)"
+                              : "translateX(0)",
                           }}
                         />
                       </button>
