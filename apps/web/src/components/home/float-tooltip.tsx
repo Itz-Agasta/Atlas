@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { TooltipData } from "@/types/argo";
 
-interface FloatTooltipProps {
+type FloatTooltipProps = {
   data: TooltipData | null;
   position: { x: number; y: number } | null;
   visible: boolean;
-}
+};
 
 export default function FloatTooltip({
   data,
@@ -22,7 +22,11 @@ export default function FloatTooltip({
   useEffect(() => {
     if (visible && data && position) {
       // Small delay for smooth transition
-      const timer = setTimeout(() => setIsVisible(true), 100);
+      const TOOLTIP_TRANSITION_DELAY_MS = 100;
+      const timer = setTimeout(
+        () => setIsVisible(true),
+        TOOLTIP_TRANSITION_DELAY_MS
+      );
       return () => clearTimeout(timer);
     }
     setIsVisible(false);
@@ -51,13 +55,14 @@ export default function FloatTooltip({
     const tooltipWidth = 260;
     const tooltipHeight = 110;
     const padding = 12;
+    const CURSOR_OFFSET_PX = 15;
 
-    let left = position.x + 15;
+    let left = position.x + CURSOR_OFFSET_PX;
     let top = position.y - tooltipHeight / 2;
 
     // Check if tooltip goes off the right edge
     if (left + tooltipWidth > window.innerWidth - padding) {
-      left = position.x - tooltipWidth - 15;
+      left = position.x - tooltipWidth - CURSOR_OFFSET_PX;
     }
 
     // Check if tooltip goes off the top edge

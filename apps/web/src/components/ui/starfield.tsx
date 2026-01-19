@@ -2,40 +2,50 @@
 
 import { useMemo } from "react";
 
-interface Star {
+type Star = {
   id: number;
   x: number;
   y: number;
   size: number;
   opacity: number;
   twinkleSpeed: number;
-}
+};
 
-interface StarfieldProps {
+type StarfieldProps = {
   isVisible: boolean;
-}
+};
 
 export default function Starfield({ isVisible }: StarfieldProps) {
   // Generate stars with varied sizes and positions
   const stars = useMemo(() => {
     const starArray: Star[] = [];
     const starCount = 200; // Number of stars
+    const MAX_POSITION_PERCENT = 100;
+    const MAX_SIZE_RANGE = 3;
+    const MIN_SIZE_PX = 1;
+    const MAX_OPACITY_RANGE = 0.8;
+    const MIN_OPACITY = 0.2;
+    const MAX_TWINKLE_SPEED_RANGE = 4;
+    const MIN_TWINKLE_SPEED_S = 2;
 
     for (let i = 0; i < starCount; i++) {
       starArray.push({
         id: i,
-        x: Math.random() * 100, // Position as percentage
-        y: Math.random() * 100,
-        size: Math.random() * 3 + 1, // Size between 1-4px
-        opacity: Math.random() * 0.8 + 0.2, // Opacity between 0.2-1
-        twinkleSpeed: Math.random() * 4 + 2, // Animation duration 2-6s
+        x: Math.random() * MAX_POSITION_PERCENT, // Position as percentage
+        y: Math.random() * MAX_POSITION_PERCENT,
+        size: Math.random() * MAX_SIZE_RANGE + MIN_SIZE_PX, // Size between 1-4px
+        opacity: Math.random() * MAX_OPACITY_RANGE + MIN_OPACITY, // Opacity between 0.2-1
+        twinkleSpeed:
+          Math.random() * MAX_TWINKLE_SPEED_RANGE + MIN_TWINKLE_SPEED_S, // Animation duration 2-6s
       });
     }
 
     return starArray;
   }, []);
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <div className="-z-10 pointer-events-none fixed inset-0 overflow-hidden">
@@ -49,22 +59,26 @@ export default function Starfield({ isVisible }: StarfieldProps) {
       />
 
       {/* Stars */}
-      {stars.map((star) => (
-        <div
-          className="absolute animate-pulse rounded-full bg-white"
-          key={star.id}
-          style={{
-            left: `${star.x}%`,
-            top: `${star.y}%`,
-            width: `${star.size}px`,
-            height: `${star.size}px`,
-            opacity: star.opacity,
-            animationDuration: `${star.twinkleSpeed}s`,
-            animationDelay: `${Math.random() * star.twinkleSpeed}s`,
-            boxShadow: `0 0 ${star.size * 2}px rgba(255, 255, 255, ${star.opacity * 0.5})`,
-          }}
-        />
-      ))}
+      {stars.map((star) => {
+        const GLOW_SIZE_MULTIPLIER = 2;
+        const GLOW_OPACITY_FACTOR = 0.5;
+        return (
+          <div
+            className="absolute animate-pulse rounded-full bg-white"
+            key={star.id}
+            style={{
+              left: `${star.x}%`,
+              top: `${star.y}%`,
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              opacity: star.opacity,
+              animationDuration: `${star.twinkleSpeed}s`,
+              animationDelay: `${Math.random() * star.twinkleSpeed}s`,
+              boxShadow: `0 0 ${star.size * GLOW_SIZE_MULTIPLIER}px rgba(255, 255, 255, ${star.opacity * GLOW_OPACITY_FACTOR})`,
+            }}
+          />
+        );
+      })}
 
       {/* Subtle nebula effects */}
       <div

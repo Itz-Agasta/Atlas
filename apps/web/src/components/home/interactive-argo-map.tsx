@@ -14,18 +14,18 @@ import {
 // Import the CSS for mapbox-gl
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import { argoFloatsData } from "@/data/argoFloats2";
+import { argoFloatsData } from "@/data/argo-floats2";
 import type { ArgoFloat, PopupData, TooltipData } from "@/types/argo";
-import Starfield from "../ui/Starfield";
-import FloatPopup from "./FloatPopup";
-import FloatTooltip from "./FloatTooltip";
-import MapControlPanel, { MAP_STYLES } from "./MapControlPanel";
+import Starfield from "../ui/starfield";
+import FloatPopup from "./float-popup";
+import FloatTooltip from "./float-tooltip";
+import MapControlPanel, { MAP_STYLES } from "./map-control-panel";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-interface InteractiveArgoMapProps {
+type InteractiveArgoMapProps = {
   floats?: ArgoFloat[];
-}
+};
 
 // Custom marker component for Argo floats
 function ArgoMarker({
@@ -116,13 +116,16 @@ export default function InteractiveArgoMap({
   // FIXME: Have to change this later
   // Calculate the bounds to fit all floats (focused on Indian Ocean)
   const bounds = useMemo(() => {
-    if (floats.length === 0) return null;
+    if (floats.length === 0) {
+      return null;
+    }
 
     // Center on Indian Ocean with appropriate zoom
+    const DEFAULT_FLAT_MAP_ZOOM = 4.5;
     return {
       longitude: 75, // Central Indian Ocean longitude
       latitude: 8, // Slightly north for better view of India's coast
-      zoom: isGlobe ? 2 : 4.5,
+      zoom: isGlobe ? 2 : DEFAULT_FLAT_MAP_ZOOM,
     };
   }, [floats, isGlobe]);
 

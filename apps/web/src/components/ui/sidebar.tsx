@@ -5,17 +5,17 @@ import type React from "react";
 import { createContext, useContext, useState } from "react";
 import { cn } from "@/lib/utils";
 
-interface Links {
+type Links = {
   label: string;
   href: string;
   icon: React.JSX.Element | React.ReactNode;
-}
+};
 
-interface SidebarContextProps {
+type SidebarContextProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   animate: boolean;
-}
+};
 
 const SidebarContext = createContext<SidebarContextProps | undefined>(
   undefined
@@ -82,21 +82,19 @@ export const DesktopSidebar = ({
 }: React.ComponentProps<typeof motion.div>) => {
   const { open, animate } = useSidebar();
   return (
-    <>
-      <motion.div
-        animate={{
-          width: animate ? (open ? "300px" : "60px") : "300px",
-        }}
-        className={cn(
-          "fixed top-0 left-0 z-50 hidden h-full w-[300px] shrink-0 bg-neutral-100 px-4 py-4 md:flex md:flex-col dark:bg-neutral-800",
-          className
-        )}
-        style={{ zIndex: 50 }}
-        {...props}
-      >
-        {children}
-      </motion.div>
-    </>
+    <motion.div
+      animate={{
+        width: animate ? (open ? "300px" : "60px") : "300px",
+      }}
+      className={cn(
+        "fixed top-0 left-0 z-50 hidden h-full w-[300px] shrink-0 bg-neutral-100 px-4 py-4 md:flex md:flex-col dark:bg-neutral-800",
+        className
+      )}
+      style={{ zIndex: 50 }}
+      {...props}
+    >
+      {children}
+    </motion.div>
   );
 };
 
@@ -107,46 +105,46 @@ export const MobileSidebar = ({
 }: React.ComponentProps<"div">) => {
   const { open, setOpen } = useSidebar();
   return (
-    <>
-      <div
-        className={cn(
-          "flex h-10 w-full flex-row items-center justify-between bg-neutral-100 px-4 py-4 md:hidden dark:bg-neutral-800"
-        )}
-        {...props}
-      >
-        <div className="z-20 flex w-full justify-end">
-          <IconMenu2
-            className="text-neutral-800 dark:text-neutral-200"
-            onClick={() => setOpen(!open)}
-          />
-        </div>
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              animate={{ x: 0, opacity: 1 }}
-              className={cn(
-                "fixed inset-0 z-[100] flex h-full w-full flex-col justify-between bg-white p-10 dark:bg-neutral-900",
-                className
-              )}
-              exit={{ x: "-100%", opacity: 0 }}
-              initial={{ x: "-100%", opacity: 0 }}
-              transition={{
-                duration: 0.3,
-                ease: "easeInOut",
-              }}
-            >
-              <div
-                className="absolute top-10 right-10 z-50 text-neutral-800 dark:text-neutral-200"
-                onClick={() => setOpen(!open)}
-              >
-                <IconX />
-              </div>
-              {children}
-            </motion.div>
-          )}
-        </AnimatePresence>
+    <div
+      className={cn(
+        "flex h-10 w-full flex-row items-center justify-between bg-neutral-100 px-4 py-4 md:hidden dark:bg-neutral-800"
+      )}
+      {...props}
+    >
+      <div className="z-20 flex w-full justify-end">
+        <IconMenu2
+          className="text-neutral-800 dark:text-neutral-200"
+          onClick={() => setOpen(!open)}
+        />
       </div>
-    </>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            animate={{ x: 0, opacity: 1 }}
+            className={cn(
+              "fixed inset-0 z-[100] flex h-full w-full flex-col justify-between bg-white p-10 dark:bg-neutral-900",
+              className
+            )}
+            exit={{ x: "-100%", opacity: 0 }}
+            initial={{ x: "-100%", opacity: 0 }}
+            transition={{
+              duration: 0.3,
+              ease: "easeInOut",
+            }}
+          >
+            <button
+              aria-label="Close sidebar"
+              className="absolute top-10 right-10 z-50 text-neutral-800 dark:text-neutral-200"
+              onClick={() => setOpen(!open)}
+              type="button"
+            >
+              <IconX />
+            </button>
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 

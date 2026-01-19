@@ -1,5 +1,5 @@
 // FIXME: its migrated
-export interface ArgoFloat {
+export type ArgoFloat = {
   id: string; // Format: AL032017_20170619180000
   floatNumber: string; // Format: 2902203
   longitude: number;
@@ -15,17 +15,17 @@ export interface ArgoFloat {
   depth?: number;
   temperature?: number;
   salinity?: number;
-}
+};
 
-export interface TooltipData {
+export type TooltipData = {
   id: string;
   longitude: number;
   latitude: number;
   date: string;
   cycle: number;
-}
+};
 
-export interface PopupData {
+export type PopupData = {
   floatNumber: string;
   cycle: number;
   date: string;
@@ -33,4 +33,4 @@ export interface PopupData {
   pi: string;
   telecomCode: string;
   sensors: string[];
-}
+};

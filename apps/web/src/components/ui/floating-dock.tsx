@@ -10,6 +10,15 @@ import {
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
+// Magnification effect constants - these are animation design values
+// biome-ignore lint/style/noMagicNumbers: Animation constants are intentional design values
+const MOUSE_DISTANCE_RANGE = [-150, 0, 150];
+// biome-ignore lint/style/noMagicNumbers: Animation constants are intentional design values
+const ITEM_SIZE_RANGE = [40, 80, 40];
+// biome-ignore lint/style/noMagicNumbers: Animation constants are intentional design values
+const ICON_SIZE_RANGE = [20, 40, 20];
+const ANIMATION_DELAY_STEP = 0.05;
+
 export const FloatingDock = ({
   items,
   desktopClassName,
@@ -51,12 +60,14 @@ const FloatingDockMobile = ({
                   opacity: 0,
                   y: 10,
                   transition: {
-                    delay: idx * 0.05,
+                    delay: idx * ANIMATION_DELAY_STEP,
                   },
                 }}
                 initial={{ opacity: 0, y: 10 }}
                 key={item.title}
-                transition={{ delay: (items.length - 1 - idx) * 0.05 }}
+                transition={{
+                  delay: (items.length - 1 - idx) * ANIMATION_DELAY_STEP,
+                }}
               >
                 <a
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-900"
@@ -73,6 +84,7 @@ const FloatingDockMobile = ({
       <button
         className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-800"
         onClick={() => setOpen(!open)}
+        type="button"
       >
         <IconLayoutNavbarCollapse className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />
       </button>
@@ -123,18 +135,26 @@ function IconContainer({
     return val - bounds.x - bounds.width / 2;
   });
 
-  const widthTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
-  const heightTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
+  const widthTransform = useTransform(
+    distance,
+    MOUSE_DISTANCE_RANGE,
+    ITEM_SIZE_RANGE
+  );
+  const heightTransform = useTransform(
+    distance,
+    MOUSE_DISTANCE_RANGE,
+    ITEM_SIZE_RANGE
+  );
 
   const widthTransformIcon = useTransform(
     distance,
-    [-150, 0, 150],
-    [20, 40, 20]
+    MOUSE_DISTANCE_RANGE,
+    ICON_SIZE_RANGE
   );
   const heightTransformIcon = useTransform(
     distance,
-    [-150, 0, 150],
-    [20, 40, 20]
+    MOUSE_DISTANCE_RANGE,
+    ICON_SIZE_RANGE
   );
 
   const width = useSpring(widthTransform, {
