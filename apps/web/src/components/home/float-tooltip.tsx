@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { TooltipData } from "@/types/argo";
 
-interface FloatTooltipProps {
+type FloatTooltipProps = {
   data: TooltipData | null;
   position: { x: number; y: number } | null;
   visible: boolean;
-}
+};
 
 export default function FloatTooltip({
   data,
@@ -22,14 +22,17 @@ export default function FloatTooltip({
   useEffect(() => {
     if (visible && data && position) {
       // Small delay for smooth transition
-      const timer = setTimeout(() => setIsVisible(true), 100);
+      const TOOLTIP_TRANSITION_DELAY_MS = 100;
+      const timer = setTimeout(
+        () => setIsVisible(true),
+        TOOLTIP_TRANSITION_DELAY_MS
+      );
       return () => clearTimeout(timer);
-    } else {
-      setIsVisible(false);
     }
+    setIsVisible(false);
   }, [visible, data, position]);
 
-  if (!data || !position || !visible) {
+  if (!(data && position && visible)) {
     return null;
   }
 
@@ -52,13 +55,14 @@ export default function FloatTooltip({
     const tooltipWidth = 260;
     const tooltipHeight = 110;
     const padding = 12;
+    const CURSOR_OFFSET_PX = 15;
 
-    let left = position.x + 15;
+    let left = position.x + CURSOR_OFFSET_PX;
     let top = position.y - tooltipHeight / 2;
 
     // Check if tooltip goes off the right edge
     if (left + tooltipWidth > window.innerWidth - padding) {
-      left = position.x - tooltipWidth - 15;
+      left = position.x - tooltipWidth - CURSOR_OFFSET_PX;
     }
 
     // Check if tooltip goes off the top edge
@@ -81,14 +85,14 @@ export default function FloatTooltip({
 
   return (
     <div
-      className="fixed z-50 pointer-events-none transition-all duration-200 ease-out"
+      className="pointer-events-none fixed z-50 transition-all duration-200 ease-out"
       style={getTooltipStyle()}
     >
-      <Card className="shadow-lg border backdrop-blur-sm bg-background/95">
-        <CardContent className="p-3 space-y-2">
+      <Card className="border bg-background/95 shadow-lg backdrop-blur-sm">
+        <CardContent className="space-y-2 p-3">
           {/* Header with ID */}
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs font-medium">
+            <Badge className="font-medium text-xs" variant="outline">
               ID: {data.id}
             </Badge>
           </div>

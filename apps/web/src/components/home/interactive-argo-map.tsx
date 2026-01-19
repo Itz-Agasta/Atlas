@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
@@ -15,31 +14,18 @@ import {
 // Import the CSS for mapbox-gl
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import { argoFloatsData } from "@/data/argoFloats2";
+import { argoFloatsData } from "@/data/argo-floats2";
 import type { ArgoFloat, PopupData, TooltipData } from "@/types/argo";
-import Starfield from "../ui/Starfield";
-import FloatPopup from "./FloatPopup";
-import FloatTooltip from "./FloatTooltip";
-import MapControlPanel, { MAP_STYLES } from "./MapControlPanel";
-
-// Dynamically import ArgoVisualizer to avoid SSR issues with Plotly.js
-const ArgoVisualizer = dynamic(() => import("../argo"), {
-  ssr: false,
-  loading: () => (
-    <div className="bg-white/95 rounded-xl shadow-lg p-3 min-w-[320px] max-w-[380px] relative">
-      <div className="animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-        <div className="h-64 bg-gray-200 rounded"></div>
-      </div>
-    </div>
-  ),
-});
+import Starfield from "../ui/starfield";
+import FloatPopup from "./float-popup";
+import FloatTooltip from "./float-tooltip";
+import MapControlPanel, { MAP_STYLES } from "./map-control-panel";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-interface InteractiveArgoMapProps {
+type InteractiveArgoMapProps = {
   floats?: ArgoFloat[];
-}
+};
 
 // Custom marker component for Argo floats
 function ArgoMarker({
@@ -57,13 +43,11 @@ function ArgoMarker({
 }) {
   return (
     <button
-      type="button"
-      className={`cursor-pointer transition-transform duration-200 border-none bg-transparent p-0 ${
+      aria-label={`Argo float ${float.id} at ${float.latitude}, ${float.longitude}`}
+      className={`cursor-pointer border-none bg-transparent p-0 transition-transform duration-200 ${
         isSelected ? "scale-125" : "hover:scale-110"
       }`}
       onClick={(e) => onClick(e.nativeEvent)}
-      onMouseEnter={(e) => onHover(e.nativeEvent)}
-      onMouseLeave={onHoverEnd}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -78,30 +62,32 @@ function ArgoMarker({
           onClick(simulatedEvent);
         }
       }}
-      aria-label={`Argo float ${float.id} at ${float.latitude}, ${float.longitude}`}
+      onMouseEnter={(e) => onHover(e.nativeEvent)}
+      onMouseLeave={onHoverEnd}
+      type="button"
     >
       <div className={`relative ${isSelected ? "animate-pulse" : ""}`}>
         {/* Outer glow ring */}
         <div
           className={`absolute inset-0 rounded-full ${
             isSelected ? "bg-white" : "bg-green-400"
-          } opacity-30 animate-ping`}
+          } animate-ping opacity-30`}
         />
 
         {/* Main marker */}
         <div
-          className={`relative w-6 h-6 rounded-full border-2 ${
+          className={`relative h-6 w-6 rounded-full border-2 ${
             isSelected
-              ? "bg-white border-gray-300"
-              : "bg-green-500 border-green-700"
-          } shadow-lg flex items-center justify-center`}
+              ? "border-gray-300 bg-white"
+              : "border-green-700 bg-green-500"
+          } flex items-center justify-center shadow-lg`}
         >
           {/* Inner dot */}
-          <div className="w-2 h-2 bg-white rounded-full" />
+          <div className="h-2 w-2 rounded-full bg-white" />
         </div>
 
         {/* Simple hover label */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 bg-opacity-95 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none backdrop-blur-sm border border-slate-600/50">
+        <div className="-top-8 -translate-x-1/2 pointer-events-none absolute left-1/2 transform whitespace-nowrap rounded-lg border border-slate-600/50 bg-slate-800 bg-opacity-95 px-3 py-1.5 text-white text-xs opacity-0 backdrop-blur-sm transition-opacity duration-200 hover:opacity-100">
           Float {float.floatNumber}
         </div>
       </div>
@@ -115,7 +101,6 @@ export default function InteractiveArgoMap({
   const router = useRouter();
   const [selectedFloat, setSelectedFloat] = useState<ArgoFloat | null>(null);
   const [hoveredFloat, setHoveredFloat] = useState<ArgoFloat | null>(null);
-  const [showProfile, setShowProfile] = useState(false);
   const [mapStyle, setMapStyle] = useState(MAP_STYLES.satellite);
   const [isGlobe, setIsGlobe] = useState(false);
   const [hoverPosition, setHoverPosition] = useState<{
@@ -131,20 +116,22 @@ export default function InteractiveArgoMap({
   // FIXME: Have to change this later
   // Calculate the bounds to fit all floats (focused on Indian Ocean)
   const bounds = useMemo(() => {
-    if (floats.length === 0) return null;
+    if (floats.length === 0) {
+      return null;
+    }
 
     // Center on Indian Ocean with appropriate zoom
+    const DEFAULT_FLAT_MAP_ZOOM = 4.5;
     return {
       longitude: 75, // Central Indian Ocean longitude
       latitude: 8, // Slightly north for better view of India's coast
-      zoom: isGlobe ? 2 : 4.5,
+      zoom: isGlobe ? 2 : DEFAULT_FLAT_MAP_ZOOM,
     };
   }, [floats, isGlobe]);
 
   const handleMarkerClick = (float: ArgoFloat, event: MouseEvent) => {
     setSelectedFloat(float);
     setClickPosition({ x: event.clientX, y: event.clientY });
-    setShowProfile(false); // Close profile if open
   };
 
   const handleMarkerHover = (float: ArgoFloat, event: MouseEvent) => {
@@ -162,17 +149,11 @@ export default function InteractiveArgoMap({
       // Navigate to the float profile page
       router.push(`/float/${selectedFloat.floatNumber}`);
     }
-    setSelectedFloat(null);
-    setClickPosition(null);
   };
 
   const handleClosePopup = () => {
     setSelectedFloat(null);
     setClickPosition(null);
-  };
-
-  const handleCloseProfile = () => {
-    setShowProfile(false);
   };
 
   // Convert ArgoFloat to TooltipData
@@ -196,12 +177,11 @@ export default function InteractiveArgoMap({
   });
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative h-full w-full">
       {/* Starfield background for globe view */}
       <Starfield isVisible={isGlobe} />
 
       <MapboxMap
-        key={isGlobe ? "globe" : "mercator"}
         initialViewState={
           bounds || {
             longitude: 75,
@@ -209,11 +189,10 @@ export default function InteractiveArgoMap({
             zoom: 4.5,
           }
         }
-        style={{ width: "100%", height: "100%" }}
-        mapStyle={mapStyle}
-        mapboxAccessToken={MAPBOX_TOKEN}
         interactiveLayerIds={[]}
-        projection={{ name: isGlobe ? "globe" : "mercator" }}
+        key={isGlobe ? "globe" : "mercator"}
+        mapboxAccessToken={MAPBOX_TOKEN}
+        mapStyle={mapStyle}
         onClick={() => {
           // Close popup when clicking on map
           setSelectedFloat(null);
@@ -221,6 +200,8 @@ export default function InteractiveArgoMap({
           // Close control panel when clicking on map
           setIsControlPanelOpen(false);
         }}
+        projection={{ name: isGlobe ? "globe" : "mercator" }}
+        style={{ width: "100%", height: "100%" }}
       >
         {/* Map Controls */}
         <GeolocateControl position="top-right" />
@@ -231,10 +212,10 @@ export default function InteractiveArgoMap({
         {/* Argo Float Markers */}
         {floats.map((float) => (
           <Marker
-            key={float.id}
-            longitude={float.longitude}
-            latitude={float.latitude}
             anchor="center"
+            key={float.id}
+            latitude={float.latitude}
+            longitude={float.longitude}
             onClick={(e) => {
               e.originalEvent.stopPropagation();
               handleMarkerClick(float, e.originalEvent);
@@ -242,10 +223,10 @@ export default function InteractiveArgoMap({
           >
             <ArgoMarker
               float={float}
+              isSelected={selectedFloat?.id === float.id}
               onClick={(e) => handleMarkerClick(float, e)}
               onHover={(e) => handleMarkerHover(float, e)}
               onHoverEnd={handleMarkerHoverEnd}
-              isSelected={selectedFloat?.id === float.id}
             />
           </Marker>
         ))}
@@ -254,7 +235,7 @@ export default function InteractiveArgoMap({
       {/* Dusky overlay for satellite view */}
       {mapStyle === MAP_STYLES.satellite && (
         <div
-          className="absolute inset-0 pointer-events-none z-[1]"
+          className="pointer-events-none absolute inset-0 z-[1]"
           style={{
             background:
               "linear-gradient(45deg, rgba(30, 41, 59, 0.15) 0%, rgba(51, 65, 85, 0.25) 50%, rgba(30, 41, 59, 0.15) 100%)",
@@ -265,12 +246,12 @@ export default function InteractiveArgoMap({
 
       {/* Control Panel */}
       <MapControlPanel
-        mapStyle={mapStyle}
-        setMapStyle={setMapStyle}
         isGlobe={isGlobe}
-        setIsGlobe={setIsGlobe}
         isOpen={isControlPanelOpen}
+        mapStyle={mapStyle}
+        setIsGlobe={setIsGlobe}
         setIsOpen={setIsControlPanelOpen}
+        setMapStyle={setMapStyle}
       />
 
       {/* Hover Tooltip */}
@@ -283,20 +264,11 @@ export default function InteractiveArgoMap({
       {/* Click Popup */}
       <FloatPopup
         data={selectedFloat ? getPopupData(selectedFloat) : null}
-        position={clickPosition}
         onClose={handleClosePopup}
         onShowProfile={handleShowProfile}
+        position={clickPosition}
         visible={!!selectedFloat && !!clickPosition}
       />
-
-      {/* Argo Profile Overlay */}
-      {showProfile && selectedFloat && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="relative">
-            <ArgoVisualizer onClose={handleCloseProfile} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
