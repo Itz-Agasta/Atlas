@@ -14,7 +14,8 @@
       "zod": "^4.1.11",
       "typescript": "^5.8.2",
       "tsdown": "^0.15.5",
-      "@trpc/client": "^11.5.0"
+      "@trpc/client": "^11.5.0",
+      "drizzle-orm": "^0.44.7"
     }
   },
   "scripts": {
@@ -33,7 +34,11 @@
   },
   "dependencies": {
     "dotenv": "^17.2.2",
+    "drizzle-orm": "^0.44.7",
     "zod": "^4.1.11"
+  },
+  "resolutions": {
+    "drizzle-orm": "^0.44.7"
   },
   "devDependencies": {
     "turbo": "^2.5.4",

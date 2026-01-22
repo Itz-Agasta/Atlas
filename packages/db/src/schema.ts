@@ -49,7 +49,11 @@ export const argo_float_status = pgTable(
     float_id: bigint("float_id", { mode: "number" })
       .primaryKey()
       .references(() => argo_float_metadata.float_id, { onDelete: "cascade" }),
-    location: geometry("location", { typed: "point", mode: "xy", srid: 4326 }),
+    location: geometry("location", {
+      type: "point",
+      mode: "xy",
+      srid: 4326,
+    }).notNull(),
     cycle_number: integer("cycle_number"),
     battery_percent: integer("battery_percent"), // 0–100
     last_update: timestamp("last_update"),
