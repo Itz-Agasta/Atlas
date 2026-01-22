@@ -5,7 +5,7 @@ import type {
   FloatLocationsResponse,
 } from "@atlas/schema/api/home-page";
 
-import { eq, isNotNull, sql } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 import { Hono } from "hono";
 import logger from "../../config/logger";
 
@@ -26,13 +26,7 @@ homeRouter.get("/locations", async (c) => {
     const results = await db
       .select({
         floatId: argo_float_metadata.float_id,
-        // Extract coordinates from PostGIS geometry
-        latitude: sql`ST_Y(${argo_float_status.location})`.mapWith(
-          (val: number) => val
-        ),
-        longitude: sql`ST_X(${argo_float_status.location})`.mapWith(
-          (val: number) => val
-        ),
+        location: argo_float_status.location,
         lastUpdate: argo_float_status.last_update,
         cycleNumber: argo_float_status.cycle_number,
       })
@@ -44,13 +38,20 @@ homeRouter.get("/locations", async (c) => {
       .where(isNotNull(argo_float_status.location));
 
     // Transform to match schema
-    const responseData = results.map((row) => ({
-      floatId: row.floatId,
-      latitude: row.latitude,
-      longitude: row.longitude,
-      lastUpdate: row.lastUpdate?.toISOString(),
-      cycleNumber: row.cycleNumber || undefined,
-    }));
+    const responseData = results
+      .filter(
+        (
+          row
+        ): row is typeof row & { location: NonNullable<typeof row.location> } =>
+          row.location !== null // I was getting a stupid typeError b/w linter and type-cheker so have to add this.
+      )
+      .map((row) => ({
+        floatId: row.floatId,
+        latitude: row.location.y,
+        longitude: row.location.x,
+        lastUpdate: row.lastUpdate?.toISOString(),
+        cycleNumber: row.cycleNumber || undefined,
+      }));
 
     const response: FloatLocationsResponse = {
       success: true,
@@ -107,8 +108,8 @@ homeRouter.get("/float/:floatId", async (c) => {
         platform_type: result.platform_type ?? undefined,
         operatingInstitution: result.operatingInstitution ?? undefined,
         piName: result.piName ?? undefined,
-        latitude: result.latitude,
-        longitude: result.longitude,
+        latitude: result.location.y,
+        longitude: result.location.x,
         cycleNumber: result.cycleNumber ?? undefined,
         batteryPercent: result.batteryPercent ?? undefined,
         lastUpdate: result.lastUpdate?.toISOString(),
@@ -145,12 +146,7 @@ async function fetchFloatData(floatId: number) {
       operatingInstitution: argo_float_metadata.operating_institution,
       piName: argo_float_metadata.pi_name,
       // Current status
-      latitude: sql`ST_Y(${argo_float_status.location})`.mapWith(
-        (val: number) => val
-      ),
-      longitude: sql`ST_X(${argo_float_status.location})`.mapWith(
-        (val: number) => val
-      ),
+      location: argo_float_status.location,
       cycleNumber: argo_float_status.cycle_number,
       batteryPercent: argo_float_status.battery_percent,
       lastUpdate: argo_float_status.last_update,
@@ -166,5 +162,7 @@ async function fetchFloatData(floatId: number) {
     .where(eq(argo_float_metadata.float_id, floatId))
     .limit(1);
 
-  return result[0];
+  return result[0] as (typeof result)[0] & {
+    location: NonNullable<(typeof result)[0]["location"]>; // As stupid ts thinks location can be null even tough in drizzle schema we mentioned its NonNullable.
+  };
 }
