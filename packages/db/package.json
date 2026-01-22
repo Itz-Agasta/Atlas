@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "dotenv": "catalog:",
-    "drizzle-orm": "^0.44.7",
+    "drizzle-orm": "catalog:",
     "pg": "^8.14.1",
     "postgres": "^3.4.7",
     "zod": "catalog:"

@@ -19,7 +19,7 @@
     "ai": "^5.0.94",
     "date-fns": "^4.1.0",
     "dotenv": "catalog:",
-    "drizzle-orm": "^0.44.7",
+    "drizzle-orm": "catalog:",
     "hono": "catalog:",
     "winston": "^3.18.3",
     "zod": "catalog:"
