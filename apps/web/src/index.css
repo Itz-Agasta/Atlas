@@ -5,7 +5,6 @@ background: 1a1a1a
 border: 303030
 */
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
