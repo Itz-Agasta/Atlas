@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --port=3001",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "check-types": "tsc -b"
   },
   "dependencies": {
     "@atlas/schema": "workspace:*",
@@ -26,9 +27,14 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
+    "baseline-browser-mapping": "^2.9.17",
+    "leaflet": "^1.9.4",
+    "mapbox-gl": "^3.18.1",
     "tailwindcss": "^4.1.10",
     "typescript": "catalog:"
   }
