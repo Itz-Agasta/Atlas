@@ -5,7 +5,7 @@ import type {
   FloatLocationsResponse,
 } from "@atlas/schema/api/home-page";
 
-import { eq, sql } from "drizzle-orm";
+import { eq, isNotNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import logger from "../../config/logger";
 
@@ -27,8 +27,12 @@ homeRouter.get("/locations", async (c) => {
       .select({
         floatId: argo_float_metadata.float_id,
         // Extract coordinates from PostGIS geometry
-        latitude: sql<number>`ST_Y(${argo_float_status.location})`,
-        longitude: sql<number>`ST_X(${argo_float_status.location})`,
+        latitude: sql`ST_Y(${argo_float_status.location})`.mapWith(
+          (val: number) => val
+        ),
+        longitude: sql`ST_X(${argo_float_status.location})`.mapWith(
+          (val: number) => val
+        ),
         lastUpdate: argo_float_status.last_update,
         cycleNumber: argo_float_status.cycle_number,
       })
@@ -37,7 +41,7 @@ homeRouter.get("/locations", async (c) => {
         argo_float_status,
         eq(argo_float_metadata.float_id, argo_float_status.float_id)
       )
-      .where(sql`${argo_float_status.location} IS NOT NULL`);
+      .where(isNotNull(argo_float_status.location));
 
     // Transform to match schema
     const responseData = results.map((row) => ({
@@ -62,7 +66,6 @@ homeRouter.get("/locations", async (c) => {
       {
         success: false,
         error: "Failed to fetch float locations",
-        message: error instanceof Error ? error.message : "Unknown error",
       },
       HTTP_STATUS_INTERNAL_ERROR
     );
@@ -142,8 +145,12 @@ async function fetchFloatData(floatId: number) {
       operatingInstitution: argo_float_metadata.operating_institution,
       piName: argo_float_metadata.pi_name,
       // Current status
-      latitude: sql<number>`ST_Y(${argo_float_status.location})`,
-      longitude: sql<number>`ST_X(${argo_float_status.location})`,
+      latitude: sql`ST_Y(${argo_float_status.location})`.mapWith(
+        (val: number) => val
+      ),
+      longitude: sql`ST_X(${argo_float_status.location})`.mapWith(
+        (val: number) => val
+      ),
       cycleNumber: argo_float_status.cycle_number,
       batteryPercent: argo_float_status.battery_percent,
       lastUpdate: argo_float_status.last_update,
