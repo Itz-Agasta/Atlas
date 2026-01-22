@@ -57,6 +57,13 @@
       "when": 1767079104754,
       "tag": "0007_slow_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1769085452988,
+      "tag": "0008_faulty_carmella_unuscione",
+      "breakpoints": true
     }
   ]
 }

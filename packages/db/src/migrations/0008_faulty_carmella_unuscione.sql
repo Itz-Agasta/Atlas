@@ -1,0 +1,1 @@
+ALTER TABLE "argo_float_status" ALTER COLUMN "location" SET NOT NULL;
