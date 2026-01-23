@@ -10,6 +10,10 @@ export const floatLocationSchema = z.object({
   longitude: z.number(),
   lastUpdate: z.string().optional(), // ISO string
   cycleNumber: z.number().optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "UNKNOWN", "DEAD"]).optional(),
+  floatType: z
+    .enum(["core", "oxygen", "biogeochemical", "deep", "unknown"])
+    .optional(),
 });
 
 /**

@@ -29,6 +29,8 @@ homeRouter.get("/locations", async (c) => {
         location: argo_float_status.location,
         lastUpdate: argo_float_status.last_update,
         cycleNumber: argo_float_status.cycle_number,
+        status: argo_float_metadata.status,
+        floatType: argo_float_metadata.float_type,
       })
       .from(argo_float_metadata)
       .innerJoin(
@@ -51,6 +53,8 @@ homeRouter.get("/locations", async (c) => {
         longitude: row.location.x,
         lastUpdate: row.lastUpdate?.toISOString(),
         cycleNumber: row.cycleNumber || undefined,
+        status: row.status || undefined,
+        floatType: row.floatType || undefined,
       }));
 
     const response: FloatLocationsResponse = {

@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 
-interface SidebarFilters {
+export interface SidebarFilters {
   platformId: string;
   timePeriod: string;
   customRange: { start: Date | undefined; end: Date | undefined };

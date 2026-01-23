@@ -14,8 +14,7 @@ import {
 // Import the CSS for mapbox-gl
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import { argoFloatsData } from "@/data/argo-floats2";
-import type { ArgoFloat, PopupData, TooltipData } from "@/types/argo";
+import type { FloatLocationsResponse } from "@atlas/schema/api/home-page";
 import Starfield from "../ui/Starfield";
 import FloatPopup from "./float-popup";
 import FloatTooltip from "./float-tooltip";
@@ -23,8 +22,13 @@ import MapControlPanel, { MAP_STYLES } from "./map-control-panel";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
+// Type for float location from API
+type FloatLocation = FloatLocationsResponse["data"][number];
+
 type InteractiveArgoMapProps = {
-  floats?: ArgoFloat[];
+  floatLocations?: FloatLocation[];
+  isLoading?: boolean;
+  error?: string | null;
 };
 
 // Custom marker component for Argo floats
@@ -35,7 +39,7 @@ function ArgoMarker({
   onHoverEnd,
   isSelected,
 }: {
-  float: ArgoFloat;
+  float: FloatLocation;
   onClick: (e: MouseEvent) => void;
   onHover: (e: MouseEvent) => void;
   onHoverEnd: () => void;
@@ -43,7 +47,7 @@ function ArgoMarker({
 }) {
   return (
     <button
-      aria-label={`Argo float ${float.id} at ${float.latitude}, ${float.longitude}`}
+      aria-label={`Argo float ${float.floatId} at ${float.latitude}, ${float.longitude}`}
       className={`cursor-pointer border-none bg-transparent p-0 transition-transform duration-200 ${
         isSelected ? "scale-125" : "hover:scale-110"
       }`}
@@ -88,7 +92,7 @@ function ArgoMarker({
 
         {/* Simple hover label */}
         <div className="-top-8 -translate-x-1/2 pointer-events-none absolute left-1/2 transform whitespace-nowrap rounded-lg border border-slate-600/50 bg-slate-800 bg-opacity-95 px-3 py-1.5 text-white text-xs opacity-0 backdrop-blur-sm transition-opacity duration-200 hover:opacity-100">
-          Float {float.floatNumber}
+          Float {float.floatId}
         </div>
       </div>
     </button>
@@ -96,11 +100,13 @@ function ArgoMarker({
 }
 
 export default function InteractiveArgoMap({
-  floats = argoFloatsData,
+  floatLocations = [],
+  isLoading = false,
+  error = null,
 }: InteractiveArgoMapProps) {
   const router = useRouter();
-  const [selectedFloat, setSelectedFloat] = useState<ArgoFloat | null>(null);
-  const [hoveredFloat, setHoveredFloat] = useState<ArgoFloat | null>(null);
+  const [selectedFloat, setSelectedFloat] = useState<FloatLocation | null>(null);
+  const [hoveredFloat, setHoveredFloat] = useState<FloatLocation | null>(null);
   const [mapStyle, setMapStyle] = useState(MAP_STYLES.satellite);
   const [isGlobe, setIsGlobe] = useState(false);
   const [hoverPosition, setHoverPosition] = useState<{
@@ -116,7 +122,7 @@ export default function InteractiveArgoMap({
   // FIXME: Have to change this later
   // Calculate the bounds to fit all floats (focused on Indian Ocean)
   const bounds = useMemo(() => {
-    if (floats.length === 0) {
+    if (floatLocations.length === 0) {
       return null;
     }
 
@@ -127,14 +133,14 @@ export default function InteractiveArgoMap({
       latitude: 8, // Slightly north for better view of India's coast
       zoom: isGlobe ? 2 : DEFAULT_FLAT_MAP_ZOOM,
     };
-  }, [floats, isGlobe]);
+  }, [floatLocations, isGlobe]);
 
-  const handleMarkerClick = (float: ArgoFloat, event: MouseEvent) => {
+  const handleMarkerClick = (float: FloatLocation, event: MouseEvent) => {
     setSelectedFloat(float);
     setClickPosition({ x: event.clientX, y: event.clientY });
   };
 
-  const handleMarkerHover = (float: ArgoFloat, event: MouseEvent) => {
+  const handleMarkerHover = (float: FloatLocation, event: MouseEvent) => {
     setHoveredFloat(float);
     setHoverPosition({ x: event.clientX, y: event.clientY });
   };
@@ -147,7 +153,7 @@ export default function InteractiveArgoMap({
   const handleShowProfile = () => {
     if (selectedFloat) {
       // Navigate to the float profile page
-      router.push(`/float/${selectedFloat.floatNumber}`);
+      router.push(`/float/${selectedFloat.floatId}`);
     }
   };
 
@@ -156,28 +162,42 @@ export default function InteractiveArgoMap({
     setClickPosition(null);
   };
 
-  // Convert ArgoFloat to TooltipData
-  const getTooltipData = (float: ArgoFloat): TooltipData => ({
-    id: float.id,
+  // Convert FloatLocation to TooltipData
+  const getTooltipData = (float: FloatLocation) => ({
+    id: String(float.floatId),
     longitude: float.longitude,
     latitude: float.latitude,
-    date: float.date,
-    cycle: float.cycle,
+    date: float.lastUpdate || "",
+    cycle: float.cycleNumber || 0,
   });
 
-  // Convert ArgoFloat to PopupData
-  const getPopupData = (float: ArgoFloat): PopupData => ({
-    floatNumber: float.floatNumber,
-    cycle: float.cycle,
-    date: float.date,
-    platformType: float.platformType,
-    pi: float.pi,
-    telecomCode: float.telecomCode,
-    sensors: float.sensors,
+  // Convert FloatLocation to PopupData
+  const getPopupData = (float: FloatLocation) => ({
+    floatNumber: String(float.floatId),
+    cycle: float.cycleNumber || 0,
+    date: float.lastUpdate || "",
+    platformType: "Unknown",
+    pi: "Unknown",
+    telecomCode: "Unknown",
+    sensors: [] as string[],
   });
 
   return (
     <div className="relative h-full w-full">
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="text-white text-lg">Loading float locations...</div>
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-4 py-2 rounded-md">
+          {error}
+        </div>
+      )}
+
       {/* Starfield background for globe view */}
       <Starfield isVisible={isGlobe} />
 
@@ -210,10 +230,10 @@ export default function InteractiveArgoMap({
         <ScaleControl position="top-right" />
 
         {/* Argo Float Markers */}
-        {floats.map((float) => (
+        {floatLocations.map((float) => (
           <Marker
             anchor="center"
-            key={float.id}
+            key={float.floatId}
             latitude={float.latitude}
             longitude={float.longitude}
             onClick={(e) => {
@@ -223,7 +243,7 @@ export default function InteractiveArgoMap({
           >
             <ArgoMarker
               float={float}
-              isSelected={selectedFloat?.id === float.id}
+              isSelected={selectedFloat?.floatId === float.floatId}
               onClick={(e) => handleMarkerClick(float, e)}
               onHover={(e) => handleMarkerHover(float, e)}
               onHoverEnd={handleMarkerHoverEnd}
