@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../index.css";
-import "leaflet/dist/leaflet.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
@@ -32,9 +31,15 @@ export default function RootLayout({
       >
         <ThemeProvider
           attribute="class"
+<<<<<<< HEAD
           defaultTheme="light" // We will change it to system later. cuz our dark mode it not aesthetic currently
           enableSystem
           disableTransitionOnChange
+=======
+          defaultTheme="light" // TODO: We will change it to system later. cuz our dark mode it not aesthetic currently
+          disableTransitionOnChange
+          enableSystem
+>>>>>>> main
         >
           <SidebarProvider>{children}</SidebarProvider>
         </ThemeProvider>

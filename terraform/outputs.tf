@@ -30,3 +30,9 @@ output "eventbridge_rule_ids" {
   description = "IDs of the EventBridge rules"
   value       = module.eventbridge.eventbridge_rule_ids
 }
+
+// Supabase
+output "project_id" {
+  description = "Supabase project ID"
+  value       = supabase_project.production.id
+}

@@ -75,3 +75,31 @@ variable "image_tag" {
   type        = string
   default     = "latest"
 }
+
+// Supabase
+variable "supabase_provider_token" {
+  type      = string
+  sensitive = true
+}
+
+variable "linked_project" {
+  description = "Supabase project ID to import"
+  type        = string
+}
+
+variable "organization_id" {
+  description = "Supabase organization ID"
+  type        = string
+}
+
+variable "database_password" {
+  description = "Database password for Supabase"
+  type        = string
+  sensitive   = true
+}
+
+variable "region" {
+  description = "Supabase region"
+  type        = string
+  default     = "ap-south-1"
+}

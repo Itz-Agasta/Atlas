@@ -1,11 +1,7 @@
-"use client";
-
-import { useParams } from "next/navigation";
-import { FloatProfilePage } from "@/components/profile/FloatProfilePage";
-
 export default function FloatPage() {
-  const params = useParams();
-  const floatId = params.id as string;
-
-  return <FloatProfilePage floatId={floatId} />;
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <h1 className="font-bold text-2xl">Page will come soon</h1>
+    </div>
+  );
 }
