@@ -16,7 +16,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import { argoFloatsData } from "@/data/argo-floats2";
 import type { ArgoFloat, PopupData, TooltipData } from "@/types/argo";
-import Starfield from "../ui/starfield";
+import Starfield from "../ui/Starfield";
 import FloatPopup from "./float-popup";
 import FloatTooltip from "./float-tooltip";
 import MapControlPanel, { MAP_STYLES } from "./map-control-panel";
