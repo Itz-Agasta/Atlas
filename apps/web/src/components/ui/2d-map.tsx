@@ -51,6 +51,7 @@ type MapProps = {
     light?: MapStyleOption;
     dark?: MapStyleOption;
   };
+  className?: string;
 } & Omit<MapLibreGL.MapOptions, "container" | "style">;
 
 type MapRef = MapLibreGL.Map;
@@ -66,7 +67,7 @@ const DefaultLoader = () => (
 );
 
 const Map = forwardRef<MapRef, MapProps>(function Map(
-  { children, styles, ...props },
+  { children, styles, className, ...props },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -160,7 +161,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
   return (
     <MapContext.Provider value={contextValue}>
-      <div ref={containerRef} className="relative w-full h-full">
+      <div ref={containerRef} className={cn("relative w-full h-full", className)}>
         {isLoading && <DefaultLoader />}
         {/* SSR-safe: children render only when map is loaded on client */}
         {mapInstance && children}

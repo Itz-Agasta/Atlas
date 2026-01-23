@@ -123,7 +123,9 @@ export function DeploymentYearFilter({
             <Input
               id="start-year"
               value={inputStart}
-              onChange={(e) => handleInputChange("start", e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleInputChange("start", e.target.value)
+              }
               onBlur={() => handleInputBlur("start")}
               className="h-8 text-sm"
               placeholder={MIN_YEAR.toString()}
@@ -136,7 +138,9 @@ export function DeploymentYearFilter({
             <Input
               id="end-year"
               value={inputEnd}
-              onChange={(e) => handleInputChange("end", e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleInputChange("end", e.target.value)
+              }
               onBlur={() => handleInputBlur("end")}
               className="h-8 text-sm"
               placeholder={MAX_YEAR.toString()}

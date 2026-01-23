@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Suggestion } from "@/components/ui/shadcn-io/ai/suggestion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { queryAgent } from "@/lib/utils";
-import type { AgentQueryInput } from "@atlas/schema/agent";
+import type { AgentQueryInput } from "@atlas/schema/api/agent";
 
 interface AgentResponseProps {
   data: Awaited<ReturnType<typeof queryAgent>>;
@@ -51,7 +51,7 @@ function AgentResponse({ data }: AgentResponseProps) {
         <section>
           <h3 className="text-sm font-semibold text-gray-600 mb-2">Sources</h3>
           <ol className="list-decimal list-inside space-y-1 text-sm text-gray-700">
-            {data.citations.map((citation, index) => (
+            {data.citations.map((citation: any, index: number) => (
               <li key={index}>{citation}</li>
             ))}
           </ol>

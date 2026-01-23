@@ -115,7 +115,7 @@ function FloatProfileContent({
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Left Sidebar */}
-      <Sidebar variant="sidebar" collapsible="icon">
+      <Sidebar>
         <SidebarContent>
           <FloatSidebar metadata={metadata} />
         </SidebarContent>

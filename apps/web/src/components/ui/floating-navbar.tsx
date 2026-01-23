@@ -13,7 +13,7 @@ export const FloatingNav = ({
   navItems: {
     name: string;
     link: string;
-    icon?: JSX.Element;
+    icon?: React.ReactNode;
   }[];
   className?: string;
 }) => {
@@ -25,7 +25,7 @@ export const FloatingNav = ({
       )}
       style={{ backgroundColor: "#1b1b1a" }}
     >
-      {navItems.map((navItem: any, idx: number) => (
+      {navItems.map((navItem, idx) => (
         <a
           key={`link=${idx}`}
           href={navItem.link}

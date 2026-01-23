@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { AgentQueryInput } from "@atlas/schema/agent";
+import type { AgentQueryInput } from "@atlas/schema/api/agent";
 import type {
   FloatLocationsResponse,
   FloatDetailResponse,
