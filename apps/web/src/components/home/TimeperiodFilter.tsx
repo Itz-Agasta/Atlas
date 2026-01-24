@@ -4,7 +4,7 @@
  * currently we are using the ui/TimePeriodSelector.tsx ...*/
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +46,12 @@ export function TimePeriodFilter({
     customRange?.end,
   );
 
+  // Sync local state when parent customRange prop changes
+  useEffect(() => {
+    setCustomStart(customRange?.start);
+    setCustomEnd(customRange?.end);
+  }, [customRange]);
+
   const handlePeriodChange = (newValue: string) => {
     if (newValue && newValue !== "custom") {
       onTimePeriodChange(newValue);
@@ -55,13 +61,14 @@ export function TimePeriodFilter({
     }
   };
 
-  const handleCustomApply = () => {
-    if (customStart && customEnd) {
-      onTimePeriodChange("custom", { start: customStart, end: customEnd });
-      setIsCustomOpen(false);
-    }
-  };
-
+const handleCustomApply = () => {
+  if (customStart && customEnd) {
+    const normalizedStart = customStart < customEnd ? customStart : customEnd;
+    const normalizedEnd = customStart > customEnd ? customStart : customEnd;
+    onTimePeriodChange("custom", { start: normalizedStart, end: normalizedEnd });
+    setIsCustomOpen(false);
+  }
+};
   const handleCustomCancel = () => {
     setCustomStart(customRange?.start);
     setCustomEnd(customRange?.end);

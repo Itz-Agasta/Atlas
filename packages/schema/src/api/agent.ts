@@ -59,5 +59,6 @@ export const scientificResponseSchema = z.object({
 });
 
 // Export inferred types
+export type AgentQueryInput = z.infer<typeof agentQueryInputSchema>;
 export type Citation = z.infer<typeof citationSchema>;
 export type ScientificResponse = z.infer<typeof scientificResponseSchema>;

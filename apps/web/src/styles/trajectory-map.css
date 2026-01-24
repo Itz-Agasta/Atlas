@@ -8,13 +8,9 @@
 /* Style the zoom control for better visibility on satellite imagery */
 .leaflet-control-zoom {
   border: none !important;
-<<<<<<< HEAD
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-=======
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
->>>>>>> main
 }
 
 .leaflet-control-zoom a {
@@ -39,13 +35,9 @@
 /* Enhance popup styling */
 .leaflet-popup-content-wrapper {
   border-radius: 8px !important;
-<<<<<<< HEAD
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-=======
   box-shadow:
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
->>>>>>> main
 }
 
 .leaflet-popup-tip {
@@ -69,8 +61,4 @@
 .trajectory-map-overlay {
   backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> main

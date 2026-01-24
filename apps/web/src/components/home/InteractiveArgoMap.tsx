@@ -271,6 +271,7 @@ export default function InteractiveArgoMap({
         setIsGlobe={setIsGlobe}
         isOpen={isControlPanelOpen}
         setIsOpen={setIsControlPanelOpen}
+        floatCount={floats.length}
       />
 
       {/* Hover Tooltip */}

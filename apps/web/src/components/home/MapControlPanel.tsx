@@ -1,7 +1,6 @@
 "use client";
 
 import { Satellite, Moon, Mountain, Map, Globe, Settings } from "lucide-react";
-import { argoFloatsData } from "@/data/argoFloats";
 
 // Map style options
 const MAP_STYLES = {
@@ -17,6 +16,7 @@ interface MapControlPanelProps {
   setIsGlobe: (globe: boolean) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  floatCount: number;
 }
 
 export default function MapControlPanel({
@@ -26,6 +26,7 @@ export default function MapControlPanel({
   setIsGlobe,
   isOpen,
   setIsOpen,
+  floatCount,
 }: MapControlPanelProps) {
   return (
     <div className="fixed bottom-4 right-4 z-10 flex flex-col items-end">
@@ -184,7 +185,7 @@ export default function MapControlPanel({
               }}
             >
               <p className="mb-2 font-medium">
-                {argoFloatsData.length} Argo floats in the Indian Ocean
+                {floatCount} Argo floats in the Indian Ocean
               </p>
               <div className="flex items-center mb-1">
                 <div

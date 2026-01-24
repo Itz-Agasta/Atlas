@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaClock } from "react-icons/fa";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -23,6 +23,12 @@ export function TimePeriodSelector({
   onValueChange,
 }: TimePeriodSelectorProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(value);
+
+  useEffect(() => {
+    if (value) {
+      setSelectedPeriod(value);
+    }
+  }, [value]);
 
   const handleValueChange = (newValue: string) => {
     if (newValue) {

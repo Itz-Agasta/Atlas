@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,13 @@ export function DeploymentYearFilter({
   const [localRange, setLocalRange] = useState([range.start, range.end]);
   const [inputStart, setInputStart] = useState(range.start.toString());
   const [inputEnd, setInputEnd] = useState(range.end.toString());
+
+  // Sync local state when parent range prop changes
+  useEffect(() => {
+    setLocalRange([range.start, range.end]);
+    setInputStart(range.start.toString());
+    setInputEnd(range.end.toString());
+  }, [range.start, range.end]);
 
   const handleSliderChange = useCallback(
     (values: number[]) => {
@@ -123,9 +130,7 @@ export function DeploymentYearFilter({
             <Input
               id="start-year"
               value={inputStart}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleInputChange("start", e.target.value)
-              }
+              onChange={(e) => handleInputChange("start", e.target.value)}
               onBlur={() => handleInputBlur("start")}
               className="h-8 text-sm"
               placeholder={MIN_YEAR.toString()}
@@ -138,9 +143,7 @@ export function DeploymentYearFilter({
             <Input
               id="end-year"
               value={inputEnd}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleInputChange("end", e.target.value)
-              }
+              onChange={(e) => handleInputChange("end", e.target.value)}
               onBlur={() => handleInputBlur("end")}
               className="h-8 text-sm"
               placeholder={MAX_YEAR.toString()}

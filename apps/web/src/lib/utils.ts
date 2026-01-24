@@ -6,7 +6,19 @@ import type {
   FloatDetailResponse,
 } from "@atlas/schema/api/home-page";
 
-const API_BASE_URL = "http://localhost:3000/api/v1";
+const getApiBaseUrl = (): string => {
+  // Use environment variable if available
+  if (process.env.NEXT_PUBLIC_SERVER_URL) {
+    return `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1`;
+  }
+  // Fallback to window.location.origin in browser, or localhost for SSR
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api/v1`;
+  }
+  return "http://localhost:3000/api/v1";
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
