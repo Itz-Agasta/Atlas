@@ -44,12 +44,12 @@ const randomMarkers = [
   { id: 8, longitude: 77.209, latitude: 28.6139, label: "New Delhi" },
 ];
 
-interface SatelliteMapProps {
+type SatelliteMapProps = {
   center?: [number, number];
   zoom?: number;
   style?: React.CSSProperties;
   children?: React.ReactNode;
-}
+};
 
 export default function SatelliteMap({
   center = [0, 0],

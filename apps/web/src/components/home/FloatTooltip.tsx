@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { TooltipData } from "@/types/argo";
 
-interface FloatTooltipProps {
+type FloatTooltipProps = {
   data: TooltipData | null;
   position: { x: number; y: number } | null;
   visible: boolean;
-}
+};
 
 export default function FloatTooltip({
   data,

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/chart";
 import { Separator } from "@/components/ui/separator";
 
-interface DriftData {
+type DriftData = {
   timestamp: string;
   speed: number;
   direction: number;
@@ -27,12 +27,12 @@ interface DriftData {
   longitude: number;
   distance: number; // cumulative distance
   displacement: number; // distance from start
-}
+};
 
-interface DriftAnalysisChartProps {
+type DriftAnalysisChartProps = {
   data: DriftData[];
   className?: string;
-}
+};
 
 const chartConfig = {
   speed: {
@@ -80,7 +80,9 @@ const DirectionDot = (props: {
   payload?: { direction?: number };
 }) => {
   const { cx, cy, payload } = props;
-  if (!(payload?.direction && cx && cy)) return <Dot {...props} />;
+  if (!(payload?.direction && cx && cy)) {
+    return <Dot {...props} />;
+  }
 
   const direction = payload.direction;
   const radians = (direction - 90) * (Math.PI / 180); // Convert to radians, adjust for math coords
@@ -124,8 +126,8 @@ export default function DriftAnalysisChart({
   // Calculate statistics
   const avgSpeed = data.reduce((sum, d) => sum + d.speed, 0) / data.length;
   const maxSpeed = Math.max(...data.map((d) => d.speed));
-  const totalDistance = data[data.length - 1]?.distance || 0;
-  const totalDisplacement = data[data.length - 1]?.displacement || 0;
+  const totalDistance = data.at(-1)?.distance || 0;
+  const totalDisplacement = data.at(-1)?.displacement || 0;
   const efficiency =
     totalDistance > 0 ? (totalDisplacement / totalDistance) * 100 : 0;
 

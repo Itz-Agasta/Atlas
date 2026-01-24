@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/chart";
 import { Separator } from "@/components/ui/separator";
 
-interface CyclePhase {
+type CyclePhase = {
   phase: "surface" | "descent" | "drift" | "ascent" | "surface_transmission";
   startTime: string;
   endTime: string;
@@ -30,12 +30,12 @@ interface CyclePhase {
   depth?: number;
   temperature?: number;
   notes?: string;
-}
+};
 
-interface CyclePhaseDurationChartProps {
+type CyclePhaseDurationChartProps = {
   data: CyclePhase[];
   className?: string;
-}
+};
 
 const chartConfig = {
   surface: {
@@ -139,7 +139,7 @@ export default function CyclePhaseDurationChart({
   // Prepare chart data for phase duration trends
   const trendData = Object.entries(cycleData)
     .map(([cycleNum, phases]) => {
-      const cycle = Number.parseInt(cycleNum);
+      const cycle = Number.parseInt(cycleNum, 10);
       const phaseMap = phases.reduce(
         (acc, phase) => {
           acc[phase.phase] = phase.duration;

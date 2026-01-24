@@ -14,10 +14,10 @@ const Plot = dynamic(() => import("react-plotly.js"), {
   ),
 });
 
-interface ArgoVisualizerProps {
+type ArgoVisualizerProps = {
   onClose?: () => void;
   closed?: boolean;
-}
+};
 
 export default function ArgoVisualizer({ onClose }: ArgoVisualizerProps) {
   const [isClient, setIsClient] = useState(false);

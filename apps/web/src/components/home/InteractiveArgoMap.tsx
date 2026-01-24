@@ -37,9 +37,9 @@ const ArgoVisualizer = dynamic(() => import("../argo"), {
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-interface InteractiveArgoMapProps {
+type InteractiveArgoMapProps = {
   floats?: ArgoFloat[];
-}
+};
 
 // Custom marker component for Argo floats
 function ArgoMarker({
@@ -131,7 +131,9 @@ export default function InteractiveArgoMap({
   // FIXME: Have to change this later
   // Calculate the bounds to fit all floats (focused on Indian Ocean)
   const bounds = useMemo(() => {
-    if (floats.length === 0) return null;
+    if (floats.length === 0) {
+      return null;
+    }
 
     // Center on Indian Ocean with appropriate zoom
     return {

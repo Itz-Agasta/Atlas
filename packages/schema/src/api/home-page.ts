@@ -12,10 +12,6 @@ export const floatLocationSchema = z.object({
   floatType: z.enum(["core", "oxygen", "biogeochemical", "deep", "unknown"]), // currently db has no deep & unknown floats
   lastUpdate: z.string().optional(), // ISO string
   cycleNumber: z.number().optional(),
-  status: z.enum(["ACTIVE", "INACTIVE", "UNKNOWN", "DEAD"]).optional(),
-  floatType: z
-    .enum(["core", "oxygen", "biogeochemical", "deep", "unknown"])
-    .optional(),
 });
 
 /**

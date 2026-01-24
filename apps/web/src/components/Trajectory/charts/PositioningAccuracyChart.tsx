@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/chart";
 import { Separator } from "@/components/ui/separator";
 
-interface PositioningData {
+type PositioningData = {
   timestamp: string;
   latitude: number;
   longitude: number;
@@ -30,12 +30,12 @@ interface PositioningData {
   hdop: number; // Horizontal Dilution of Precision
   fixType: "GPS" | "DGPS" | "RTK" | "Estimated";
   signalStrength: number; // dB
-}
+};
 
-interface PositioningAccuracyChartProps {
+type PositioningAccuracyChartProps = {
   data: PositioningData[];
   className?: string;
-}
+};
 
 const chartConfig = {
   horizontalAccuracy: {

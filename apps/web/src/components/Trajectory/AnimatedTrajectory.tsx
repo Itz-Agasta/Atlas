@@ -5,14 +5,14 @@ import { useEffect, useRef, useState } from "react";
 import { useMap } from "react-leaflet";
 import type { TrajectoryPoint } from "@/data/mockTrajectoryData";
 
-interface AnimatedTrajectoryProps {
+type AnimatedTrajectoryProps = {
   points: TrajectoryPoint[];
   animationDuration?: number;
   strokeColor?: string;
   strokeWidth?: number;
   showProgressMarkers?: boolean;
   onAnimationComplete?: () => void;
-}
+};
 
 export default function AnimatedTrajectory({
   points,
@@ -24,10 +24,12 @@ export default function AnimatedTrajectory({
 }: AnimatedTrajectoryProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const map = useMap();
-  const [animationProgress, setAnimationProgress] = useState(0);
+  const [_animationProgress, setAnimationProgress] = useState(0);
 
   useEffect(() => {
-    if (!(map && svgRef.current) || points.length < 2) return;
+    if (!(map && svgRef.current) || points.length < 2) {
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -135,7 +137,7 @@ export default function AnimatedTrajectory({
         // Remove progress marker and add end marker
         svg.select(".progress-marker").remove();
 
-        const [endX, endY] = pixelPoints[pixelPoints.length - 1];
+        const [endX, endY] = pixelPoints.at(-1)!;
         markersGroup
           .append("circle")
           .attr("cx", endX)
@@ -156,7 +158,9 @@ export default function AnimatedTrajectory({
 
     // Update on map changes
     const updateVisualization = () => {
-      if (!svg.node()) return;
+      if (!svg.node()) {
+        return;
+      }
 
       const updatedPixelPoints = points.map(convertToPixel);
       mainPath.datum(updatedPixelPoints).attr("d", line);

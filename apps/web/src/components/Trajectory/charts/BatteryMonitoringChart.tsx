@@ -30,7 +30,7 @@ import {
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import { Separator } from "@/components/ui/separator";
 
-interface BatteryData {
+type BatteryData = {
   timestamp: string;
   voltage: number;
   current?: number; // mA
@@ -39,9 +39,9 @@ interface BatteryData {
   cycleNumber: number;
   phase: "surface" | "descent" | "drift" | "ascent" | "transmission";
   estimatedRemaining?: number; // percentage
-}
+};
 
-interface BatteryMonitoringChartProps {
+type BatteryMonitoringChartProps = {
   data: BatteryData[];
   className?: string;
   specifications?: {
@@ -51,7 +51,7 @@ interface BatteryMonitoringChartProps {
     capacity: number; // Ah
     expectedLifetime: number; // days
   };
-}
+};
 
 const chartConfig = {
   voltage: {
@@ -80,7 +80,9 @@ const getBatteryIcon = (
   voltage: number,
   specs?: BatteryMonitoringChartProps["specifications"]
 ) => {
-  if (!specs) return <Battery className="h-5 w-5" />;
+  if (!specs) {
+    return <Battery className="h-5 w-5" />;
+  }
 
   if (voltage <= specs.criticalVoltageThreshold) {
     return <BatteryLow className="h-5 w-5 text-red-500" />;
@@ -95,7 +97,9 @@ const getBatteryStatus = (
   voltage: number,
   specs?: BatteryMonitoringChartProps["specifications"]
 ) => {
-  if (!specs) return { status: "Unknown", color: "text-gray-600" };
+  if (!specs) {
+    return { status: "Unknown", color: "text-gray-600" };
+  }
 
   if (voltage <= specs.criticalVoltageThreshold) {
     return { status: "Critical", color: "text-red-600" };
@@ -134,7 +138,7 @@ export default function BatteryMonitoringChart({
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
-  const latestData = sortedData[sortedData.length - 1];
+  const latestData = sortedData.at(-1);
   const firstData = sortedData[0];
 
   // Calculate statistics

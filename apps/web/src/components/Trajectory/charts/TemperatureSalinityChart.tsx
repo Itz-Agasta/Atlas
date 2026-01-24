@@ -4,9 +4,9 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import type { FloatTrajectory } from "@/data/mockTrajectoryData";
 
-interface TemperatureSalinityChartProps {
+type TemperatureSalinityChartProps = {
   trajectory: FloatTrajectory;
-}
+};
 
 export default function TemperatureSalinityChart({
   trajectory,
@@ -14,7 +14,9 @@ export default function TemperatureSalinityChart({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!svgRef.current || trajectory.points.length === 0) return;
+    if (!svgRef.current || trajectory.points.length === 0) {
+      return;
+    }
 
     // Clear previous chart
     d3.select(svgRef.current).selectAll("*").remove();
@@ -29,7 +31,9 @@ export default function TemperatureSalinityChart({
       (point) => point.temperature != null && point.salinity != null
     );
 
-    if (validPoints.length === 0) return;
+    if (validPoints.length === 0) {
+      return;
+    }
 
     // Create scales
     const salinityExtent = d3.extent(validPoints, (d) => d.salinity || 0) as [
@@ -119,8 +123,8 @@ export default function TemperatureSalinityChart({
             Date: ${new Date(d.timestamp).toLocaleDateString()}
           `
           )
-          .style("left", event.pageX + 10 + "px")
-          .style("top", event.pageY - 10 + "px");
+          .style("left", `${event.pageX + 10}px`)
+          .style("top", `${event.pageY - 10}px`);
       })
       .on("mouseout", () => {
         d3.selectAll(".d3-tooltip").remove();

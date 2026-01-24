@@ -85,7 +85,9 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   useImperativeHandle(ref, () => mapInstance as MapLibreGL.Map, [mapInstance]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
 
     const initialStyle =
       resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
@@ -117,15 +119,19 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       setMapInstance(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mapStyles.dark, mapStyles.light, props, resolvedTheme]);
 
   useEffect(() => {
-    if (!(mapInstance && resolvedTheme)) return;
+    if (!(mapInstance && resolvedTheme)) {
+      return;
+    }
 
     const newStyle =
       resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
 
-    if (currentStyleRef.current === newStyle) return;
+    if (currentStyleRef.current === newStyle) {
+      return;
+    }
 
     currentStyleRef.current = newStyle;
     setIsStyleLoaded(false);
@@ -248,10 +254,23 @@ function MapMarker({
     return markerInstance;
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    draggable,
+    latitude,
+    longitude,
+    markerOptions,
+    onClick,
+    onDrag,
+    onDragEnd,
+    onDragStart,
+    onMouseEnter,
+    onMouseLeave,
+  ]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
 
     marker.addTo(map);
 
@@ -260,7 +279,7 @@ function MapMarker({
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map]);
+  }, [map, marker.addTo, marker.remove]);
 
   if (
     marker.getLngLat().lng !== longitude ||
@@ -352,10 +371,12 @@ function MarkerPopup({
 
     return popupInstance;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [container, popupOptions]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
 
     popup.setDOMContent(container);
     marker.setPopup(popup);
@@ -364,7 +385,7 @@ function MarkerPopup({
       marker.setPopup(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map]);
+  }, [map, container, marker.setPopup, popup]);
 
   if (popup.isOpen()) {
     const prev = prevPopupOptions.current;
@@ -431,10 +452,12 @@ function MarkerTooltip({
 
     return tooltipInstance;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [popupOptions]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
 
     tooltip.setDOMContent(container);
 
@@ -452,7 +475,15 @@ function MarkerTooltip({
       tooltip.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map]);
+  }, [
+    map,
+    container,
+    marker.getElement,
+    marker.getLngLat,
+    tooltip.remove,
+    tooltip.setDOMContent,
+    tooltip.setLngLat,
+  ]);
 
   if (tooltip.isOpen()) {
     const prev = prevTooltipOptions.current;
@@ -613,8 +644,7 @@ function MapControls({
           onLocate?.(coords);
           setWaitingForLocation(false);
         },
-        (error) => {
-          console.error("Error getting location:", error);
+        (_error) => {
           setWaitingForLocation(false);
         }
       );
@@ -623,7 +653,9 @@ function MapControls({
 
   const handleFullscreen = useCallback(() => {
     const container = map?.getContainer();
-    if (!container) return;
+    if (!container) {
+      return;
+    }
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
@@ -631,7 +663,9 @@ function MapControls({
     }
   }, [map]);
 
-  if (!isLoaded) return null;
+  if (!isLoaded) {
+    return null;
+  }
 
   return (
     <div
@@ -687,7 +721,9 @@ function CompassButton({ onClick }: { onClick: () => void }) {
   const compassRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!(isLoaded && map && compassRef.current)) return;
+    if (!(isLoaded && map && compassRef.current)) {
+      return;
+    }
 
     const compass = compassRef.current;
 
@@ -763,10 +799,12 @@ function MapPopup({
 
     return popupInstance;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [latitude, longitude, popupOptions]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
 
     const onCloseProp = () => onClose?.();
     popup.on("close", onCloseProp);
@@ -781,7 +819,17 @@ function MapPopup({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map]);
+  }, [
+    map,
+    container,
+    onClose,
+    popup.addTo,
+    popup.isOpen,
+    popup.off,
+    popup.on,
+    popup.remove,
+    popup.setDOMContent,
+  ]);
 
   if (popup.isOpen()) {
     const prev = popupOptionsRef.current;
@@ -874,7 +922,9 @@ function MapRoute({
 
   // Add source and layer on mount
   useEffect(() => {
-    if (!(isLoaded && map)) return;
+    if (!(isLoaded && map)) {
+      return;
+    }
 
     map.addSource(sourceId, {
       type: "geojson",
@@ -900,18 +950,24 @@ function MapRoute({
 
     return () => {
       try {
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
+        if (map.getLayer(layerId)) {
+          map.removeLayer(layerId);
+        }
+        if (map.getSource(sourceId)) {
+          map.removeSource(sourceId);
+        }
       } catch {
         // ignore
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, map]);
+  }, [isLoaded, map, color, dashArray, layerId, opacity, sourceId, width]);
 
   // When coordinates change, update the source data
   useEffect(() => {
-    if (!(isLoaded && map) || coordinates.length < 2) return;
+    if (!(isLoaded && map) || coordinates.length < 2) {
+      return;
+    }
 
     const source = map.getSource(sourceId) as MapLibreGL.GeoJSONSource;
     if (source) {
@@ -924,7 +980,9 @@ function MapRoute({
   }, [isLoaded, map, coordinates, sourceId]);
 
   useEffect(() => {
-    if (!(isLoaded && map && map.getLayer(layerId))) return;
+    if (!(isLoaded && map && map.getLayer(layerId))) {
+      return;
+    }
 
     map.setPaintProperty(layerId, "line-color", color);
     map.setPaintProperty(layerId, "line-width", width);
@@ -936,7 +994,9 @@ function MapRoute({
 
   // Handle click and hover events
   useEffect(() => {
-    if (!(isLoaded && map && interactive)) return;
+    if (!(isLoaded && map && interactive)) {
+      return;
+    }
 
     const handleClick = () => {
       onClick?.();
@@ -1027,7 +1087,9 @@ function MapClusterLayer<
 
   // Add source and layers on mount
   useEffect(() => {
-    if (!(isLoaded && map)) return;
+    if (!(isLoaded && map)) {
+      return;
+    }
 
     // Add clustered GeoJSON source
     map.addSource(sourceId, {
@@ -1095,22 +1157,43 @@ function MapClusterLayer<
 
     return () => {
       try {
-        if (map.getLayer(clusterCountLayerId))
+        if (map.getLayer(clusterCountLayerId)) {
           map.removeLayer(clusterCountLayerId);
-        if (map.getLayer(unclusteredLayerId))
+        }
+        if (map.getLayer(unclusteredLayerId)) {
           map.removeLayer(unclusteredLayerId);
-        if (map.getLayer(clusterLayerId)) map.removeLayer(clusterLayerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
+        }
+        if (map.getLayer(clusterLayerId)) {
+          map.removeLayer(clusterLayerId);
+        }
+        if (map.getSource(sourceId)) {
+          map.removeSource(sourceId);
+        }
       } catch {
         // ignore
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, map, sourceId]);
+  }, [
+    isLoaded,
+    map,
+    sourceId,
+    clusterColors[0],
+    clusterCountLayerId,
+    clusterLayerId,
+    clusterMaxZoom,
+    clusterRadius,
+    clusterThresholds[0],
+    data,
+    pointColor,
+    unclusteredLayerId,
+  ]);
 
   // Update source data when data prop changes (only for non-URL data)
   useEffect(() => {
-    if (!(isLoaded && map) || typeof data === "string") return;
+    if (!(isLoaded && map) || typeof data === "string") {
+      return;
+    }
 
     const source = map.getSource(sourceId) as MapLibreGL.GeoJSONSource;
     if (source) {
@@ -1120,7 +1203,9 @@ function MapClusterLayer<
 
   // Update layer styles when props change
   useEffect(() => {
-    if (!(isLoaded && map)) return;
+    if (!(isLoaded && map)) {
+      return;
+    }
 
     const prev = stylePropsRef.current;
     const colorsChanged =
@@ -1167,7 +1252,9 @@ function MapClusterLayer<
 
   // Handle click events
   useEffect(() => {
-    if (!(isLoaded && map)) return;
+    if (!(isLoaded && map)) {
+      return;
+    }
 
     // Cluster click handler - zoom into cluster
     const handleClusterClick = async (
@@ -1178,7 +1265,9 @@ function MapClusterLayer<
       const features = map.queryRenderedFeatures(e.point, {
         layers: [clusterLayerId],
       });
-      if (!features.length) return;
+      if (!features.length) {
+        return;
+      }
 
       const feature = features[0];
       const clusterId = feature.properties?.cluster_id as number;
@@ -1207,7 +1296,9 @@ function MapClusterLayer<
         features?: MapLibreGL.MapGeoJSONFeature[];
       }
     ) => {
-      if (!(onPointClick && e.features?.length)) return;
+      if (!(onPointClick && e.features?.length)) {
+        return;
+      }
 
       const feature = e.features[0];
       const coordinates = (

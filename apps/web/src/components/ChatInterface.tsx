@@ -8,24 +8,24 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
-interface Message {
+type Message = {
   id: string;
   content: string;
   role: "user" | "assistant";
   timestamp: Date;
   citations?: Citation[];
-}
+};
 
-interface Citation {
+type Citation = {
   source: string;
   content: string;
   score: number;
-}
+};
 
-interface ChatInterfaceProps {
+type ChatInterfaceProps = {
   isVisible?: boolean;
   onClose?: () => void;
-}
+};
 
 // Initialize Groq client
 const groq = new Groq({
@@ -174,11 +174,13 @@ export default function ChatInterface({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [scrollToBottom]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading) {
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -193,31 +195,22 @@ export default function ChatInterface({
     setIsLoading(true);
 
     try {
-      console.log("🔍 Searching vector database for relevant documents...");
-
       // Fake loading delay to simulate vector search
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      console.log("✅ Found relevant documents! Generating response...");
-
       // Generate fake citations from random PDFs
       const fakeCitations = generateFakeCitations(5);
-      console.log(
-        `📚 Retrieved ${fakeCitations.length} citations from research database`
-      );
 
       // Convert to Citation format
-      const citations: Citation[] = fakeCitations.map((fake, index) => ({
+      const citations: Citation[] = fakeCitations.map((fake, _index) => ({
         source: fake.title,
         content: `Research findings from oceanic and climate studies. Published in ${fake.year}.`,
         score: Number.parseFloat(fake.similarity),
       }));
 
-      console.log("🤖 Generating response using retrieved context...");
-
       // Create a prompt that will make Groq naturally include citation numbers
       const citationTitles = fakeCitations
-        .map((fake, index) => `[${index + 1}] ${fake.title}`)
+        .map((fake, _index) => `[${_index + 1}] ${fake.title}`)
         .join("\n");
 
       // Use Groq with instructions to include citation numbers
@@ -257,13 +250,8 @@ Instructions:
         citations,
       };
 
-      console.log(
-        "✅ Response generated with citations from research database"
-      );
-
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error("Error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: `❌ Error: ${error instanceof Error ? error.message : "An unknown error occurred"}\n\nPlease check your API keys and try again.`,
@@ -278,13 +266,8 @@ Instructions:
   };
 
   // Helper function to create embeddings using Gemini's embedding model
-  const createEmbedding = async (text: string): Promise<number[]> => {
+  const _createEmbedding = async (text: string): Promise<number[]> => {
     try {
-      console.log(
-        "Generating Gemini embedding for:",
-        text.substring(0, 50) + "..."
-      );
-
       // Use server-side embedding API with Gemini
       const response = await fetch("/api/embeddings", {
         method: "POST",
@@ -297,12 +280,8 @@ Instructions:
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          console.log(
-            `Gemini embedding generated successfully (${data.dimensions} dimensions)`
-          );
           return data.embedding;
         }
-        console.error("Embedding API error:", data.error);
         throw new Error(
           data.error + (data.suggestion ? ` - ${data.suggestion}` : "")
         );
@@ -310,8 +289,6 @@ Instructions:
       const errorData = await response.json();
       throw new Error(errorData.error || `HTTP ${response.status}`);
     } catch (error) {
-      console.error("Embedding generation failed:", error);
-
       // Show user-friendly error message
       const errorMessage =
         error instanceof Error ? error.message : "Unknown embedding error";
@@ -332,15 +309,17 @@ Instructions:
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
-      textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
     }
   };
 
   useEffect(() => {
     adjustTextareaHeight();
-  }, [inputValue]);
+  }, [adjustTextareaHeight]);
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <Card className="fixed top-4 right-4 z-50 flex h-[calc(100vh-2rem)] w-96 flex-col overflow-hidden rounded-xl border border-gray-800 bg-black p-0 shadow-2xl">

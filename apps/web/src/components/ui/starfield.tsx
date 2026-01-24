@@ -2,18 +2,18 @@
 
 import { useMemo } from "react";
 
-interface Star {
+type Star = {
   id: number;
   x: number;
   y: number;
   size: number;
   opacity: number;
   twinkleSpeed: number;
-}
+};
 
-interface StarfieldProps {
+type StarfieldProps = {
   isVisible: boolean;
-}
+};
 
 export default function Starfield({ isVisible }: StarfieldProps) {
   // Generate stars with varied sizes and positions
@@ -35,7 +35,9 @@ export default function Starfield({ isVisible }: StarfieldProps) {
     return starArray;
   }, []);
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <div className="-z-10 pointer-events-none fixed inset-0 overflow-hidden">

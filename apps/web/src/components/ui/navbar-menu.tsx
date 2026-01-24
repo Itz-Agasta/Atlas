@@ -28,7 +28,6 @@ export const MenuItem = ({
       className="relative"
       onFocus={() => setActive(item)}
       onMouseEnter={() => setActive(item)}
-      tabIndex={0}
     >
       <motion.p
         className="cursor-pointer text-black hover:opacity-[0.9] dark:text-white"

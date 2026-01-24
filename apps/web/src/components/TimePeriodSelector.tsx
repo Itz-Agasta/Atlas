@@ -12,10 +12,10 @@ const TIME_PERIODS = [
   { value: "all", label: "All" },
 ];
 
-interface TimePeriodSelectorProps {
+type TimePeriodSelectorProps = {
   value?: string;
   onValueChange?: (value: string) => void;
-}
+};
 
 export function TimePeriodSelector({
   value = "all",

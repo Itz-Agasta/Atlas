@@ -24,9 +24,9 @@ import { Suggestion } from "@/components/ui/shadcn-io/ai/suggestion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { queryAgent } from "@/lib/utils";
 
-interface AgentResponseProps {
+type AgentResponseProps = {
   data: Awaited<ReturnType<typeof queryAgent>>;
-}
+};
 
 function AgentResponse({ data }: AgentResponseProps) {
   if (!data.success) {
@@ -68,16 +68,16 @@ function AgentResponse({ data }: AgentResponseProps) {
   );
 }
 
-interface ChatProps {
+type ChatProps = {
   onClose?: () => void;
-}
+};
 
-interface Message {
+type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
   data?: Awaited<ReturnType<typeof queryAgent>>;
-}
+};
 
 export default function Chat({ onClose }: ChatProps) {
   const [input, setInput] = useState("");
@@ -136,7 +136,7 @@ export default function Chat({ onClose }: ChatProps) {
   // Auto-scroll to bottom when new messages come in
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, []);
 
   // Handle mouse down event on the resize handle
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -147,7 +147,9 @@ export default function Chat({ onClose }: ChatProps) {
   // Handle mouse move event while resizing
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
+      if (!isResizing) {
+        return;
+      }
 
       // Calculate new width based on mouse position
       // Window width - mouse X position from right edge

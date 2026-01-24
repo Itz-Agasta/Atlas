@@ -8,13 +8,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { PopupData } from "@/types/argo";
 
-interface InlineFloatPopupProps {
+type InlineFloatPopupProps = {
   data: PopupData | null;
   position: { x: number; y: number } | null;
   onClose: () => void;
   onShowProfile?: () => void;
   visible: boolean;
-}
+};
 
 export default function FloatPopup({
   data,
@@ -49,7 +49,6 @@ export default function FloatPopup({
     } else if (action === "Trajectory") {
       router.push(`/trajectory/${data.floatNumber}`);
     } else {
-      console.log(`Action clicked: ${action} for float ${data.floatNumber}`);
       alert(`${action} for Float ${data.floatNumber} - Feature coming soon!`);
     }
   };

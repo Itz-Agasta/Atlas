@@ -43,7 +43,9 @@ export default function MapWithFilters() {
 
   // Apply filters to float locations
   const filteredLocations = floatLocations.filter((float) => {
-    if (!filters) return true;
+    if (!filters) {
+      return true;
+    }
 
     // Filter by platform ID search
     if (
@@ -62,14 +64,16 @@ export default function MapWithFilters() {
         filters.status.active &&
         floatStatus !== "ACTIVE" &&
         !filters.status.inactive
-      )
+      ) {
         return false;
+      }
       if (
         filters.status.inactive &&
         floatStatus !== "INACTIVE" &&
         !filters.status.active
-      )
+      ) {
         return false;
+      }
       // If both active and inactive are selected, show both
       if (
         filters.status.active &&

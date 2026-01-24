@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { OceanographicData } from "@/data/mockOceanographicData";
 
-interface OceanographicProfileProps {
+type OceanographicProfileProps = {
   data: OceanographicData[];
   parameter: keyof Pick<
     OceanographicData,
@@ -24,7 +24,7 @@ interface OceanographicProfileProps {
   color: string;
   width?: number;
   height?: number;
-}
+};
 
 export function OceanographicProfile({
   data,
@@ -38,7 +38,9 @@ export function OceanographicProfile({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!(svgRef.current && data.length)) return;
+    if (!(svgRef.current && data.length)) {
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -212,8 +214,8 @@ export function OceanographicProfile({
       })
       .on("mousemove", (event) => {
         tooltip
-          .style("top", event.pageY - 10 + "px")
-          .style("left", event.pageX + 10 + "px");
+          .style("top", `${event.pageY - 10}px`)
+          .style("left", `${event.pageX + 10}px`);
       })
       .on("mouseout", function () {
         tooltip.style("visibility", "hidden");
@@ -254,7 +256,7 @@ export function OceanographicProfile({
     // Animation
     const totalLength = path.node()?.getTotalLength() || 0;
     path
-      .attr("stroke-dasharray", totalLength + " " + totalLength)
+      .attr("stroke-dasharray", `${totalLength} ${totalLength}`)
       .attr("stroke-dashoffset", totalLength)
       .transition()
       .duration(2000)

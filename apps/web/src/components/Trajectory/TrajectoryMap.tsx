@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import type { FloatTrajectory } from "@/data/mockTrajectoryData";
 import TrajectoryPointHover from "./TrajectoryPointHover";
 
-interface TrajectoryMapProps {
+type TrajectoryMapProps = {
   trajectory: FloatTrajectory;
-}
+};
 
 // Dynamically import map components to avoid SSR issues
 const MapContainer = dynamic(
@@ -39,12 +39,18 @@ const AnimatedTrajectory = dynamic(() => import("./AnimatedTrajectory"), {
 
 // Custom numbered marker icon
 const createNumberedIcon = (number: number, isStart = false, isEnd = false) => {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") {
+    return null;
+  }
   const L = require("leaflet");
 
   let color = "#3b82f6"; // Default blue
-  if (isStart) color = "#22c55e"; // Green for start
-  if (isEnd) color = "#ef4444"; // Red for end
+  if (isStart) {
+    color = "#22c55e"; // Green for start
+  }
+  if (isEnd) {
+    color = "#ef4444"; // Red for end
+  }
 
   return new L.Icon({
     iconUrl:
@@ -104,11 +110,11 @@ export default function TrajectoryMap({ trajectory }: TrajectoryMapProps) {
     // Fix for default markers
     if (typeof window !== "undefined") {
       // biome-ignore lint/suspicious/noExplicitAny: Required for Leaflet icon fix
-      delete (window as any).L;
+      (window as any).L = undefined;
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const L = require("leaflet");
       // biome-ignore lint/suspicious/noExplicitAny: Required for Leaflet icon fix
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      (L.Icon.Default.prototype as any)._getIconUrl = undefined;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl:
           "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -163,7 +169,9 @@ export default function TrajectoryMap({ trajectory }: TrajectoryMapProps) {
           const isEnd = index === trajectory.points.length - 1;
           const icon = createNumberedIcon(pointNumber, isStart, isEnd);
 
-          if (!icon) return null;
+          if (!icon) {
+            return null;
+          }
 
           return (
             <Marker

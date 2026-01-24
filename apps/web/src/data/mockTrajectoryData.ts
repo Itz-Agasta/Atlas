@@ -1,6 +1,6 @@
 import type { LatLngTuple } from "leaflet";
 
-export interface TrajectoryPoint {
+export type TrajectoryPoint = {
   id: number;
   latitude: number;
   longitude: number;
@@ -9,9 +9,9 @@ export interface TrajectoryPoint {
   temperature?: number;
   salinity?: number;
   status: "active" | "completed" | "current";
-}
+};
 
-export interface FloatTrajectory {
+export type FloatTrajectory = {
   floatId: string;
   floatNumber: string;
   startDate: string;
@@ -79,7 +79,7 @@ export interface FloatTrajectory {
     verticalSampling: string;
     dataRecovery: number; // percentage
   };
-}
+};
 
 // Generate realistic trajectory data for different regions
 export const generateMockTrajectoryData = (

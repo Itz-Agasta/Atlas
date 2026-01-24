@@ -9,10 +9,10 @@ import type {
   OceanographicData,
 } from "@/data/mockOceanographicData";
 
-interface DataDownloadProps {
+type DataDownloadProps = {
   data: OceanographicData[];
   metadata: FloatMetadata;
-}
+};
 
 export function DataDownload({ data, metadata }: DataDownloadProps) {
   const downloadCSV = () => {

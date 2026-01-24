@@ -18,20 +18,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { OceanographicData } from "@/data/mockOceanographicData";
 
-interface AIInsightsProps {
+type AIInsightsProps = {
   data: OceanographicData[];
   variant?: "ts-diagram" | "multi-parameter";
-}
+};
 
-interface StepData {
+type StepData = {
   id: number;
   title: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
   duration: number;
-}
+};
 
-interface AnalysisResult {
+type AnalysisResult = {
   waterMasses: Array<{
     name: string;
     depthRange: string;
@@ -46,7 +46,7 @@ interface AnalysisResult {
   }>;
   biogeochemicalInsights: string[];
   keyFindings: string[];
-}
+};
 
 const ANALYSIS_STEPS: StepData[] = [
   {

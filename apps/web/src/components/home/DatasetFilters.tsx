@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 
-interface DatasetFiltersProps {
+type DatasetFiltersProps = {
   datasets: {
     argoCore: boolean;
     argoBGC: boolean;
@@ -20,9 +20,9 @@ interface DatasetFiltersProps {
     tropicalCyclones: boolean;
   };
   onDatasetsChange: (datasets: DatasetFiltersProps["datasets"]) => void;
-}
+};
 
-interface FilterGroup {
+type FilterGroup = {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   items: {
@@ -31,7 +31,7 @@ interface FilterGroup {
     description: string;
     color?: string;
   }[];
-}
+};
 
 const FILTER_GROUPS: FilterGroup[] = [
   {
@@ -130,8 +130,12 @@ export function DatasetFilters({
 
   const getGroupStatus = (groupItems: FilterGroup["items"]) => {
     const enabledCount = groupItems.filter((item) => datasets[item.key]).length;
-    if (enabledCount === 0) return "none";
-    if (enabledCount === groupItems.length) return "all";
+    if (enabledCount === 0) {
+      return "none";
+    }
+    if (enabledCount === groupItems.length) {
+      return "all";
+    }
     return "partial";
   };
 

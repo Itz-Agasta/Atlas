@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 
-interface DeploymentYearFilterProps {
+type DeploymentYearFilterProps = {
   range: { start: number; end: number };
   onRangeChange: (range: { start: number; end: number }) => void;
-}
+};
 
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR = 1997; // Argo program started in 1999, but some earlier data exists

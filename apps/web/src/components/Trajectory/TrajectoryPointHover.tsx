@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { TrajectoryPoint } from "@/data/mockTrajectoryData";
 
-interface TrajectoryPointHoverProps {
+type TrajectoryPointHoverProps = {
   point: TrajectoryPoint;
   pointNumber: number;
   isStart?: boolean;
   isEnd?: boolean;
-}
+};
 
 export default function TrajectoryPointHover({
   point,
@@ -46,9 +46,12 @@ export default function TrajectoryPointHover({
   };
 
   const getPointTypeInfo = () => {
-    if (isStart)
+    if (isStart) {
       return { label: "Start Point", color: "bg-green-100 text-green-800" };
-    if (isEnd) return { label: "End Point", color: "bg-red-100 text-red-800" };
+    }
+    if (isEnd) {
+      return { label: "End Point", color: "bg-red-100 text-red-800" };
+    }
     return {
       label: `Point ${pointNumber}`,
       color: "bg-blue-100 text-blue-800",

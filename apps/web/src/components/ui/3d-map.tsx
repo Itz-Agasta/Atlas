@@ -5,9 +5,9 @@ import { useEffect, useMemo, useRef } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export default function MapLibre3DMap({
-  setIs3D,
+  _setIs3D,
 }: {
-  setIs3D: (is3D: boolean) => void;
+  _setIs3D: (is3D: boolean) => void;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreGL.Map | null>(null);
@@ -22,7 +22,9 @@ export default function MapLibre3DMap({
   }, []);
 
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current) {
+      return;
+    }
 
     mapRef.current = new MapLibreGL.Map({
       container: mapContainerRef.current,
@@ -64,7 +66,7 @@ export default function MapLibre3DMap({
 
       // Add markers for floats
       floats.forEach((float) => {
-        const marker = new MapLibreGL.Marker({ color: "#3FB1CE" })
+        const _marker = new MapLibreGL.Marker({ color: "#3FB1CE" })
           .setLngLat([float.lng, float.lat])
           .setPopup(
             new MapLibreGL.Popup({ offset: 25 }).setHTML(

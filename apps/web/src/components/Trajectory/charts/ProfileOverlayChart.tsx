@@ -4,9 +4,9 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import type { FloatTrajectory } from "@/data/mockTrajectoryData";
 
-interface ProfileOverlayChartProps {
+type ProfileOverlayChartProps = {
   trajectory: FloatTrajectory;
-}
+};
 
 export default function ProfileOverlayChart({
   trajectory,
@@ -14,7 +14,9 @@ export default function ProfileOverlayChart({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!svgRef.current || trajectory.points.length === 0) return;
+    if (!svgRef.current || trajectory.points.length === 0) {
+      return;
+    }
 
     // Clear previous chart
     d3.select(svgRef.current).selectAll("*").remove();
@@ -29,7 +31,9 @@ export default function ProfileOverlayChart({
       (point) => point.temperature != null && point.depth != null
     );
 
-    if (validPoints.length === 0) return;
+    if (validPoints.length === 0) {
+      return;
+    }
 
     // Create scales
     const temperatureExtent = d3.extent(
@@ -139,8 +143,8 @@ export default function ProfileOverlayChart({
               Temp Range: ${Math.min(...profile.map((p) => p.temperature || 0)).toFixed(2)}°C - ${Math.max(...profile.map((p) => p.temperature || 0)).toFixed(2)}°C
             `
             )
-            .style("left", event.pageX + 10 + "px")
-            .style("top", event.pageY - 10 + "px");
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 10}px`);
         })
         .on("mouseout", (event) => {
           // Reset highlight

@@ -4,7 +4,7 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import type { OceanographicData } from "@/data/mockOceanographicData";
 
-interface MultiParameterProfileProps {
+type MultiParameterProfileProps = {
   data: OceanographicData[];
   parameters: Array<{
     key: keyof OceanographicData;
@@ -14,7 +14,7 @@ interface MultiParameterProfileProps {
   }>;
   width?: number;
   height?: number;
-}
+};
 
 export function MultiParameterProfile({
   data,
@@ -25,7 +25,9 @@ export function MultiParameterProfile({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!(svgRef.current && data.length && parameters.length)) return;
+    if (!(svgRef.current && data.length && parameters.length)) {
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -124,7 +126,7 @@ export function MultiParameterProfile({
       // Animation
       const totalLength = path.node()?.getTotalLength() || 0;
       path
-        .attr("stroke-dasharray", totalLength + " " + totalLength)
+        .attr("stroke-dasharray", `${totalLength} ${totalLength}`)
         .attr("stroke-dashoffset", totalLength)
         .transition()
         .duration(2000)
@@ -166,8 +168,8 @@ export function MultiParameterProfile({
       })
       .on("mousemove", (event) => {
         tooltip
-          .style("top", event.pageY - 10 + "px")
-          .style("left", event.pageX + 10 + "px");
+          .style("top", `${event.pageY - 10}px`)
+          .style("left", `${event.pageX + 10}px`);
       })
       .on("mouseout", function () {
         tooltip.style("visibility", "hidden");

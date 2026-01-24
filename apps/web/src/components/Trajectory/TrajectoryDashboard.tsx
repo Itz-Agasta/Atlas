@@ -34,9 +34,9 @@ import QualityControlChart from "./charts/QualityControlChart";
 import TemperatureSalinityChart from "./charts/TemperatureSalinityChart";
 import TrajectoryTimelineChart from "./charts/TrajectoryTimelineChart";
 
-interface TrajectoryDashboardProps {
+type TrajectoryDashboardProps = {
   trajectory: FloatTrajectory;
-}
+};
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString("en-US", {
@@ -83,9 +83,15 @@ const getQualityFlagDescription = (flag: number) => {
 };
 
 const getQualityFlagColor = (flag: number) => {
-  if (flag <= 2) return "bg-green-500";
-  if (flag <= 3) return "bg-yellow-500";
-  if (flag <= 4) return "bg-red-500";
+  if (flag <= 2) {
+    return "bg-green-500";
+  }
+  if (flag <= 3) {
+    return "bg-yellow-500";
+  }
+  if (flag <= 4) {
+    return "bg-red-500";
+  }
   return "bg-gray-500";
 };
 

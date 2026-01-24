@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface ProfileData {
+type ProfileData = {
   depth: number;
   temperature: number;
   salinity: number;
@@ -18,16 +18,16 @@ interface ProfileData {
   density: number;
   qualityFlag: number;
   timestamp: string;
-}
+};
 
-interface MultiParameterProfileChartProps {
+type MultiParameterProfileChartProps = {
   data: ProfileData[];
   className?: string;
   title?: string;
-}
+};
 
 // D3.js Profile Chart Component
-interface D3ProfileChartProps {
+type D3ProfileChartProps = {
   data: ProfileData[];
   parameters: Array<{
     key: keyof ProfileData;
@@ -38,7 +38,7 @@ interface D3ProfileChartProps {
   width?: number;
   height?: number;
   title: string;
-}
+};
 
 function D3ProfileChart({
   data,
@@ -50,7 +50,9 @@ function D3ProfileChart({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!(svgRef.current && data.length && parameters.length)) return;
+    if (!(svgRef.current && data.length && parameters.length)) {
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -76,7 +78,9 @@ function D3ProfileChart({
           .map((d) => d[param.key] as number)
           .filter((v) => v !== undefined && v !== null && !Number.isNaN(v));
 
-        if (values.length === 0) return null;
+        if (values.length === 0) {
+          return null;
+        }
 
         const extent = d3.extent(values) as [number, number];
         return {
@@ -91,7 +95,9 @@ function D3ProfileChart({
 
     // Add gradients for each parameter
     normalizedScales.forEach((param, i) => {
-      if (!param) return;
+      if (!param) {
+        return;
+      }
 
       const gradient = svg
         .append("defs")
@@ -148,14 +154,18 @@ function D3ProfileChart({
 
     // Create lines and areas for each parameter
     normalizedScales.forEach((param, paramIndex) => {
-      if (!param) return;
+      if (!param) {
+        return;
+      }
 
       const validData = data.filter((d) => {
         const value = d[param.key] as number;
         return value !== undefined && value !== null && !Number.isNaN(value);
       });
 
-      if (validData.length === 0) return;
+      if (validData.length === 0) {
+        return;
+      }
 
       const paramLine = d3
         .line<ProfileData>()
@@ -201,8 +211,12 @@ function D3ProfileChart({
         .attr("cy", (d) => yScale(d.depth))
         .attr("r", (d) => {
           const data = d as ProfileData;
-          if (data.qualityFlag <= 2) return 3;
-          if (data.qualityFlag <= 3) return 4;
+          if (data.qualityFlag <= 2) {
+            return 3;
+          }
+          if (data.qualityFlag <= 3) {
+            return 4;
+          }
           return 5;
         })
         .style("fill", param.color)
@@ -210,15 +224,19 @@ function D3ProfileChart({
         .style("stroke-width", 1.5)
         .style("opacity", (d) => {
           const data = d as ProfileData;
-          if (data.qualityFlag <= 2) return 0.8;
-          if (data.qualityFlag <= 3) return 0.6;
+          if (data.qualityFlag <= 2) {
+            return 0.8;
+          }
+          if (data.qualityFlag <= 3) {
+            return 0.6;
+          }
           return 0.4;
         });
 
       // Animation
       const totalLength = path.node()?.getTotalLength() || 0;
       path
-        .attr("stroke-dasharray", totalLength + " " + totalLength)
+        .attr("stroke-dasharray", `${totalLength} ${totalLength}`)
         .attr("stroke-dashoffset", totalLength)
         .transition()
         .duration(2500)
@@ -235,8 +253,12 @@ function D3ProfileChart({
         .ease(d3.easeBackOut.overshoot(0.3))
         .style("opacity", (d) => {
           const data = d as ProfileData;
-          if (data.qualityFlag <= 2) return 0.8;
-          if (data.qualityFlag <= 3) return 0.6;
+          if (data.qualityFlag <= 2) {
+            return 0.8;
+          }
+          if (data.qualityFlag <= 3) {
+            return 0.6;
+          }
           return 0.4;
         });
     });
@@ -263,10 +285,13 @@ function D3ProfileChart({
         const data = d as ProfileData;
         const parameterInfo = normalizedScales
           .map((param) => {
-            if (!param) return null;
-            const value = data[param.key] as number;
-            if (value === undefined || value === null || Number.isNaN(value))
+            if (!param) {
               return null;
+            }
+            const value = data[param.key] as number;
+            if (value === undefined || value === null || Number.isNaN(value)) {
+              return null;
+            }
             return `<span style="color: ${param.color};">${param.name}: ${value.toFixed(2)} ${param.unit}</span>`;
           })
           .filter(Boolean)
@@ -297,8 +322,8 @@ function D3ProfileChart({
       })
       .on("mousemove", (event) => {
         tooltip
-          .style("top", event.pageY - 10 + "px")
-          .style("left", event.pageX + 10 + "px");
+          .style("top", `${event.pageY - 10}px`)
+          .style("left", `${event.pageX + 10}px`);
       })
       .on("mouseout", function (_, d) {
         tooltip.style("visibility", "hidden");
@@ -354,7 +379,9 @@ function D3ProfileChart({
       .attr("transform", `translate(${width - 130}, ${margin.top})`);
 
     normalizedScales.forEach((param, i) => {
-      if (!param) return;
+      if (!param) {
+        return;
+      }
 
       const legendItem = legend
         .append("g")
@@ -446,13 +473,19 @@ function D3ProfileChart({
         .on("mouseout", () => {
           // Restore original opacity
           normalizedScales.forEach((param, j) => {
-            if (!param) return;
+            if (!param) {
+              return;
+            }
             g.selectAll(`.profile-line-${j}`).style("opacity", 0.9);
             g.selectAll(`.profile-area-${j}`).style("opacity", 0.4);
             g.selectAll(`.data-point-${j}`).style("opacity", (d) => {
               const data = d as ProfileData;
-              if (data.qualityFlag <= 2) return 0.8;
-              if (data.qualityFlag <= 3) return 0.6;
+              if (data.qualityFlag <= 2) {
+                return 0.8;
+              }
+              if (data.qualityFlag <= 3) {
+                return 0.6;
+              }
               return 0.4;
             });
           });
@@ -517,9 +550,13 @@ export default function MultiParameterProfileChart({
   // Quality statistics
   const qualityStats = sortedData.reduce(
     (acc, d) => {
-      if (d.qualityFlag <= 2) acc.good++;
-      else if (d.qualityFlag <= 3) acc.questionable++;
-      else acc.bad++;
+      if (d.qualityFlag <= 2) {
+        acc.good++;
+      } else if (d.qualityFlag <= 3) {
+        acc.questionable++;
+      } else {
+        acc.bad++;
+      }
       return acc;
     },
     { good: 0, questionable: 0, bad: 0 }

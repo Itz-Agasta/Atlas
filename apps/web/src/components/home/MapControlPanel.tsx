@@ -9,7 +9,7 @@ const MAP_STYLES = {
   outdoors: "mapbox://styles/mapbox/outdoors-v11",
 };
 
-interface MapControlPanelProps {
+type MapControlPanelProps = {
   mapStyle: string;
   setMapStyle: (style: string) => void;
   isGlobe: boolean;
@@ -17,7 +17,7 @@ interface MapControlPanelProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   floatCount: number;
-}
+};
 
 export default function MapControlPanel({
   mapStyle,

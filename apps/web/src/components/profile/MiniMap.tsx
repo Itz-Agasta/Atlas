@@ -18,28 +18,11 @@ const Marker = dynamic(
   { ssr: false }
 );
 
-interface MiniMapProps {
+type MiniMapProps = {
   latitude: number;
   longitude: number;
   className?: string;
-}
-
-function CustomMarker() {
-  return (
-    <div className="relative">
-      {/* Blur effect */}
-      <div className="absolute inset-0 rounded-full bg-yellow-400/50 blur-md" />
-      {/* Outer glow ring */}
-      <div className="absolute inset-0 animate-ping rounded-full bg-yellow-400 opacity-30" />
-
-      {/* Main marker */}
-      <div className="relative flex h-6 w-6 items-center justify-center rounded-full border-2 border-yellow-700 bg-yellow-500 shadow-lg">
-        {/* Inner dot */}
-        <div className="h-2 w-2 rounded-full bg-white" />
-      </div>
-    </div>
-  );
-}
+};
 
 export function MiniMap({ latitude, longitude, className = "" }: MiniMapProps) {
   const [markerIcon, setMarkerIcon] = useState<Icon | null>(null);

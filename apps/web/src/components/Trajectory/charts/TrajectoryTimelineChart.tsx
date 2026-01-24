@@ -4,9 +4,9 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import type { FloatTrajectory } from "@/data/mockTrajectoryData";
 
-interface TrajectoryTimelineChartProps {
+type TrajectoryTimelineChartProps = {
   trajectory: FloatTrajectory;
-}
+};
 
 export default function TrajectoryTimelineChart({
   trajectory,
@@ -14,7 +14,9 @@ export default function TrajectoryTimelineChart({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!svgRef.current || trajectory.points.length === 0) return;
+    if (!svgRef.current || trajectory.points.length === 0) {
+      return;
+    }
 
     // Clear previous chart
     d3.select(svgRef.current).selectAll("*").remove();
@@ -30,7 +32,7 @@ export default function TrajectoryTimelineChart({
 
     const timeExtent = d3.extent(
       validPoints,
-      (d) => parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date()
+      (d) => parseTime(`${d.timestamp.slice(0, -1)}.000Z`) || new Date()
     ) as [Date, Date];
     const depthExtent = d3.extent(validPoints, (d) => d.depth || 0) as [
       number,
@@ -83,7 +85,7 @@ export default function TrajectoryTimelineChart({
     const line = d3
       .line<(typeof validPoints)[0]>()
       .x((d) =>
-        xScale(parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date())
+        xScale(parseTime(`${d.timestamp.slice(0, -1)}.000Z`) || new Date())
       )
       .y((d) => yScale(d.depth || 0))
       .curve(d3.curveMonotoneX);
@@ -102,7 +104,7 @@ export default function TrajectoryTimelineChart({
       .enter()
       .append("circle")
       .attr("cx", (d) =>
-        xScale(parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date())
+        xScale(parseTime(`${d.timestamp.slice(0, -1)}.000Z`) || new Date())
       )
       .attr("cy", (d) => yScale(d.depth || 0))
       .attr("r", 4)
@@ -138,8 +140,8 @@ export default function TrajectoryTimelineChart({
             Salinity: ${d.salinity?.toFixed(2)} PSU
           `
           )
-          .style("left", event.pageX + 10 + "px")
-          .style("top", event.pageY - 10 + "px");
+          .style("left", `${event.pageX + 10}px`)
+          .style("top", `${event.pageY - 10}px`);
       })
       .on("mouseout", (event) => {
         // Reset highlight

@@ -24,14 +24,14 @@ const TIME_PERIODS = [
   { value: "custom", label: "Custom" },
 ];
 
-interface TimePeriodFilterProps {
+type TimePeriodFilterProps = {
   value: string;
   customRange?: { start: Date; end: Date };
   onTimePeriodChange: (
     period: string,
     customRange?: { start: Date; end: Date }
   ) => void;
-}
+};
 
 export function TimePeriodFilter({
   value,

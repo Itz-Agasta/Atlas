@@ -33,7 +33,7 @@ import {
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import { Separator } from "@/components/ui/separator";
 
-interface QualityData {
+type QualityData = {
   parameter: "temperature" | "salinity" | "pressure" | "oxygen" | "chlorophyll";
   timestamp: string;
   depth: number;
@@ -43,12 +43,12 @@ interface QualityData {
   confidence: number; // 0-100
   outlierScore?: number;
   profileId: string;
-}
+};
 
-interface QualityControlChartProps {
+type QualityControlChartProps = {
   data: QualityData[];
   className?: string;
-}
+};
 
 const chartConfig = {
   good: {

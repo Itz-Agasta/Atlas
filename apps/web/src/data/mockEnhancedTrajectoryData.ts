@@ -1,12 +1,12 @@
 // Mock data generators for the enhanced trajectory dashboard charts
 
-interface TrajectoryPoint {
+type TrajectoryPoint = {
   latitude: number;
   longitude: number;
   timestamp: string;
-}
+};
 
-export interface DriftData {
+export type DriftData = {
   timestamp: string;
   speed: number;
   direction: number;
@@ -14,9 +14,9 @@ export interface DriftData {
   longitude: number;
   distance: number;
   displacement: number;
-}
+};
 
-export interface PositioningData {
+export type PositioningData = {
   timestamp: string;
   latitude: number;
   longitude: number;
@@ -26,9 +26,9 @@ export interface PositioningData {
   hdop: number;
   fixType: "GPS" | "DGPS" | "RTK" | "Estimated";
   signalStrength: number;
-}
+};
 
-export interface ProfileData {
+export type ProfileData = {
   depth: number;
   temperature: number;
   salinity: number;
@@ -38,9 +38,9 @@ export interface ProfileData {
   density: number;
   qualityFlag: number;
   timestamp: string;
-}
+};
 
-export interface CyclePhase {
+export type CyclePhase = {
   phase: "surface" | "descent" | "drift" | "ascent" | "surface_transmission";
   startTime: string;
   endTime: string;
@@ -49,9 +49,9 @@ export interface CyclePhase {
   depth?: number;
   temperature?: number;
   notes?: string;
-}
+};
 
-export interface BatteryData {
+export type BatteryData = {
   timestamp: string;
   voltage: number;
   current?: number;
@@ -60,9 +60,9 @@ export interface BatteryData {
   cycleNumber: number;
   phase: "surface" | "descent" | "drift" | "ascent" | "transmission";
   estimatedRemaining?: number;
-}
+};
 
-export interface QualityData {
+export type QualityData = {
   parameter: "temperature" | "salinity" | "pressure" | "oxygen" | "chlorophyll";
   timestamp: string;
   depth: number;
@@ -72,7 +72,7 @@ export interface QualityData {
   confidence: number;
   outlierScore?: number;
   profileId: string;
-}
+};
 
 export function generateMockDriftData(
   trajectoryPoints: TrajectoryPoint[]
@@ -112,7 +112,9 @@ export function generateMockDriftData(
     const cumulativeDistance = trajectoryPoints
       .slice(0, index + 2)
       .reduce((total, p, i) => {
-        if (i === 0) return 0;
+        if (i === 0) {
+          return 0;
+        }
         const prev = trajectoryPoints[i - 1];
         const lat1 = (prev.latitude * Math.PI) / 180;
         const lat2 = (p.latitude * Math.PI) / 180;

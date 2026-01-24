@@ -1,4 +1,4 @@
-export interface OceanographicData {
+export type OceanographicData = {
   depth: number;
   temperature: number; // Celsius
   salinity: number; // PSU (Practical Salinity Units)
@@ -11,9 +11,9 @@ export interface OceanographicData {
   particleBackscattering: number; // m⁻¹
   pressure: number; // dbar
   density: number; // kg/m³
-}
+};
 
-export interface FloatMetadata {
+export type FloatMetadata = {
   id: string;
   name: string;
   country: string;
@@ -31,7 +31,7 @@ export interface FloatMetadata {
     longitude: number;
   };
   qualityFlag: number;
-}
+};
 
 // Generate realistic oceanographic data based on depth profiles
 export function generateMockOceanographicData(

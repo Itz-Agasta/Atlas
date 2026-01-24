@@ -27,16 +27,16 @@ import {
   getMockFloatMetadata,
 } from "@/data/mockOceanographicData";
 
-interface FloatProfilePageProps {
+type FloatProfilePageProps = {
   floatId: string;
-}
+};
 
-interface MultiParameterConfig {
+type MultiParameterConfig = {
   key: "temperature" | "salinity" | "dissolvedOxygen" | "chlorophyll";
   name: string;
   color: string;
   unit: string;
-}
+};
 
 export function FloatProfilePage({ floatId }: FloatProfilePageProps) {
   // Generate consistent mock data for this float

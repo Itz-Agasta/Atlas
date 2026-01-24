@@ -23,7 +23,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
-export interface SidebarFilters {
+export type SidebarFilters = {
   platformId: string;
   timePeriod: string;
   customRange: { start: Date | undefined; end: Date | undefined };
@@ -43,12 +43,12 @@ export interface SidebarFilters {
     sst: boolean;
     salinityGradients: boolean;
   };
-}
+};
 
-interface SidebarProps {
+type SidebarProps = {
   className?: string;
   onFiltersChange?: (filters: SidebarFilters) => void;
-}
+};
 
 const timePeriodOptions = [
   { id: "7d", label: "7D" },
@@ -150,7 +150,7 @@ export function Sidebar({ className, onFiltersChange }: SidebarProps) {
     handleFilterUpdate({ overlays: updatedOverlays });
   };
 
-  const getTimePeriodPosition = () => {
+  const _getTimePeriodPosition = () => {
     const index = timePeriodOptions.findIndex(
       (opt) => opt.id === filters.timePeriod
     );
@@ -245,9 +245,7 @@ export function Sidebar({ className, onFiltersChange }: SidebarProps) {
               style={{ color: "var(--muted-foreground)" }}
             >
               <span>{timePeriodOptions[0].label}</span>
-              <span>
-                {timePeriodOptions[timePeriodOptions.length - 1].label}
-              </span>
+              <span>{timePeriodOptions.at(-1)!.label}</span>
             </div>
             <div className="px-1">
               <Slider

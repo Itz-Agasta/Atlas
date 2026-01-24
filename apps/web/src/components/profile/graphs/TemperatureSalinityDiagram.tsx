@@ -4,11 +4,11 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import type { OceanographicData } from "@/data/mockOceanographicData";
 
-interface TemperatureSalinityDiagramProps {
+type TemperatureSalinityDiagramProps = {
   data: OceanographicData[];
   width?: number;
   height?: number;
-}
+};
 
 export function TemperatureSalinityDiagram({
   data,
@@ -18,7 +18,9 @@ export function TemperatureSalinityDiagram({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!(svgRef.current && data.length)) return;
+    if (!(svgRef.current && data.length)) {
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -138,8 +140,8 @@ export function TemperatureSalinityDiagram({
       })
       .on("mousemove", (event) => {
         tooltip
-          .style("top", event.pageY - 10 + "px")
-          .style("left", event.pageX + 10 + "px");
+          .style("top", `${event.pageY - 10}px`)
+          .style("left", `${event.pageX + 10}px`);
       })
       .on("mouseout", function () {
         tooltip.style("visibility", "hidden");
