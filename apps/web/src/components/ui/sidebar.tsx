@@ -180,3 +180,33 @@ export const SidebarLink = ({
     </a>
   );
 };
+// Alias for compatibility
+export const SidebarContent = SidebarBody;
+
+export const SidebarTrigger = ({
+  className,
+  ...props
+}: React.ComponentProps<"button">) => {
+  const { open, setOpen } = useSidebar();
+  return (
+    <button
+      className={cn(
+        "h-7 w-7 text-neutral-800 dark:text-neutral-200",
+        className
+      )}
+      onClick={() => setOpen(!open)}
+      type="button"
+      {...props}
+    >
+      <IconMenu2 className="h-full w-full" />
+      <span className="sr-only">Toggle Sidebar</span>
+    </button>
+  );
+};
+
+export const SidebarDivider = ({
+  className,
+  ...props
+}: React.ComponentProps<"div">) => (
+  <div className={cn("mb-6 h-4 w-full bg-border", className)} {...props} />
+);

@@ -2,18 +2,18 @@
 
 import { useMemo } from "react";
 
-type Star = {
+interface Star {
   id: number;
   x: number;
   y: number;
   size: number;
   opacity: number;
   twinkleSpeed: number;
-};
+}
 
-type StarfieldProps = {
+interface StarfieldProps {
   isVisible: boolean;
-};
+}
 
 export default function Starfield({ isVisible }: StarfieldProps) {
   // Generate stars with varied sizes and positions
@@ -35,12 +35,10 @@ export default function Starfield({ isVisible }: StarfieldProps) {
     return starArray;
   }, []);
 
-  if (!isVisible) {
-    return null;
-  }
+  if (!isVisible) return null;
 
   return (
-    <div className="-z-10 pointer-events-none fixed inset-0 overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
       {/* Deep space background gradient */}
       <div
         className="absolute inset-0"
@@ -53,8 +51,8 @@ export default function Starfield({ isVisible }: StarfieldProps) {
       {/* Stars */}
       {stars.map((star) => (
         <div
-          className="absolute animate-pulse rounded-full bg-white"
           key={star.id}
+          className="absolute rounded-full bg-white animate-pulse"
           style={{
             left: `${star.x}%`,
             top: `${star.y}%`,
