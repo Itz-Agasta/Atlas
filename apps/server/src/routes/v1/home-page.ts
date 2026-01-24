@@ -27,10 +27,10 @@ homeRouter.get("/locations", async (c) => {
       .select({
         floatId: argo_float_metadata.float_id,
         location: argo_float_status.location,
-        lastUpdate: argo_float_status.last_update,
-        cycleNumber: argo_float_status.cycle_number,
         status: argo_float_metadata.status,
         floatType: argo_float_metadata.float_type,
+        lastUpdate: argo_float_status.last_update,
+        cycleNumber: argo_float_status.cycle_number,
       })
       .from(argo_float_metadata)
       .innerJoin(
@@ -51,10 +51,10 @@ homeRouter.get("/locations", async (c) => {
         floatId: row.floatId,
         latitude: row.location.y,
         longitude: row.location.x,
+        status: row.status || "UNKNOWN", // for sidebar
+        floatType: row.floatType || "unknown", // for sidebar
         lastUpdate: row.lastUpdate?.toISOString(),
-        cycleNumber: row.cycleNumber || undefined,
-        status: row.status || undefined,
-        floatType: row.floatType || undefined,
+        cycleNumber: row.cycleNumber || undefined, // for hover display
       }));
 
     const response: FloatLocationsResponse = {
@@ -108,7 +108,7 @@ homeRouter.get("/float/:floatId", async (c) => {
         floatId: result.floatId,
         wmoNumber: result.wmoNumber,
         status: result.status || "UNKNOWN",
-        floatType: result.floatType ?? undefined,
+        floatType: result.floatType || "unknown",
         platform_type: result.platform_type ?? undefined,
         operatingInstitution: result.operatingInstitution ?? undefined,
         piName: result.piName ?? undefined,

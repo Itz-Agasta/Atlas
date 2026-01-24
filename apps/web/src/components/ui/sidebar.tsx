@@ -197,3 +197,10 @@ export const SidebarTrigger = ({ className, ...props }: React.ComponentProps<"bu
     </button>
   );
 };
+
+export const SidebarDivider = ({ className, ...props }: React.ComponentProps<"div">) => (
+  <div
+    className={cn("h-4 w-full mb-6 bg-border", className)}
+    {...props}
+  />
+);

@@ -167,7 +167,7 @@ export function Sidebar({ className, onFiltersChange }: SidebarProps) {
         </button>
       </div>
 
-      <div className="flex flex-col h-full w-full overflow-y-auto p-5 pt-2">
+      <div className="flex-1 min-h-0 flex flex-col w-full overflow-y-auto p-5 pt-2">
         {/* Platform ID Search */}
         <div className="mb-6">
           <h3
@@ -345,7 +345,7 @@ export function Sidebar({ className, onFiltersChange }: SidebarProps) {
         </div>
 
         {/* Divider */}
-        <div className="h-px mb-6" style={{ backgroundColor: "var(--border)" }} />
+        <div className="h-px w-full my-2" style={{ backgroundColor: "var(--muted-foreground)", opacity: 0.3 }} />
 
         {/* Filtering */}
         <div className="mb-6">
