@@ -24,12 +24,11 @@ export default function FloatTooltip({
       // Small delay for smooth transition
       const timer = setTimeout(() => setIsVisible(true), 100);
       return () => clearTimeout(timer);
-    } else {
-      setIsVisible(false);
     }
+    setIsVisible(false);
   }, [visible, data, position]);
 
-  if (!data || !position || !visible) {
+  if (!(data && position && visible)) {
     return null;
   }
 
@@ -81,14 +80,14 @@ export default function FloatTooltip({
 
   return (
     <div
-      className="fixed z-50 pointer-events-none transition-all duration-200 ease-out"
+      className="pointer-events-none fixed z-50 transition-all duration-200 ease-out"
       style={getTooltipStyle()}
     >
-      <Card className="shadow-lg border backdrop-blur-sm bg-background/95">
-        <CardContent className="p-3 space-y-2">
+      <Card className="border bg-background/95 shadow-lg backdrop-blur-sm">
+        <CardContent className="space-y-2 p-3">
           {/* Header with ID */}
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs font-medium">
+            <Badge className="font-medium text-xs" variant="outline">
               ID: {data.id}
             </Badge>
           </div>

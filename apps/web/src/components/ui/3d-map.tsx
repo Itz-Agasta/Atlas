@@ -1,10 +1,14 @@
 "use client";
-//maplibre gl component for alternative options
-import { useEffect, useRef, useMemo } from "react";
 import MapLibreGL from "maplibre-gl";
+//maplibre gl component for alternative options
+import { useEffect, useMemo, useRef } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-export default function MapLibre3DMap({ setIs3D }: { setIs3D: (is3D: boolean) => void }) {
+export default function MapLibre3DMap({
+  setIs3D,
+}: {
+  setIs3D: (is3D: boolean) => void;
+}) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreGL.Map | null>(null);
 
@@ -47,10 +51,14 @@ export default function MapLibre3DMap({ setIs3D }: { setIs3D: (is3D: boolean) =>
       });
 
       // Set font for text layers
-      map.getStyle().layers.forEach(layer => {
-        if (layer.type === 'symbol' && layer.layout && 'text-font' in layer.layout) {
-          map.setLayoutProperty(layer.id, 'text-font', ['TASA Orbiter Bold']);
-          map.setPaintProperty(layer.id, 'text-color', '#ffffff');
+      map.getStyle().layers.forEach((layer) => {
+        if (
+          layer.type === "symbol" &&
+          layer.layout &&
+          "text-font" in layer.layout
+        ) {
+          map.setLayoutProperty(layer.id, "text-font", ["TASA Orbiter Bold"]);
+          map.setPaintProperty(layer.id, "text-color", "#ffffff");
         }
       });
 
@@ -75,8 +83,17 @@ export default function MapLibre3DMap({ setIs3D }: { setIs3D: (is3D: boolean) =>
   }, [floats]);
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapContainerRef} className="w-full h-full" style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} />
+    <div className="relative h-full w-full">
+      <div
+        className="h-full w-full"
+        ref={mapContainerRef}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+        }}
+      />
     </div>
   );
 }

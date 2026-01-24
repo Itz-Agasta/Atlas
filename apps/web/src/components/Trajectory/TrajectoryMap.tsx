@@ -12,23 +12,23 @@ interface TrajectoryMapProps {
 // Dynamically import map components to avoid SSR issues
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
-  { ssr: false },
+  { ssr: false }
 );
 const TileLayer = dynamic(
   () => import("react-leaflet").then((mod) => mod.TileLayer),
-  { ssr: false },
+  { ssr: false }
 );
 const Polyline = dynamic(
   () => import("react-leaflet").then((mod) => mod.Polyline),
-  { ssr: false },
+  { ssr: false }
 );
 const Marker = dynamic(
   () => import("react-leaflet").then((mod) => mod.Marker),
-  { ssr: false },
+  { ssr: false }
 );
 const Tooltip = dynamic(
   () => import("react-leaflet").then((mod) => mod.Tooltip),
-  { ssr: false },
+  { ssr: false }
 );
 
 // Dynamically import the animated component
@@ -38,11 +38,7 @@ const AnimatedTrajectory = dynamic(() => import("./AnimatedTrajectory"), {
 });
 
 // Custom numbered marker icon
-const createNumberedIcon = (
-  number: number,
-  isStart: boolean = false,
-  isEnd: boolean = false,
-) => {
+const createNumberedIcon = (number: number, isStart = false, isEnd = false) => {
   if (typeof window === "undefined") return null;
   const L = require("leaflet");
 
@@ -96,7 +92,7 @@ export default function TrajectoryMap({ trajectory }: TrajectoryMapProps) {
       : ([15, 80] as [number, number]);
 
   const trajectoryPath = trajectory.points.map(
-    (point) => [point.latitude, point.longitude] as [number, number],
+    (point) => [point.latitude, point.longitude] as [number, number]
   );
 
   const handleAnimationComplete = () => {
@@ -126,36 +122,36 @@ export default function TrajectoryMap({ trajectory }: TrajectoryMapProps) {
 
   return (
     <MapContainer
-      center={center}
       bounds={bounds}
-      zoom={6}
-      style={{ height: "100%", width: "100%" }}
+      center={center}
       className="trajectory-map"
+      style={{ height: "100%", width: "100%" }}
+      zoom={6}
     >
       <TileLayer
-        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         attribution="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
       />
 
       {/* Animated Trajectory Line */}
       {trajectory.points.length > 1 && !animationCompleted && (
         <AnimatedTrajectory
-          points={trajectory.points}
           animationDuration={7000}
+          onAnimationComplete={handleAnimationComplete}
+          points={trajectory.points}
+          showProgressMarkers={true}
           strokeColor="#3b82f6"
           strokeWidth={3}
-          showProgressMarkers={true}
-          onAnimationComplete={handleAnimationComplete}
         />
       )}
 
       {/* Static Trajectory Line (shown after animation) */}
       {trajectoryPath.length > 1 && showStaticLine && (
         <Polyline
-          positions={trajectoryPath}
           color="#3b82f6"
-          weight={3}
           opacity={0.8}
+          positions={trajectoryPath}
+          weight={3}
         />
       )}
 
@@ -171,17 +167,17 @@ export default function TrajectoryMap({ trajectory }: TrajectoryMapProps) {
 
           return (
             <Marker
+              icon={icon}
               key={`point-${point.timestamp}-${index}`}
               position={[point.latitude, point.longitude]}
-              icon={icon}
             >
               <Tooltip direction="left" offset={[10, 0]} opacity={1}>
                 <div className="p-0">
                   <TrajectoryPointHover
+                    isEnd={isEnd}
+                    isStart={isStart}
                     point={point}
                     pointNumber={pointNumber}
-                    isStart={isStart}
-                    isEnd={isEnd}
                   />
                 </div>
               </Tooltip>

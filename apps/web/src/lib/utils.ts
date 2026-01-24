@@ -1,10 +1,10 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
 import type { AgentQueryInput } from "@atlas/schema/api/agent";
 import type {
-  FloatLocationsResponse,
   FloatDetailResponse,
+  FloatLocationsResponse,
 } from "@atlas/schema/api/home-page";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 const getApiBaseUrl = (): string => {
   // Use environment variable if available
@@ -63,7 +63,9 @@ export async function fetchFloatLocations(): Promise<FloatLocationsResponse> {
  * Fetch detailed information for a specific float
  * GET /api/v1/home/float/:floatId
  */
-export async function fetchFloatDetail(floatId: number): Promise<FloatDetailResponse> {
+export async function fetchFloatDetail(
+  floatId: number
+): Promise<FloatDetailResponse> {
   const response = await fetch(`${API_BASE_URL}/home/float/${floatId}`, {
     method: "GET",
     headers: {

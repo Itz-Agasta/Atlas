@@ -1,6 +1,6 @@
 "use client";
 
-import { Satellite, Moon, Mountain, Map, Globe, Settings } from "lucide-react";
+import { Globe, Map, Moon, Mountain, Satellite, Settings } from "lucide-react";
 
 // Map style options
 const MAP_STYLES = {
@@ -29,7 +29,7 @@ export default function MapControlPanel({
   floatCount,
 }: MapControlPanelProps) {
   return (
-    <div className="fixed bottom-4 right-4 z-10 flex flex-col items-end">
+    <div className="fixed right-4 bottom-4 z-10 flex flex-col items-end">
       {/* Control Panel (slides up when open) */}
       {isOpen && (
         <div
@@ -41,7 +41,7 @@ export default function MapControlPanel({
         >
           <div className="min-w-[240px]">
             <h3
-              className="font-semibold mb-4 text-sm uppercase tracking-wide"
+              className="mb-4 font-semibold text-sm uppercase tracking-wide"
               style={{ color: "var(--muted-foreground)" }}
             >
               Map Controls
@@ -50,16 +50,15 @@ export default function MapControlPanel({
             {/* Map Style Toggle */}
             <div className="mb-5">
               <div
-                className="text-xs font-medium mb-2 uppercase tracking-wide"
+                className="mb-2 font-medium text-xs uppercase tracking-wide"
                 style={{ color: "var(--muted-foreground)" }}
               >
                 Map Style
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <button
-                  type="button"
+                  className="flex flex-col items-center gap-1.5 rounded-md px-3 py-2.5 text-xs transition-all duration-200"
                   onClick={() => setMapStyle(MAP_STYLES.satellite)}
-                  className="flex flex-col items-center gap-1.5 px-3 py-2.5 text-xs rounded-md transition-all duration-200"
                   style={{
                     backgroundColor:
                       mapStyle === MAP_STYLES.satellite
@@ -75,14 +74,14 @@ export default function MapControlPanel({
                         ? "var(--primary)"
                         : "var(--border)",
                   }}
+                  type="button"
                 >
                   <Satellite className="h-4 w-4" />
                   <span>Satellite</span>
                 </button>
                 <button
-                  type="button"
+                  className="flex flex-col items-center gap-1.5 rounded-md px-3 py-2.5 text-xs transition-all duration-200"
                   onClick={() => setMapStyle(MAP_STYLES.dark)}
-                  className="flex flex-col items-center gap-1.5 px-3 py-2.5 text-xs rounded-md transition-all duration-200"
                   style={{
                     backgroundColor:
                       mapStyle === MAP_STYLES.dark
@@ -98,14 +97,14 @@ export default function MapControlPanel({
                         ? "var(--primary)"
                         : "var(--border)",
                   }}
+                  type="button"
                 >
                   <Moon className="h-4 w-4" />
                   <span>Dark</span>
                 </button>
                 <button
-                  type="button"
+                  className="flex flex-col items-center gap-1.5 rounded-md px-3 py-2.5 text-xs transition-all duration-200"
                   onClick={() => setMapStyle(MAP_STYLES.outdoors)}
-                  className="flex flex-col items-center gap-1.5 px-3 py-2.5 text-xs rounded-md transition-all duration-200"
                   style={{
                     backgroundColor:
                       mapStyle === MAP_STYLES.outdoors
@@ -121,6 +120,7 @@ export default function MapControlPanel({
                         ? "var(--primary)"
                         : "var(--border)",
                   }}
+                  type="button"
                 >
                   <Mountain className="h-4 w-4" />
                   <span>Outdoors</span>
@@ -131,34 +131,33 @@ export default function MapControlPanel({
             {/* 2D/Globe Toggle */}
             <div className="mb-5">
               <div
-                className="text-xs font-medium mb-2 uppercase tracking-wide"
+                className="mb-2 font-medium text-xs uppercase tracking-wide"
                 style={{ color: "var(--muted-foreground)" }}
               >
                 View Mode
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  type="button"
+                  className="flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-xs transition-all duration-200"
                   onClick={() => setIsGlobe(false)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs rounded-md transition-all duration-200"
                   style={{
-                    backgroundColor: !isGlobe
-                      ? "var(--sidebar-accent)"
-                      : "transparent",
-                    color: !isGlobe
-                      ? "var(--sidebar-accent-foreground)"
-                      : "var(--sidebar-foreground)",
+                    backgroundColor: isGlobe
+                      ? "transparent"
+                      : "var(--sidebar-accent)",
+                    color: isGlobe
+                      ? "var(--sidebar-foreground)"
+                      : "var(--sidebar-accent-foreground)",
                     border: "1px solid",
-                    borderColor: !isGlobe ? "var(--primary)" : "var(--border)",
+                    borderColor: isGlobe ? "var(--border)" : "var(--primary)",
                   }}
+                  type="button"
                 >
                   <Map className="h-4 w-4" />
                   <span>2D</span>
                 </button>
                 <button
-                  type="button"
+                  className="flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-xs transition-all duration-200"
                   onClick={() => setIsGlobe(true)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs rounded-md transition-all duration-200"
                   style={{
                     backgroundColor: isGlobe
                       ? "var(--sidebar-accent)"
@@ -169,6 +168,7 @@ export default function MapControlPanel({
                     border: "1px solid",
                     borderColor: isGlobe ? "var(--primary)" : "var(--border)",
                   }}
+                  type="button"
                 >
                   <Globe className="h-4 w-4" />
                   <span>Globe</span>
@@ -178,7 +178,7 @@ export default function MapControlPanel({
 
             {/* Info */}
             <div
-              className="text-xs pt-3"
+              className="pt-3 text-xs"
               style={{
                 borderTop: "1px solid var(--border)",
                 color: "var(--muted-foreground)",
@@ -187,15 +187,15 @@ export default function MapControlPanel({
               <p className="mb-2 font-medium">
                 {floatCount} Argo floats in the Indian Ocean
               </p>
-              <div className="flex items-center mb-1">
+              <div className="mb-1 flex items-center">
                 <div
-                  className="w-2.5 h-2.5 rounded-full mr-2"
+                  className="mr-2 h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: "var(--primary)" }}
                 />
                 <span>Active Float</span>
               </div>
               <div className="flex items-center">
-                <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full mr-2" />
+                <div className="mr-2 h-2.5 w-2.5 rounded-full bg-yellow-500" />
                 <span>Selected Float</span>
               </div>
             </div>
@@ -205,9 +205,9 @@ export default function MapControlPanel({
 
       {/* Settings Button */}
       <button
-        type="button"
+        aria-label="Toggle map controls"
+        className="rounded-lg p-3 backdrop-blur-sm transition-all duration-200"
         onClick={() => setIsOpen(!isOpen)}
-        className="p-3 rounded-lg transition-all duration-200 backdrop-blur-sm"
         style={{
           backgroundColor: isOpen ? "var(--sidebar-accent)" : "var(--sidebar)",
           color: isOpen
@@ -215,7 +215,7 @@ export default function MapControlPanel({
             : "var(--sidebar-foreground)",
           border: "1px solid var(--border)",
         }}
-        aria-label="Toggle map controls"
+        type="button"
       >
         <Settings
           className={`h-5 w-5 transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`}

@@ -18,7 +18,7 @@ export function TemperatureSalinityDiagram({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!svgRef.current || !data.length) return;
+    if (!(svgRef.current && data.length)) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -82,7 +82,7 @@ export function TemperatureSalinityDiagram({
         d3
           .axisBottom(xScale)
           .tickSize(-innerHeight)
-          .tickFormat(() => ""),
+          .tickFormat(() => "")
       )
       .style("stroke-dasharray", "2,2")
       .style("opacity", 0.2);
@@ -93,7 +93,7 @@ export function TemperatureSalinityDiagram({
         d3
           .axisLeft(yScale)
           .tickSize(-innerWidth)
-          .tickFormat(() => ""),
+          .tickFormat(() => "")
       )
       .style("stroke-dasharray", "2,2")
       .style("opacity", 0.2);
@@ -132,7 +132,7 @@ export function TemperatureSalinityDiagram({
         tooltip
           .style("visibility", "visible")
           .html(
-            `Depth: ${d.depth}m<br/>Temperature: ${d.temperature.toFixed(2)}°C<br/>Salinity: ${d.salinity.toFixed(2)} PSU`,
+            `Depth: ${d.depth}m<br/>Temperature: ${d.temperature.toFixed(2)}°C<br/>Salinity: ${d.salinity.toFixed(2)} PSU`
           );
         d3.select(this).attr("r", 6).style("stroke-width", 2);
       })
@@ -230,7 +230,7 @@ export function TemperatureSalinityDiagram({
       .append("stop")
       .attr("offset", (d) => `${d * 100}%`)
       .attr("stop-color", (d) =>
-        colorScale(legendScale.invert(d * legendHeight)),
+        colorScale(legendScale.invert(d * legendHeight))
       );
 
     legend
@@ -264,12 +264,12 @@ export function TemperatureSalinityDiagram({
   }, [data, width, height]);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border overflow-hidden">
+    <div className="overflow-hidden rounded-lg border bg-white p-6 shadow-sm">
       <svg
+        className="h-full w-full overflow-visible"
+        height={height}
         ref={svgRef}
         width={width}
-        height={height}
-        className="overflow-visible w-full h-full"
       />
     </div>
   );

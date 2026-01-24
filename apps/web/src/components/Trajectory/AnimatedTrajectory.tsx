@@ -27,7 +27,7 @@ export default function AnimatedTrajectory({
   const [animationProgress, setAnimationProgress] = useState(0);
 
   useEffect(() => {
-    if (!map || !svgRef.current || points.length < 2) return;
+    if (!(map && svgRef.current) || points.length < 2) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();

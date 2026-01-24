@@ -38,7 +38,7 @@ export function OceanographicProfile({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!svgRef.current || !data.length) return;
+    if (!(svgRef.current && data.length)) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -129,7 +129,7 @@ export function OceanographicProfile({
         d3
           .axisBottom(xScale)
           .tickSize(-innerHeight)
-          .tickFormat(() => ""),
+          .tickFormat(() => "")
       )
       .style("stroke-dasharray", "2,2")
       .style("opacity", 0.3);
@@ -140,7 +140,7 @@ export function OceanographicProfile({
         d3
           .axisLeft(yScale)
           .tickSize(-innerWidth)
-          .tickFormat(() => ""),
+          .tickFormat(() => "")
       )
       .style("stroke-dasharray", "2,2")
       .style("opacity", 0.3);
@@ -206,7 +206,7 @@ export function OceanographicProfile({
         tooltip
           .style("visibility", "visible")
           .html(
-            `Depth: ${data.depth}m<br/>${title}: ${(data[parameter] as number).toFixed(2)} ${unit}`,
+            `Depth: ${data.depth}m<br/>${title}: ${(data[parameter] as number).toFixed(2)} ${unit}`
           );
         d3.select(this).attr("r", 5).style("opacity", 1);
       })
@@ -270,14 +270,14 @@ export function OceanographicProfile({
   return (
     <Card className="h-fit">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium">{title}</CardTitle>
+        <CardTitle className="font-medium text-base">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="flex justify-center items-center p-4">
+      <CardContent className="flex items-center justify-center p-4">
         <svg
+          className="overflow-visible"
+          height={height}
           ref={svgRef}
           width={width}
-          height={height}
-          className="overflow-visible"
         />
       </CardContent>
     </Card>

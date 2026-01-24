@@ -38,7 +38,7 @@ export function DeploymentYearFilter({
       setInputEnd(values[1].toString());
       onRangeChange({ start: values[0], end: values[1] });
     },
-    [onRangeChange],
+    [onRangeChange]
   );
 
   const handleInputChange = (type: "start" | "end", value: string) => {
@@ -54,14 +54,14 @@ export function DeploymentYearFilter({
     let newEnd = range.end;
 
     if (type === "start") {
-      const parsed = parseInt(inputStart, 10);
+      const parsed = Number.parseInt(inputStart, 10);
       if (!Number.isNaN(parsed) && parsed >= MIN_YEAR && parsed <= range.end) {
         newStart = parsed;
       } else {
         setInputStart(range.start.toString()); // Reset invalid input
       }
     } else {
-      const parsed = parseInt(inputEnd, 10);
+      const parsed = Number.parseInt(inputEnd, 10);
       if (
         !Number.isNaN(parsed) &&
         parsed <= MAX_YEAR &&
@@ -96,26 +96,26 @@ export function DeploymentYearFilter({
 
   return (
     <Card className="shadow-sm">
-      <CardContent className="pt-4 space-y-4">
+      <CardContent className="space-y-4 pt-4">
         {/* Slider */}
         <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <Label className="text-sm font-medium">Deployment Year Range</Label>
-            <div className="text-sm text-muted-foreground">
+          <div className="flex items-center justify-between">
+            <Label className="font-medium text-sm">Deployment Year Range</Label>
+            <div className="text-muted-foreground text-sm">
               {localRange[0]} - {localRange[1]}
             </div>
           </div>
           <div className="px-2">
             <Slider
-              value={localRange}
-              onValueChange={handleSliderChange}
-              min={MIN_YEAR}
-              max={MAX_YEAR}
-              step={1}
               className="w-full"
+              max={MAX_YEAR}
+              min={MIN_YEAR}
+              onValueChange={handleSliderChange}
+              step={1}
+              value={localRange}
             />
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="flex justify-between text-muted-foreground text-xs">
             <span>{MIN_YEAR}</span>
             <span>{MAX_YEAR}</span>
           </div>
@@ -124,49 +124,49 @@ export function DeploymentYearFilter({
         {/* Manual Input */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label htmlFor="start-year" className="text-xs">
+            <Label className="text-xs" htmlFor="start-year">
               Start Year
             </Label>
             <Input
-              id="start-year"
-              value={inputStart}
-              onChange={(e) => handleInputChange("start", e.target.value)}
-              onBlur={() => handleInputBlur("start")}
               className="h-8 text-sm"
+              id="start-year"
+              onBlur={() => handleInputBlur("start")}
+              onChange={(e) => handleInputChange("start", e.target.value)}
               placeholder={MIN_YEAR.toString()}
+              value={inputStart}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="end-year" className="text-xs">
+            <Label className="text-xs" htmlFor="end-year">
               End Year
             </Label>
             <Input
-              id="end-year"
-              value={inputEnd}
-              onChange={(e) => handleInputChange("end", e.target.value)}
-              onBlur={() => handleInputBlur("end")}
               className="h-8 text-sm"
+              id="end-year"
+              onBlur={() => handleInputBlur("end")}
+              onChange={(e) => handleInputChange("end", e.target.value)}
               placeholder={MAX_YEAR.toString()}
+              value={inputEnd}
             />
           </div>
         </div>
 
         {/* Presets */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Quick Select</Label>
+          <Label className="text-muted-foreground text-xs">Quick Select</Label>
           <div className="grid grid-cols-2 gap-2">
             {presets.map((preset) => (
               <Button
-                key={preset.label}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handlePresetClick(preset)}
                 className={`h-7 text-xs ${
                   localRange[0] === preset.start && localRange[1] === preset.end
                     ? "bg-primary text-primary-foreground"
                     : ""
                 }`}
+                key={preset.label}
+                onClick={() => handlePresetClick(preset)}
+                size="sm"
+                type="button"
+                variant="outline"
               >
                 {preset.label}
               </Button>
@@ -175,8 +175,8 @@ export function DeploymentYearFilter({
         </div>
 
         {/* Info */}
-        <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded">
-          <div className="font-medium mb-1">Deployment Years</div>
+        <div className="rounded bg-muted/20 p-2 text-muted-foreground text-xs">
+          <div className="mb-1 font-medium">Deployment Years</div>
           <div>
             Filter floats by their initial deployment year. This affects all
             data visualization and analysis for the selected time range.

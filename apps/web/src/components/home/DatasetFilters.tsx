@@ -119,7 +119,7 @@ export function DatasetFilters({
         acc[item.key] = enable;
         return acc;
       },
-      {} as Partial<DatasetFiltersProps["datasets"]>,
+      {} as Partial<DatasetFiltersProps["datasets"]>
     );
 
     onDatasetsChange({
@@ -140,37 +140,37 @@ export function DatasetFilters({
       {FILTER_GROUPS.map((group) => {
         const groupStatus = getGroupStatus(group.items);
         const enabledCount = group.items.filter(
-          (item) => datasets[item.key],
+          (item) => datasets[item.key]
         ).length;
 
         return (
-          <Card key={group.title} className="shadow-sm">
+          <Card className="shadow-sm" key={group.title}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 font-medium text-sm">
                   <group.icon className="h-4 w-4 text-primary" />
                   {group.title}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   {enabledCount > 0 && (
-                    <Badge variant="secondary" className="text-xs px-2 py-0">
+                    <Badge className="px-2 py-0 text-xs" variant="secondary">
                       {enabledCount}
                     </Badge>
                   )}
                   <div className="flex gap-1">
                     <button
-                      type="button"
-                      onClick={() => toggleGroup(group.items, true)}
-                      className="text-xs px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      className="rounded bg-primary/10 px-2 py-1 text-primary text-xs transition-colors hover:bg-primary/20"
                       disabled={groupStatus === "all"}
+                      onClick={() => toggleGroup(group.items, true)}
+                      type="button"
                     >
                       All
                     </button>
                     <button
-                      type="button"
-                      onClick={() => toggleGroup(group.items, false)}
-                      className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                      className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs transition-colors hover:bg-muted/80"
                       disabled={groupStatus === "none"}
+                      onClick={() => toggleGroup(group.items, false)}
+                      type="button"
                     >
                       None
                     </button>
@@ -184,26 +184,26 @@ export function DatasetFilters({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div
-                        className={`w-3 h-3 rounded-full ${item.color || "bg-gray-400"}`}
+                        className={`h-3 w-3 rounded-full ${item.color || "bg-gray-400"}`}
                         title={`${item.label} indicator`}
                       />
                       <div className="flex-1">
                         <Label
+                          className="cursor-pointer font-medium text-sm"
                           htmlFor={item.key}
-                          className="text-sm font-medium cursor-pointer"
                         >
                           {item.label}
                         </Label>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="mt-0.5 text-muted-foreground text-xs">
                           {item.description}
                         </p>
                       </div>
                     </div>
                     <Switch
-                      id={item.key}
                       checked={datasets[item.key]}
-                      onCheckedChange={() => handleToggle(item.key)}
                       className="data-[state=checked]:bg-primary"
+                      id={item.key}
+                      onCheckedChange={() => handleToggle(item.key)}
                     />
                   </div>
                   {index < group.items.length - 1 && (
@@ -219,7 +219,7 @@ export function DatasetFilters({
       {/* Quick Actions */}
       <div className="flex gap-2 pt-2">
         <button
-          type="button"
+          className="flex-1 rounded bg-primary px-3 py-2 text-primary-foreground text-xs transition-colors hover:bg-primary/90"
           onClick={() =>
             onDatasetsChange(
               Object.keys(datasets).reduce(
@@ -227,16 +227,16 @@ export function DatasetFilters({
                   acc[key as keyof typeof datasets] = true;
                   return acc;
                 },
-                {} as typeof datasets,
-              ),
+                {} as typeof datasets
+              )
             )
           }
-          className="flex-1 text-xs px-3 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          type="button"
         >
           Enable All
         </button>
         <button
-          type="button"
+          className="flex-1 rounded bg-muted px-3 py-2 text-muted-foreground text-xs transition-colors hover:bg-muted/80"
           onClick={() =>
             onDatasetsChange(
               Object.keys(datasets).reduce(
@@ -244,11 +244,11 @@ export function DatasetFilters({
                   acc[key as keyof typeof datasets] = false;
                   return acc;
                 },
-                {} as typeof datasets,
-              ),
+                {} as typeof datasets
+              )
             )
           }
-          className="flex-1 text-xs px-3 py-2 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+          type="button"
         >
           Disable All
         </button>

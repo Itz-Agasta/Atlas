@@ -26,7 +26,7 @@ export default function ProfileOverlayChart({
 
     // Filter points with valid temperature and depth data
     const validPoints = trajectory.points.filter(
-      (point) => point.temperature != null && point.depth != null,
+      (point) => point.temperature != null && point.depth != null
     );
 
     if (validPoints.length === 0) return;
@@ -34,7 +34,7 @@ export default function ProfileOverlayChart({
     // Create scales
     const temperatureExtent = d3.extent(
       validPoints,
-      (d) => d.temperature || 0,
+      (d) => d.temperature || 0
     ) as [number, number];
     const depthExtent = d3.extent(validPoints, (d) => d.depth || 0) as [
       number,
@@ -47,7 +47,7 @@ export default function ProfileOverlayChart({
 
     // Create color scale based on time
     const timeExtent = d3.extent(validPoints, (d) =>
-      new Date(d.timestamp).getTime(),
+      new Date(d.timestamp).getTime()
     ) as [number, number];
     const colorScale = d3
       .scaleSequential(d3.interpolatePlasma)
@@ -137,7 +137,7 @@ export default function ProfileOverlayChart({
               Date: ${new Date(profile[0].timestamp).toLocaleDateString()}<br/>
               Depth Range: ${Math.min(...profile.map((p) => p.depth || 0)).toFixed(1)}m - ${Math.max(...profile.map((p) => p.depth || 0)).toFixed(1)}m<br/>
               Temp Range: ${Math.min(...profile.map((p) => p.temperature || 0)).toFixed(2)}°C - ${Math.max(...profile.map((p) => p.temperature || 0)).toFixed(2)}°C
-            `,
+            `
             )
             .style("left", event.pageX + 10 + "px")
             .style("top", event.pageY - 10 + "px");
@@ -178,15 +178,13 @@ export default function ProfileOverlayChart({
     const legendAxis = d3
       .axisBottom(legendScale)
       .ticks(3)
-      .tickFormat((d) => {
-        return d3.timeFormat("%b %d")(new Date(d as number));
-      });
+      .tickFormat((d) => d3.timeFormat("%b %d")(new Date(d as number)));
 
     const legend = svg
       .append("g")
       .attr(
         "transform",
-        `translate(${margin.left + width - legendWidth}, ${height + margin.top + 40})`,
+        `translate(${margin.left + width - legendWidth}, ${height + margin.top + 40})`
       );
 
     // Create gradient for legend
@@ -205,8 +203,8 @@ export default function ProfileOverlayChart({
         .attr(
           "stop-color",
           colorScale(
-            timeExtent[0] + (i / steps) * (timeExtent[1] - timeExtent[0]),
-          ),
+            timeExtent[0] + (i / steps) * (timeExtent[1] - timeExtent[0])
+          )
         );
     }
 
@@ -232,12 +230,12 @@ export default function ProfileOverlayChart({
   }, [trajectory]);
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="flex h-full w-full items-center justify-center">
       <svg
-        ref={svgRef}
-        width="400"
         height="300"
+        ref={svgRef}
         style={{ maxWidth: "100%", height: "auto" }}
+        width="400"
       />
     </div>
   );

@@ -30,7 +30,7 @@ export default function TrajectoryTimelineChart({
 
     const timeExtent = d3.extent(
       validPoints,
-      (d) => parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date(),
+      (d) => parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date()
     ) as [Date, Date];
     const depthExtent = d3.extent(validPoints, (d) => d.depth || 0) as [
       number,
@@ -44,7 +44,7 @@ export default function TrajectoryTimelineChart({
     // Create color scale for temperature
     const temperatureExtent = d3.extent(
       validPoints,
-      (d) => d.temperature || 0,
+      (d) => d.temperature || 0
     ) as [number, number];
     const colorScale = d3
       .scaleSequential(d3.interpolateRdYlBu)
@@ -83,7 +83,7 @@ export default function TrajectoryTimelineChart({
     const line = d3
       .line<(typeof validPoints)[0]>()
       .x((d) =>
-        xScale(parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date()),
+        xScale(parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date())
       )
       .y((d) => yScale(d.depth || 0))
       .curve(d3.curveMonotoneX);
@@ -102,7 +102,7 @@ export default function TrajectoryTimelineChart({
       .enter()
       .append("circle")
       .attr("cx", (d) =>
-        xScale(parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date()),
+        xScale(parseTime(d.timestamp.slice(0, -1) + ".000Z") || new Date())
       )
       .attr("cy", (d) => yScale(d.depth || 0))
       .attr("r", 4)
@@ -136,7 +136,7 @@ export default function TrajectoryTimelineChart({
             Depth: ${d.depth?.toFixed(1)}m<br/>
             Temp: ${d.temperature?.toFixed(2)}°C<br/>
             Salinity: ${d.salinity?.toFixed(2)} PSU
-          `,
+          `
           )
           .style("left", event.pageX + 10 + "px")
           .style("top", event.pageY - 10 + "px");
@@ -166,7 +166,7 @@ export default function TrajectoryTimelineChart({
       .append("g")
       .attr(
         "transform",
-        `translate(${margin.left + width - legendWidth}, ${height + margin.top + 40})`,
+        `translate(${margin.left + width - legendWidth}, ${height + margin.top + 40})`
       );
 
     // Create gradient for legend
@@ -186,8 +186,8 @@ export default function TrajectoryTimelineChart({
           "stop-color",
           colorScale(
             temperatureExtent[0] +
-              (i / steps) * (temperatureExtent[1] - temperatureExtent[0]),
-          ),
+              (i / steps) * (temperatureExtent[1] - temperatureExtent[0])
+          )
         );
     }
 
@@ -213,12 +213,12 @@ export default function TrajectoryTimelineChart({
   }, [trajectory]);
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="flex h-full w-full items-center justify-center">
       <svg
-        ref={svgRef}
-        width="600"
         height="250"
+        ref={svgRef}
         style={{ maxWidth: "100%", height: "auto" }}
+        width="600"
       />
     </div>
   );

@@ -24,7 +24,7 @@ const ProgressIndicator = React.forwardRef<
       progressClassName,
       ...props
     },
-    ref,
+    ref
   ) => {
     const clampedValue = Math.max(0, Math.min(100, value));
 
@@ -40,11 +40,11 @@ const ProgressIndicator = React.forwardRef<
     };
 
     return (
-      <div ref={ref} className={cn("space-y-2", className)} {...props}>
+      <div className={cn("space-y-2", className)} ref={ref} {...props}>
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium">{title}</h4>
+          <h4 className="font-medium text-sm">{title}</h4>
           {showPercentage && (
-            <span className="text-sm font-medium">
+            <span className="font-medium text-sm">
               {clampedValue.toFixed(1)}%
             </span>
           )}
@@ -53,14 +53,14 @@ const ProgressIndicator = React.forwardRef<
           <div
             className={cn(
               "h-full transition-all duration-300",
-              getProgressColor(),
+              getProgressColor()
             )}
             style={{ width: `${clampedValue}%` }}
           />
         </div>
       </div>
     );
-  },
+  }
 );
 
 ProgressIndicator.displayName = "ProgressIndicator";

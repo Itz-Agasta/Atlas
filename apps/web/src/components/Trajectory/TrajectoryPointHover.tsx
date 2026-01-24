@@ -17,15 +17,14 @@ export default function TrajectoryPointHover({
   isStart = false,
   isEnd = false,
 }: TrajectoryPointHoverProps) {
-  const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
+  const formatDate = (timestamp: string) =>
+    new Date(timestamp).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
   const formatCoordinate = (value: number, type: "lat" | "lng") => {
     const direction =
@@ -59,10 +58,10 @@ export default function TrajectoryPointHover({
   const pointTypeInfo = getPointTypeInfo();
 
   return (
-    <div className="min-w-[280px] p-3 space-y-2 bg-white shadow-lg rounded-lg border">
+    <div className="min-w-[280px] space-y-2 rounded-lg border bg-white p-3 shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Badge variant="outline" className={pointTypeInfo.color}>
+        <Badge className={pointTypeInfo.color} variant="outline">
           {pointTypeInfo.label}
         </Badge>
         <Badge className={getStatusColor(point.status)}>
@@ -74,7 +73,7 @@ export default function TrajectoryPointHover({
 
       {/* Location Information */}
       <div className="space-y-1">
-        <h4 className="text-sm font-semibold text-gray-900">Location</h4>
+        <h4 className="font-semibold text-gray-900 text-sm">Location</h4>
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
             <span className="font-medium text-gray-600">Latitude:</span>
@@ -95,8 +94,8 @@ export default function TrajectoryPointHover({
 
       {/* Timestamp */}
       <div className="space-y-1">
-        <h4 className="text-sm font-semibold text-gray-900">Time</h4>
-        <div className="text-xs text-gray-900">
+        <h4 className="font-semibold text-gray-900 text-sm">Time</h4>
+        <div className="text-gray-900 text-xs">
           {formatDate(point.timestamp)}
         </div>
       </div>
@@ -108,7 +107,7 @@ export default function TrajectoryPointHover({
         <>
           <Separator />
           <div className="space-y-1">
-            <h4 className="text-sm font-semibold text-gray-900">
+            <h4 className="font-semibold text-gray-900 text-sm">
               Measurements
             </h4>
             <div className="grid gap-1 text-xs">
@@ -147,7 +146,7 @@ export default function TrajectoryPointHover({
       {(isStart || isEnd) && (
         <>
           <Separator />
-          <div className="text-xs text-center text-gray-500">
+          <div className="text-center text-gray-500 text-xs">
             {isStart && "🚀 Mission Start"}
             {isEnd && "🏁 Mission End"}
           </div>

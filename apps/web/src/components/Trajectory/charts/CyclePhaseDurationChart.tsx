@@ -102,7 +102,7 @@ export default function CyclePhaseDurationChart({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-8">
+          <div className="py-8 text-center text-muted-foreground">
             No cycle data available
           </div>
         </CardContent>
@@ -121,7 +121,7 @@ export default function CyclePhaseDurationChart({
       acc[phase.phase].avg = acc[phase.phase].total / acc[phase.phase].count;
       return acc;
     },
-    {} as Record<string, { total: number; count: number; avg: number }>,
+    {} as Record<string, { total: number; count: number; avg: number }>
   );
 
   // Group by cycle for timeline view
@@ -133,7 +133,7 @@ export default function CyclePhaseDurationChart({
       acc[phase.cycleNumber].push(phase);
       return acc;
     },
-    {} as Record<number, CyclePhase[]>,
+    {} as Record<number, CyclePhase[]>
   );
 
   // Prepare chart data for phase duration trends
@@ -145,7 +145,7 @@ export default function CyclePhaseDurationChart({
           acc[phase.phase] = phase.duration;
           return acc;
         },
-        {} as Record<string, number>,
+        {} as Record<string, number>
       );
 
       return {
@@ -166,7 +166,7 @@ export default function CyclePhaseDurationChart({
       count: stats.count,
       totalDuration: stats.total,
       label: chartConfig[phase as keyof typeof chartConfig]?.label || phase,
-    }),
+    })
   );
 
   const totalCycles = Object.keys(cycleData).length;
@@ -184,7 +184,7 @@ export default function CyclePhaseDurationChart({
             <Clock className="h-5 w-5" />
             Cycle Phase Duration
           </CardTitle>
-          <Badge variant="outline" className="font-mono">
+          <Badge className="font-mono" variant="outline">
             {totalCycles} cycles
           </Badge>
         </div>
@@ -192,26 +192,26 @@ export default function CyclePhaseDurationChart({
 
       <CardContent className="space-y-6">
         {/* Summary Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Total Cycles</div>
-            <div className="text-lg font-semibold">{totalCycles}</div>
+            <div className="text-muted-foreground text-sm">Total Cycles</div>
+            <div className="font-semibold text-lg">{totalCycles}</div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Avg Cycle Duration
             </div>
-            <div className="text-lg font-semibold">
+            <div className="font-semibold text-lg">
               {avgCycleDuration.toFixed(1)} h
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Total Phases</div>
-            <div className="text-lg font-semibold">{data.length}</div>
+            <div className="text-muted-foreground text-sm">Total Phases</div>
+            <div className="font-semibold text-lg">{data.length}</div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Longest Phase</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Longest Phase</div>
+            <div className="font-semibold text-lg">
               {Math.max(...data.map((d) => d.duration)).toFixed(1)} h
             </div>
           </div>
@@ -219,17 +219,17 @@ export default function CyclePhaseDurationChart({
 
         {/* Phase Distribution */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium">Phase Distribution</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <h4 className="font-medium text-sm">Phase Distribution</h4>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
             {phaseDistribution.map((phase) => (
               <Badge
+                className={`${getPhaseColor(phase.phase)} flex items-center justify-center gap-1 p-2`}
                 key={phase.phase}
                 variant="outline"
-                className={`${getPhaseColor(phase.phase)} flex items-center gap-1 justify-center p-2`}
               >
                 {getPhaseIcon(phase.phase)}
                 <div className="text-center">
-                  <div className="text-xs font-medium">{phase.label}</div>
+                  <div className="font-medium text-xs">{phase.label}</div>
                   <div className="text-xs">
                     {phase.avgDuration.toFixed(1)}h avg
                   </div>
@@ -242,31 +242,31 @@ export default function CyclePhaseDurationChart({
         <Separator />
 
         {/* Side-by-side Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Average Phase Duration */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Average Phase Duration</h4>
-            <ChartContainer config={chartConfig} className="h-[280px]">
+            <h4 className="font-medium text-sm">Average Phase Duration</h4>
+            <ChartContainer className="h-[280px]" config={chartConfig}>
               <BarChart data={phaseDistribution}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
+                  angle={-45}
+                  axisLine={false}
                   dataKey="label"
                   fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  angle={-45}
-                  textAnchor="end"
                   height={80}
+                  textAnchor="end"
+                  tickLine={false}
                 />
                 <YAxis
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   label={{
                     value: "Duration (hours)",
                     angle: -90,
                     position: "insideLeft",
                   }}
+                  tickLine={false}
                 />
                 <ChartTooltip
                   content={
@@ -295,25 +295,25 @@ export default function CyclePhaseDurationChart({
 
           {/* Cycle Duration Trends */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Cycle Duration Trends</h4>
-            <ChartContainer config={chartConfig} className="h-[280px]">
+            <h4 className="font-medium text-sm">Cycle Duration Trends</h4>
+            <ChartContainer className="h-[280px]" config={chartConfig}>
               <ComposedChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
+                  axisLine={false}
                   dataKey="cycleLabel"
                   fontSize={11}
                   tickLine={false}
-                  axisLine={false}
                 />
                 <YAxis
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   label={{
                     value: "Duration (hours)",
                     angle: -90,
                     position: "insideLeft",
                   }}
+                  tickLine={false}
                 />
                 <ChartTooltip
                   content={
@@ -334,62 +334,62 @@ export default function CyclePhaseDurationChart({
                   }
                 />
                 <ReferenceLine
-                  y={avgCycleDuration}
+                  label={{ value: "Avg", position: "top" }}
                   stroke="hsl(var(--muted-foreground))"
                   strokeDasharray="5 5"
-                  label={{ value: "Avg", position: "top" }}
+                  y={avgCycleDuration}
                 />
 
                 {/* Stacked areas for each phase */}
                 <Area
-                  type="monotone"
                   dataKey="surface"
-                  stackId="1"
-                  stroke="var(--color-surface)"
                   fill="var(--color-surface)"
                   fillOpacity={0.6}
+                  stackId="1"
+                  stroke="var(--color-surface)"
+                  type="monotone"
                 />
                 <Area
-                  type="monotone"
                   dataKey="descent"
-                  stackId="1"
-                  stroke="var(--color-descent)"
                   fill="var(--color-descent)"
                   fillOpacity={0.6}
+                  stackId="1"
+                  stroke="var(--color-descent)"
+                  type="monotone"
                 />
                 <Area
-                  type="monotone"
                   dataKey="drift"
-                  stackId="1"
-                  stroke="var(--color-drift)"
                   fill="var(--color-drift)"
                   fillOpacity={0.6}
+                  stackId="1"
+                  stroke="var(--color-drift)"
+                  type="monotone"
                 />
                 <Area
-                  type="monotone"
                   dataKey="ascent"
-                  stackId="1"
-                  stroke="var(--color-ascent)"
                   fill="var(--color-ascent)"
                   fillOpacity={0.6}
+                  stackId="1"
+                  stroke="var(--color-ascent)"
+                  type="monotone"
                 />
                 <Area
-                  type="monotone"
                   dataKey="surface_transmission"
-                  stackId="1"
-                  stroke="var(--color-surface_transmission)"
                   fill="var(--color-surface_transmission)"
                   fillOpacity={0.6}
+                  stackId="1"
+                  stroke="var(--color-surface_transmission)"
+                  type="monotone"
                 />
 
                 {/* Total duration line */}
                 <Line
-                  type="monotone"
+                  activeDot={{ r: 5 }}
                   dataKey="totalDuration"
+                  dot={{ r: 3 }}
                   stroke="hsl(var(--foreground))"
                   strokeWidth={3}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
+                  type="monotone"
                 />
               </ComposedChart>
             </ChartContainer>
@@ -401,36 +401,36 @@ export default function CyclePhaseDurationChart({
           <>
             <Separator />
             <div className="space-y-3">
-              <h4 className="text-sm font-medium">Latest Cycle Breakdown</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h4 className="font-medium text-sm">Latest Cycle Breakdown</h4>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {Object.entries(
                   cycleData[Math.max(...Object.keys(cycleData).map(Number))] ||
-                    {},
+                    {}
                 ).map(([_index, phase]) => (
                   <div
+                    className="flex items-center justify-between rounded-lg border p-3"
                     key={`${phase.cycleNumber}-${phase.phase}`}
-                    className="flex items-center justify-between p-3 border rounded-lg"
                   >
                     <div className="flex items-center gap-2">
                       <div className={getPhaseColor(phase.phase)}>
                         {getPhaseIcon(phase.phase)}
                       </div>
                       <div>
-                        <div className="text-sm font-medium">
+                        <div className="font-medium text-sm">
                           {chartConfig[phase.phase as keyof typeof chartConfig]
                             ?.label || phase.phase}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {new Date(phase.startTime).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium">
+                      <div className="font-medium text-sm">
                         {phase.duration.toFixed(1)} h
                       </div>
                       {phase.depth && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {phase.depth.toFixed(0)} m depth
                         </div>
                       )}

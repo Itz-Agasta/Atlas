@@ -78,7 +78,7 @@ const chartConfig = {
 
 const getBatteryIcon = (
   voltage: number,
-  specs?: BatteryMonitoringChartProps["specifications"],
+  specs?: BatteryMonitoringChartProps["specifications"]
 ) => {
   if (!specs) return <Battery className="h-5 w-5" />;
 
@@ -93,7 +93,7 @@ const getBatteryIcon = (
 
 const getBatteryStatus = (
   voltage: number,
-  specs?: BatteryMonitoringChartProps["specifications"],
+  specs?: BatteryMonitoringChartProps["specifications"]
 ) => {
   if (!specs) return { status: "Unknown", color: "text-gray-600" };
 
@@ -121,7 +121,7 @@ export default function BatteryMonitoringChart({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-8">
+          <div className="py-8 text-center text-muted-foreground">
             No battery data available
           </div>
         </CardContent>
@@ -131,7 +131,7 @@ export default function BatteryMonitoringChart({
 
   // Sort data by timestamp
   const sortedData = [...data].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
   const latestData = sortedData[sortedData.length - 1];
@@ -156,8 +156,8 @@ export default function BatteryMonitoringChart({
           ((currentVoltage - specifications.criticalVoltageThreshold) /
             (specifications.nominalVoltage -
               specifications.criticalVoltageThreshold)) *
-            100,
-        ),
+            100
+        )
       )
     : undefined;
 
@@ -199,8 +199,8 @@ export default function BatteryMonitoringChart({
             Battery Monitoring
           </CardTitle>
           <Badge
-            variant="outline"
             className={`font-mono ${batteryStatus.color}`}
+            variant="outline"
           >
             {batteryStatus.status}
           </Badge>
@@ -235,10 +235,10 @@ export default function BatteryMonitoringChart({
         )}
 
         {/* Summary Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Current Voltage</div>
-            <div className="text-lg font-semibold flex items-center gap-1">
+            <div className="text-muted-foreground text-sm">Current Voltage</div>
+            <div className="flex items-center gap-1 font-semibold text-lg">
               {currentVoltage.toFixed(2)}V
               {voltageDecline > 0 ? (
                 <TrendingDown className="h-4 w-4 text-red-500" />
@@ -248,22 +248,22 @@ export default function BatteryMonitoringChart({
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Voltage Decline</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Voltage Decline</div>
+            <div className="font-semibold text-lg">
               {voltageDecline.toFixed(3)}V
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Avg Power</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Avg Power</div>
+            <div className="font-semibold text-lg">
               {avgPowerConsumption
                 ? `${avgPowerConsumption.toFixed(3)}W`
                 : "N/A"}
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Days Running</div>
-            <div className="text-lg font-semibold flex items-center gap-1">
+            <div className="text-muted-foreground text-sm">Days Running</div>
+            <div className="flex items-center gap-1 font-semibold text-lg">
               {daysRunning.toFixed(0)}
               <Clock className="h-4 w-4 text-blue-500" />
             </div>
@@ -278,10 +278,10 @@ export default function BatteryMonitoringChart({
         {/* Estimated Remaining Time */}
         {estimatedRemainingDays !== undefined && (
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Estimated Remaining
             </div>
-            <div className="text-lg font-semibold">
+            <div className="font-semibold text-lg">
               {estimatedRemainingDays > 0
                 ? `${estimatedRemainingDays.toFixed(0)} days`
                 : "Calculate pending"}
@@ -292,32 +292,32 @@ export default function BatteryMonitoringChart({
         <Separator />
 
         {/* Side-by-side Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Voltage Trend */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Voltage Trend</h4>
-            <ChartContainer config={chartConfig} className="h-[280px]">
+            <h4 className="font-medium text-sm">Voltage Trend</h4>
+            <ChartContainer className="h-[280px]" config={chartConfig}>
               <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
+                  angle={-45}
+                  axisLine={false}
                   dataKey="time"
                   fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  angle={-45}
-                  textAnchor="end"
                   height={60}
+                  textAnchor="end"
+                  tickLine={false}
                 />
                 <YAxis
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  domain={["dataMin - 0.1", "dataMax + 0.1"]}
+                  fontSize={11}
                   label={{
                     value: "Voltage (V)",
                     angle: -90,
                     position: "insideLeft",
                   }}
-                  domain={["dataMin - 0.1", "dataMax + 0.1"]}
+                  tickLine={false}
                 />
                 <ChartTooltip
                   content={
@@ -340,41 +340,41 @@ export default function BatteryMonitoringChart({
                 {specifications && (
                   <>
                     <ReferenceLine
-                      y={specifications.nominalVoltage}
+                      label={{ value: "Nominal", position: "top" }}
                       stroke="hsl(var(--primary))"
                       strokeDasharray="5 5"
-                      label={{ value: "Nominal", position: "top" }}
+                      y={specifications.nominalVoltage}
                     />
                     <ReferenceLine
-                      y={specifications.lowVoltageThreshold}
+                      label={{ value: "Low", position: "top" }}
                       stroke="hsl(var(--warning))"
                       strokeDasharray="5 5"
-                      label={{ value: "Low", position: "top" }}
+                      y={specifications.lowVoltageThreshold}
                     />
                     <ReferenceLine
-                      y={specifications.criticalVoltageThreshold}
+                      label={{ value: "Critical", position: "top" }}
                       stroke="hsl(var(--destructive))"
                       strokeDasharray="5 5"
-                      label={{ value: "Critical", position: "top" }}
+                      y={specifications.criticalVoltageThreshold}
                     />
                   </>
                 )}
 
                 <Area
-                  type="monotone"
                   dataKey="voltage"
-                  stroke="var(--color-voltage)"
                   fill="var(--color-voltage)"
                   fillOpacity={0.3}
+                  stroke="var(--color-voltage)"
                   strokeWidth={2}
+                  type="monotone"
                 />
                 <Line
-                  type="monotone"
+                  activeDot={{ r: 4 }}
                   dataKey="voltage"
+                  dot={{ r: 2 }}
                   stroke="var(--color-voltage)"
                   strokeWidth={3}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  type="monotone"
                 />
               </ComposedChart>
             </ChartContainer>
@@ -383,45 +383,45 @@ export default function BatteryMonitoringChart({
           {/* Power Consumption by Phase */}
           {chartData.some((d) => d.powerConsumption) ? (
             <div className="space-y-3">
-              <h4 className="text-sm font-medium">
+              <h4 className="font-medium text-sm">
                 Power Consumption by Phase
               </h4>
-              <ChartContainer config={chartConfig} className="h-[280px]">
+              <ChartContainer className="h-[280px]" config={chartConfig}>
                 <ComposedChart
                   data={chartData.filter((d) => d.powerConsumption)}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
+                    angle={-45}
+                    axisLine={false}
                     dataKey="time"
                     fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    angle={-45}
-                    textAnchor="end"
                     height={60}
+                    textAnchor="end"
+                    tickLine={false}
                   />
                   <YAxis
-                    yAxisId="power"
-                    fontSize={11}
-                    tickLine={false}
                     axisLine={false}
+                    fontSize={11}
                     label={{
                       value: "Power (W)",
                       angle: -90,
                       position: "insideLeft",
                     }}
+                    tickLine={false}
+                    yAxisId="power"
                   />
                   <YAxis
-                    yAxisId="temp"
-                    orientation="right"
-                    fontSize={11}
-                    tickLine={false}
                     axisLine={false}
+                    fontSize={11}
                     label={{
                       value: "Temperature (°C)",
                       angle: 90,
                       position: "insideRight",
                     }}
+                    orientation="right"
+                    tickLine={false}
+                    yAxisId="temp"
                   />
                   <ChartTooltip
                     content={
@@ -445,30 +445,30 @@ export default function BatteryMonitoringChart({
                     }
                   />
                   <Bar
-                    yAxisId="power"
                     dataKey="powerConsumption"
                     fill="var(--color-powerConsumption)"
                     opacity={0.7}
                     radius={[2, 2, 0, 0]}
+                    yAxisId="power"
                   />
                   <Line
-                    yAxisId="temp"
-                    type="monotone"
+                    activeDot={{ r: 4 }}
                     dataKey="temperature"
+                    dot={{ r: 2 }}
                     stroke="var(--color-temperature)"
                     strokeWidth={2}
-                    dot={{ r: 2 }}
-                    activeDot={{ r: 4 }}
+                    type="monotone"
+                    yAxisId="temp"
                   />
                 </ComposedChart>
               </ChartContainer>
             </div>
           ) : (
             <div className="space-y-3">
-              <h4 className="text-sm font-medium">
+              <h4 className="font-medium text-sm">
                 Power Consumption by Phase
               </h4>
-              <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+              <div className="flex h-[280px] items-center justify-center text-muted-foreground">
                 No power consumption data available
               </div>
             </div>
@@ -480,7 +480,7 @@ export default function BatteryMonitoringChart({
           <>
             <Separator />
             <div className="space-y-2">
-              <h4 className="text-sm font-medium">Battery Specifications</h4>
+              <h4 className="font-medium text-sm">Battery Specifications</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <div className="text-muted-foreground">Nominal Voltage:</div>

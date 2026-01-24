@@ -138,7 +138,7 @@ export default function ChatInterface({
   ];
 
   // Generate fake citations from random PDFs
-  const generateFakeCitations = (count: number = 5) => {
+  const generateFakeCitations = (count = 5) => {
     const shuffled = [...availablePdfs].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, count);
 
@@ -161,9 +161,9 @@ export default function ChatInterface({
       return {
         title: cleanTitle,
         pdf_name: pdf,
-        doi: doi,
+        doi,
         similarity: (0.75 + Math.random() * 0.2).toFixed(3), // Random similarity between 0.75-0.95
-        year: year,
+        year,
       };
     });
   };
@@ -203,14 +203,14 @@ export default function ChatInterface({
       // Generate fake citations from random PDFs
       const fakeCitations = generateFakeCitations(5);
       console.log(
-        `📚 Retrieved ${fakeCitations.length} citations from research database`,
+        `📚 Retrieved ${fakeCitations.length} citations from research database`
       );
 
       // Convert to Citation format
       const citations: Citation[] = fakeCitations.map((fake, index) => ({
         source: fake.title,
         content: `Research findings from oceanic and climate studies. Published in ${fake.year}.`,
-        score: parseFloat(fake.similarity),
+        score: Number.parseFloat(fake.similarity),
       }));
 
       console.log("🤖 Generating response using retrieved context...");
@@ -254,11 +254,11 @@ Instructions:
           completion.choices[0]?.message?.content || "No response generated.",
         role: "assistant",
         timestamp: new Date(),
-        citations: citations,
+        citations,
       };
 
       console.log(
-        "✅ Response generated with citations from research database",
+        "✅ Response generated with citations from research database"
       );
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -282,7 +282,7 @@ Instructions:
     try {
       console.log(
         "Generating Gemini embedding for:",
-        text.substring(0, 50) + "...",
+        text.substring(0, 50) + "..."
       );
 
       // Use server-side embedding API with Gemini
@@ -298,19 +298,17 @@ Instructions:
         const data = await response.json();
         if (data.success) {
           console.log(
-            `Gemini embedding generated successfully (${data.dimensions} dimensions)`,
+            `Gemini embedding generated successfully (${data.dimensions} dimensions)`
           );
           return data.embedding;
-        } else {
-          console.error("Embedding API error:", data.error);
-          throw new Error(
-            data.error + (data.suggestion ? ` - ${data.suggestion}` : ""),
-          );
         }
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        console.error("Embedding API error:", data.error);
+        throw new Error(
+          data.error + (data.suggestion ? ` - ${data.suggestion}` : "")
+        );
       }
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP ${response.status}`);
     } catch (error) {
       console.error("Embedding generation failed:", error);
 
@@ -318,7 +316,7 @@ Instructions:
       const errorMessage =
         error instanceof Error ? error.message : "Unknown embedding error";
       throw new Error(
-        `Cannot generate Gemini embeddings: ${errorMessage}\n\nTo fix this:\n1. Get a Gemini API key from https://makersuite.google.com/app/apikey\n2. Add it to your .env.local as NEXT_PUBLIC_GEMINI_API_KEY\n3. Note: Using Gemini embeddings means your vector database should also use Gemini embeddings for compatibility`,
+        `Cannot generate Gemini embeddings: ${errorMessage}\n\nTo fix this:\n1. Get a Gemini API key from https://makersuite.google.com/app/apikey\n2. Add it to your .env.local as NEXT_PUBLIC_GEMINI_API_KEY\n3. Note: Using Gemini embeddings means your vector database should also use Gemini embeddings for compatibility`
       );
     }
   };
@@ -345,31 +343,31 @@ Instructions:
   if (!isVisible) return null;
 
   return (
-    <Card className="fixed top-4 right-4 w-96 h-[calc(100vh-2rem)] flex flex-col bg-black rounded-xl shadow-2xl border border-gray-800 overflow-hidden z-50 p-0">
+    <Card className="fixed top-4 right-4 z-50 flex h-[calc(100vh-2rem)] w-96 flex-col overflow-hidden rounded-xl border border-gray-800 bg-black p-0 shadow-2xl">
       {/* Header with Close Button */}
-      <CardHeader className="border-b border-gray-800 p-4 bg-black flex items-center justify-between">
-        <CardTitle className="text-xl font-semibold text-white">
+      <CardHeader className="flex items-center justify-between border-gray-800 border-b bg-black p-4">
+        <CardTitle className="font-semibold text-white text-xl">
           FloatChat
         </CardTitle>
         <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors duration-200 rounded hover:bg-gray-800"
           aria-label="Close chat"
+          className="rounded text-gray-400 transition-colors duration-200 hover:bg-gray-800 hover:text-white"
+          onClick={onClose}
+          size="icon"
+          variant="ghost"
         >
           <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
             fill="none"
+            height="20"
             stroke="currentColor"
-            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="20"
           >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
+            <line x1="18" x2="6" y1="6" y2="18" />
+            <line x1="6" x2="18" y1="6" y2="18" />
           </svg>
         </Button>
       </CardHeader>
@@ -377,17 +375,17 @@ Instructions:
       {/* Messages Container */}
       <ScrollArea className="flex-1">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full p-6">
+          <div className="flex h-full items-center justify-center p-6">
             <div className="text-center text-gray-400">
-              <div className="text-4xl mb-4">🌊</div>
-              <h2 className="text-2xl font-semibold mb-2 text-white">
+              <div className="mb-4 text-4xl">🌊</div>
+              <h2 className="mb-2 font-semibold text-2xl text-white">
                 Ask about Argo Floats!
               </h2>
-              <p className="text-gray-500 mb-4">
+              <p className="mb-4 text-gray-500">
                 I can help you understand ocean data and Argo float
                 measurements.
               </p>
-              <div className="text-sm text-gray-600 space-y-1">
+              <div className="space-y-1 text-gray-600 text-sm">
                 <p>• "What is temperature profiling?"</p>
                 <p>• "How do Argo floats measure salinity?"</p>
                 <p>• "Explain ocean currents in the Indian Ocean"</p>
@@ -398,13 +396,13 @@ Instructions:
           <div className="w-full">
             {messages.map((message) => (
               <div
+                className={`px-4 py-6 ${message.role === "assistant" ? "bg-black" : "bg-gray-900"}`}
                 key={message.id}
-                className={`py-6 px-4 ${message.role === "assistant" ? "bg-black" : "bg-gray-900"}`}
               >
-                <div className="px-4 flex gap-4">
+                <div className="flex gap-4 px-4">
                   <div className="flex-shrink-0">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                      className={`flex h-8 w-8 items-center justify-center rounded-full font-semibold text-sm ${
                         message.role === "user"
                           ? "bg-gray-700 text-white"
                           : "bg-green-600 text-white"
@@ -413,30 +411,30 @@ Instructions:
                       {message.role === "user" ? "U" : "AI"}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="prose prose-invert max-w-none">
                       <p className="whitespace-pre-wrap text-gray-100 leading-relaxed">
                         {message.content}
                       </p>
                       {message.citations && message.citations.length > 0 ? (
                         <div className="mt-4 pt-3">
-                          <Separator className="bg-gray-800 mb-3" />
-                          <h4 className="text-sm font-semibold text-gray-300 mb-2">
+                          <Separator className="mb-3 bg-gray-800" />
+                          <h4 className="mb-2 font-semibold text-gray-300 text-sm">
                             📚 Research Citations ({message.citations.length}):
                           </h4>
                           <div className="space-y-2">
                             {message.citations.map((citation, index) => (
                               <Card
+                                className="rounded-md border border-gray-800 bg-gray-900 p-3 text-gray-400 text-xs"
                                 key={index}
-                                className="text-xs text-gray-400 bg-gray-900 p-3 rounded-md border border-gray-800"
                               >
-                                <div className="font-medium text-gray-300 mb-2 flex items-center justify-between">
+                                <div className="mb-2 flex items-center justify-between font-medium text-gray-300">
                                   <span>
                                     [{index + 1}]{" "}
                                     {citation.source || `Source ${index + 1}`}
                                   </span>
                                   {citation.score !== undefined && (
-                                    <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
+                                    <span className="rounded bg-gray-800 px-2 py-1 text-gray-500 text-xs">
                                       Similarity: {citation.score.toFixed(3)}
                                     </span>
                                   )}
@@ -450,8 +448,8 @@ Instructions:
                         </div>
                       ) : message.role === "assistant" ? (
                         <div className="mt-4 pt-3">
-                          <Separator className="bg-gray-800 mb-3" />
-                          <div className="text-xs text-gray-500 italic">
+                          <Separator className="mb-3 bg-gray-800" />
+                          <div className="text-gray-500 text-xs italic">
                             No sources found in vector database for this query.
                           </div>
                         </div>
@@ -462,24 +460,24 @@ Instructions:
               </div>
             ))}
             {isLoading && (
-              <div className="py-6 px-4 bg-black">
-                <div className="px-4 flex gap-4">
+              <div className="bg-black px-4 py-6">
+                <div className="flex gap-4 px-4">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-sm font-semibold text-white">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600 font-semibold text-sm text-white">
                       AI
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-gray-400" />
                       <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
                         style={{ animationDelay: "0.1s" }}
-                      ></div>
+                      />
                       <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
                         style={{ animationDelay: "0.2s" }}
-                      ></div>
+                      />
                     </div>
                   </div>
                 </div>
@@ -491,34 +489,34 @@ Instructions:
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="border-t border-gray-800 p-4 bg-black">
-        <form onSubmit={handleSubmit} className="relative">
+      <div className="border-gray-800 border-t bg-black p-4">
+        <form className="relative" onSubmit={handleSubmit}>
           <div className="relative rounded-lg">
             <Textarea
-              ref={textareaRef}
-              value={inputValue}
+              className="max-h-[200px] min-h-[56px] w-full resize-none border border-gray-800 bg-gray-900 pr-12 focus-visible:border-green-500/50 focus-visible:ring-green-500/20"
+              disabled={isLoading}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Message FloatChat..."
-              className="w-full resize-none bg-gray-900 border border-gray-800 focus-visible:ring-green-500/20 focus-visible:border-green-500/50 pr-12 min-h-[56px] max-h-[200px]"
+              ref={textareaRef}
               rows={1}
-              disabled={isLoading}
+              value={inputValue}
             />
             <Button
-              type="submit"
+              className="absolute right-2 bottom-2 rounded-md bg-green-600 p-2 text-white hover:bg-green-700 disabled:bg-gray-800 disabled:text-gray-600"
               disabled={!inputValue.trim() || isLoading}
-              className="absolute right-2 bottom-2 p-2 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-800 disabled:text-gray-600"
               size="icon"
+              type="submit"
             >
               <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
                 fill="none"
+                height="16"
                 stroke="currentColor"
-                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                width="16"
               >
                 <path d="m22 2-7 20-4-9-9-4Z" />
                 <path d="M22 2 11 13" />

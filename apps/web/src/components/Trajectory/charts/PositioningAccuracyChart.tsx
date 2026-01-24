@@ -103,7 +103,7 @@ export default function PositioningAccuracyChart({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-8">
+          <div className="py-8 text-center text-muted-foreground">
             No positioning data available
           </div>
         </CardContent>
@@ -125,7 +125,7 @@ export default function PositioningAccuracyChart({
       acc[d.fixType] = (acc[d.fixType] || 0) + 1;
       return acc;
     },
-    {} as Record<string, number>,
+    {} as Record<string, number>
   );
 
   // Prepare chart data
@@ -146,7 +146,7 @@ export default function PositioningAccuracyChart({
             <Satellite className="h-5 w-5" />
             Positioning Accuracy
           </CardTitle>
-          <Badge variant="outline" className="font-mono">
+          <Badge className="font-mono" variant="outline">
             {data.length} fixes
           </Badge>
         </div>
@@ -154,28 +154,28 @@ export default function PositioningAccuracyChart({
 
       <CardContent className="space-y-6">
         {/* Summary Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Avg Accuracy</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Avg Accuracy</div>
+            <div className="font-semibold text-lg">
               {avgAccuracy.toFixed(1)} m
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Best Accuracy</div>
-            <div className="text-lg font-semibold text-green-600">
+            <div className="text-muted-foreground text-sm">Best Accuracy</div>
+            <div className="font-semibold text-green-600 text-lg">
               {bestAccuracy.toFixed(1)} m
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Worst Accuracy</div>
-            <div className="text-lg font-semibold text-orange-600">
+            <div className="text-muted-foreground text-sm">Worst Accuracy</div>
+            <div className="font-semibold text-lg text-orange-600">
               {worstAccuracy.toFixed(1)} m
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Avg Satellites</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Avg Satellites</div>
+            <div className="font-semibold text-lg">
               {avgSatellites.toFixed(1)}
             </div>
           </div>
@@ -183,13 +183,13 @@ export default function PositioningAccuracyChart({
 
         {/* Fix Type Distribution */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium">Fix Type Distribution</h4>
+          <h4 className="font-medium text-sm">Fix Type Distribution</h4>
           <div className="flex flex-wrap gap-2">
             {Object.entries(fixTypeStats).map(([type, count]) => (
               <Badge
+                className={`${getFixTypeColor(type)} flex items-center gap-1`}
                 key={type}
                 variant="outline"
-                className={`${getFixTypeColor(type)} flex items-center gap-1`}
               >
                 {getFixTypeIcon(type)}
                 {type}: {count}
@@ -201,44 +201,44 @@ export default function PositioningAccuracyChart({
         <Separator />
 
         {/* Side-by-side Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Accuracy Over Time */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Horizontal Accuracy Profile</h4>
-            <ChartContainer config={chartConfig} className="h-[280px]">
+            <h4 className="font-medium text-sm">Horizontal Accuracy Profile</h4>
+            <ChartContainer className="h-[280px]" config={chartConfig}>
               <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
+                  angle={-45}
+                  axisLine={false}
                   dataKey="time"
                   fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  angle={-45}
-                  textAnchor="end"
                   height={60}
+                  textAnchor="end"
+                  tickLine={false}
                 />
                 <YAxis
-                  yAxisId="accuracy"
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   label={{
                     value: "Accuracy (m)",
                     angle: -90,
                     position: "insideLeft",
                   }}
+                  tickLine={false}
+                  yAxisId="accuracy"
                 />
                 <YAxis
-                  yAxisId="satellites"
-                  orientation="right"
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   label={{
                     value: "Satellites",
                     angle: 90,
                     position: "insideRight",
                   }}
+                  orientation="right"
+                  tickLine={false}
+                  yAxisId="satellites"
                 />
                 <ChartTooltip
                   content={
@@ -263,29 +263,29 @@ export default function PositioningAccuracyChart({
                   }
                 />
                 <ReferenceLine
-                  yAxisId="accuracy"
-                  y={avgAccuracy}
+                  label={{ value: "Avg", position: "top" }}
                   stroke="hsl(var(--muted-foreground))"
                   strokeDasharray="5 5"
-                  label={{ value: "Avg", position: "top" }}
+                  y={avgAccuracy}
+                  yAxisId="accuracy"
                 />
                 <Area
-                  yAxisId="accuracy"
-                  type="monotone"
                   dataKey="horizontalAccuracy"
-                  stroke="var(--color-horizontalAccuracy)"
                   fill="var(--color-horizontalAccuracy)"
                   fillOpacity={0.2}
+                  stroke="var(--color-horizontalAccuracy)"
                   strokeWidth={2}
+                  type="monotone"
+                  yAxisId="accuracy"
                 />
                 <Line
-                  yAxisId="satellites"
-                  type="monotone"
+                  activeDot={{ r: 4 }}
                   dataKey="satelliteCount"
+                  dot={{ r: 2 }}
                   stroke="var(--color-satelliteCount)"
                   strokeWidth={2}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  type="monotone"
+                  yAxisId="satellites"
                 />
               </ComposedChart>
             </ChartContainer>
@@ -293,37 +293,37 @@ export default function PositioningAccuracyChart({
 
           {/* HDOP and Signal Strength */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Signal Quality Metrics</h4>
-            <ChartContainer config={chartConfig} className="h-[280px]">
+            <h4 className="font-medium text-sm">Signal Quality Metrics</h4>
+            <ChartContainer className="h-[280px]" config={chartConfig}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
+                  angle={-45}
+                  axisLine={false}
                   dataKey="time"
                   fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  angle={-45}
-                  textAnchor="end"
                   height={60}
+                  textAnchor="end"
+                  tickLine={false}
                 />
                 <YAxis
-                  yAxisId="hdop"
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   label={{ value: "HDOP", angle: -90, position: "insideLeft" }}
+                  tickLine={false}
+                  yAxisId="hdop"
                 />
                 <YAxis
-                  yAxisId="signal"
-                  orientation="right"
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   label={{
                     value: "Signal (dB)",
                     angle: 90,
                     position: "insideRight",
                   }}
+                  orientation="right"
+                  tickLine={false}
+                  yAxisId="signal"
                 />
                 <ChartTooltip
                   content={
@@ -347,36 +347,36 @@ export default function PositioningAccuracyChart({
                   }
                 />
                 <ReferenceLine
-                  yAxisId="hdop"
-                  y={2}
+                  label={{ value: "Poor", position: "top" }}
                   stroke="hsl(var(--destructive))"
                   strokeDasharray="5 5"
-                  label={{ value: "Poor", position: "top" }}
+                  y={2}
+                  yAxisId="hdop"
                 />
                 <ReferenceLine
-                  yAxisId="hdop"
-                  y={1}
+                  label={{ value: "Good", position: "top" }}
                   stroke="hsl(var(--primary))"
                   strokeDasharray="5 5"
-                  label={{ value: "Good", position: "top" }}
+                  y={1}
+                  yAxisId="hdop"
                 />
                 <Line
-                  yAxisId="hdop"
-                  type="monotone"
+                  activeDot={{ r: 4 }}
                   dataKey="hdop"
+                  dot={{ r: 2 }}
                   stroke="var(--color-hdop)"
                   strokeWidth={2}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  type="monotone"
+                  yAxisId="hdop"
                 />
                 <Line
-                  yAxisId="signal"
-                  type="monotone"
+                  activeDot={{ r: 4 }}
                   dataKey="signalStrength"
+                  dot={{ r: 2 }}
                   stroke="var(--color-signalStrength)"
                   strokeWidth={2}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  type="monotone"
+                  yAxisId="signal"
                 />
               </LineChart>
             </ChartContainer>

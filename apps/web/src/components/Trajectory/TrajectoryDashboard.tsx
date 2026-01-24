@@ -38,23 +38,21 @@ interface TrajectoryDashboardProps {
   trajectory: FloatTrajectory;
 }
 
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+const formatDate = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
-};
 
-const formatDateTime = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+const formatDateTime = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
-};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -97,12 +95,12 @@ export default function TrajectoryDashboard({
   // Generate mock enhanced data for demonstration
   const driftData = React.useMemo(
     () => generateMockDriftData(trajectory.points),
-    [trajectory.points],
+    [trajectory.points]
   );
 
   const positioningData = React.useMemo(
     () => generateMockPositioningData(trajectory.points),
-    [trajectory.points],
+    [trajectory.points]
   );
 
   const profileData = React.useMemo(() => generateMockProfileData(), []);
@@ -111,7 +109,7 @@ export default function TrajectoryDashboard({
 
   const batteryData = React.useMemo(
     () => generateMockBatteryData(trajectory.points),
-    [trajectory.points],
+    [trajectory.points]
   );
 
   const qualityData = React.useMemo(() => generateMockQualityData(), []);
@@ -128,33 +126,33 @@ export default function TrajectoryDashboard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Float Trajectory</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="font-bold text-3xl">Float Trajectory</h1>
+          <p className="mt-1 text-muted-foreground">
             Tracking path for {trajectory.floatNumber}
           </p>
         </div>
         <Badge
-          variant="secondary"
           className={`${getStatusColor(trajectory.status)} text-white`}
+          variant="secondary"
         >
           {trajectory.status.toUpperCase()}
         </Badge>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="font-medium text-sm">
               Total Distance
             </CardTitle>
             <Navigation className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="font-bold text-2xl">
               {trajectory.totalDistance} km
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Over {trajectory.missionDuration} days
             </p>
           </CardContent>
@@ -162,12 +160,12 @@ export default function TrajectoryDashboard({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Data Points</CardTitle>
+            <CardTitle className="font-medium text-sm">Data Points</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{trajectory.points.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="font-bold text-2xl">{trajectory.points.length}</div>
+            <p className="text-muted-foreground text-xs">
               Measurement locations
             </p>
           </CardContent>
@@ -175,72 +173,72 @@ export default function TrajectoryDashboard({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="font-medium text-sm">
               Mission Duration
             </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="font-bold text-2xl">
               {trajectory.missionDuration}
             </div>
-            <p className="text-xs text-muted-foreground">Days active</p>
+            <p className="text-muted-foreground text-xs">Days active</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Platform Type</CardTitle>
+            <CardTitle className="font-medium text-sm">Platform Type</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{trajectory.platformType}</div>
-            <p className="text-xs text-muted-foreground">Float model</p>
+            <div className="font-bold text-2xl">{trajectory.platformType}</div>
+            <p className="text-muted-foreground text-xs">Float model</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Enhanced Tabbed Dashboard Content */}
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs className="w-full" defaultValue="overview">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger
-            value="overview"
             className="flex items-center gap-1 text-xs"
+            value="overview"
           >
             <Info className="h-3 w-3" />
             Overview
           </TabsTrigger>
           <TabsTrigger
-            value="analysis"
             className="flex items-center gap-1 text-xs"
+            value="analysis"
           >
             <BarChart3 className="h-3 w-3" />
             Analysis
           </TabsTrigger>
           <TabsTrigger
-            value="monitoring"
             className="flex items-center gap-1 text-xs"
+            value="monitoring"
           >
             <Activity className="h-3 w-3" />
             Monitoring
           </TabsTrigger>
           <TabsTrigger
-            value="profiles"
             className="flex items-center gap-1 text-xs"
+            value="profiles"
           >
             <Database className="h-3 w-3" />
             Profiles
           </TabsTrigger>
           <TabsTrigger
-            value="quality"
             className="flex items-center gap-1 text-xs"
+            value="quality"
           >
             <Route className="h-3 w-3" />
             Quality
           </TabsTrigger>
           <TabsTrigger
-            value="metadata"
             className="flex items-center gap-1 text-xs"
+            value="metadata"
           >
             <Calendar className="h-3 w-3" />
             Metadata
@@ -248,8 +246,8 @@ export default function TrajectoryDashboard({
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <TabsContent className="mt-6 space-y-6" value="overview">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* About Float */}
             <Card>
               <CardHeader>
@@ -300,9 +298,9 @@ export default function TrajectoryDashboard({
                   <span className="font-medium text-muted-foreground text-sm">
                     Sensors
                   </span>
-                  <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="mt-1 flex flex-wrap gap-1">
                     {trajectory.sensors.map((sensor) => (
-                      <Badge key={sensor} variant="outline" className="text-xs">
+                      <Badge className="text-xs" key={sensor} variant="outline">
                         {sensor}
                       </Badge>
                     ))}
@@ -318,18 +316,18 @@ export default function TrajectoryDashboard({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">
+                  <span className="font-medium text-muted-foreground text-sm">
                     Launched
                   </span>
                   <p className="text-sm">
                     {Math.round(
                       (Date.now() -
                         new Date(trajectory.deploymentDate).getTime()) /
-                        (1000 * 60 * 60 * 24 * 30),
+                        (1000 * 60 * 60 * 24 * 30)
                     )}{" "}
                     months ago
                   </p>
-                  <p className="text-xs text-muted-foreground font-mono">
+                  <p className="font-mono text-muted-foreground text-xs">
                     {formatDate(trajectory.deploymentDate)}
                   </p>
                 </div>
@@ -414,7 +412,7 @@ export default function TrajectoryDashboard({
                   <span className="font-medium text-muted-foreground text-sm">
                     Last Surface Data
                   </span>
-                  <p className="text-xs font-mono">
+                  <p className="font-mono text-xs">
                     {trajectory.lastSurfaceData.pressure} dbar{" "}
                     {trajectory.lastSurfaceData.temperature.toFixed(3)}℃{" "}
                     {trajectory.lastSurfaceData.salinity.toFixed(2)} PSU
@@ -425,7 +423,7 @@ export default function TrajectoryDashboard({
                   <span className="font-medium text-muted-foreground text-sm">
                     Last Bottom Data
                   </span>
-                  <p className="text-xs font-mono">
+                  <p className="font-mono text-xs">
                     {trajectory.lastBottomData.pressure} dbar{" "}
                     {trajectory.lastBottomData.temperature.toFixed(3)}℃{" "}
                     {trajectory.lastBottomData.salinity.toFixed(2)} PSU
@@ -438,16 +436,16 @@ export default function TrajectoryDashboard({
                   <span className="font-medium text-muted-foreground text-sm">
                     Profiles data
                   </span>
-                  <div className="flex gap-2 mt-1">
+                  <div className="mt-1 flex gap-2">
                     <Badge
+                      className="cursor-pointer text-xs hover:bg-muted"
                       variant="outline"
-                      className="text-xs cursor-pointer hover:bg-muted"
                     >
                       in Ascii
                     </Badge>
                     <Badge
+                      className="cursor-pointer text-xs hover:bg-muted"
                       variant="outline"
-                      className="text-xs cursor-pointer hover:bg-muted"
                     >
                       in Netcdf
                     </Badge>
@@ -459,7 +457,7 @@ export default function TrajectoryDashboard({
         </TabsContent>
 
         {/* Analysis Tab - Enhanced Charts */}
-        <TabsContent value="analysis" className="space-y-6 mt-6">
+        <TabsContent className="mt-6 space-y-6" value="analysis">
           <div className="grid grid-cols-1 gap-6">
             <DriftAnalysisChart data={driftData} />
             <PositioningAccuracyChart data={positioningData} />
@@ -468,7 +466,7 @@ export default function TrajectoryDashboard({
         </TabsContent>
 
         {/* Monitoring Tab - System Health */}
-        <TabsContent value="monitoring" className="space-y-6 mt-6">
+        <TabsContent className="mt-6 space-y-6" value="monitoring">
           <div className="grid grid-cols-1 gap-6">
             <BatteryMonitoringChart
               data={batteryData}
@@ -478,14 +476,14 @@ export default function TrajectoryDashboard({
         </TabsContent>
 
         {/* Profiles Tab - Oceanographic Data */}
-        <TabsContent value="profiles" className="space-y-6 mt-6">
+        <TabsContent className="mt-6 space-y-6" value="profiles">
           <div className="grid grid-cols-1 gap-6">
             <MultiParameterProfileChart data={profileData} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Temperature-Salinity Diagram</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Interactive scatter plot showing the relationship between
                     temperature and salinity, colored by depth
                   </p>
@@ -498,7 +496,7 @@ export default function TrajectoryDashboard({
               <Card>
                 <CardHeader>
                   <CardTitle>Temperature Profiles</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Overlaid temperature vs depth profiles showing changes over
                     time
                   </p>
@@ -512,20 +510,20 @@ export default function TrajectoryDashboard({
         </TabsContent>
 
         {/* Quality Tab - QC Metrics */}
-        <TabsContent value="quality" className="space-y-6 mt-6">
+        <TabsContent className="mt-6 space-y-6" value="quality">
           <div className="grid grid-cols-1 gap-6">
             <QualityControlChart data={qualityData} />
           </div>
         </TabsContent>
 
         {/* Metadata Tab */}
-        <TabsContent value="metadata" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent className="mt-6 space-y-6" value="metadata">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Quality Control */}
             <Card>
               <CardHeader>
                 <CardTitle>Quality Control</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Data quality flags and validation status
                 </p>
               </CardHeader>
@@ -535,10 +533,10 @@ export default function TrajectoryDashboard({
                     Data Mode
                   </span>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
+                    <Badge className="text-xs" variant="outline">
                       {trajectory.qualityControl.dataMode}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {trajectory.qualityControl.dataMode === "A"
                         ? "Automatic"
                         : trajectory.qualityControl.dataMode === "R"
@@ -558,7 +556,7 @@ export default function TrajectoryDashboard({
                     </Badge>
                     <span className="text-xs">
                       {getQualityFlagDescription(
-                        trajectory.qualityControl.positionQC,
+                        trajectory.qualityControl.positionQC
                       )}
                     </span>
                   </div>
@@ -574,7 +572,7 @@ export default function TrajectoryDashboard({
                     </Badge>
                     <span className="text-xs">
                       {getQualityFlagDescription(
-                        trajectory.qualityControl.temperatureQC,
+                        trajectory.qualityControl.temperatureQC
                       )}
                     </span>
                   </div>
@@ -590,7 +588,7 @@ export default function TrajectoryDashboard({
                     </Badge>
                     <span className="text-xs">
                       {getQualityFlagDescription(
-                        trajectory.qualityControl.salinityQC,
+                        trajectory.qualityControl.salinityQC
                       )}
                     </span>
                   </div>
@@ -606,7 +604,7 @@ export default function TrajectoryDashboard({
                     </Badge>
                     <span className="text-xs">
                       {getQualityFlagDescription(
-                        trajectory.qualityControl.pressureQC,
+                        trajectory.qualityControl.pressureQC
                       )}
                     </span>
                   </div>
@@ -614,7 +612,7 @@ export default function TrajectoryDashboard({
                   <span className="font-medium text-muted-foreground">
                     Last QC Date
                   </span>
-                  <span className="text-xs font-mono">
+                  <span className="font-mono text-xs">
                     {formatDateTime(trajectory.qualityControl.lastQCDate)}
                   </span>
                 </div>
@@ -625,9 +623,9 @@ export default function TrajectoryDashboard({
                   <span className="font-medium text-muted-foreground text-sm">
                     QC Tests Performed
                   </span>
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="mt-2 flex flex-wrap gap-1">
                     {trajectory.qualityControl.qcPerformed.map((test) => (
-                      <Badge key={test} variant="outline" className="text-xs">
+                      <Badge className="text-xs" key={test} variant="outline">
                         {test}
                       </Badge>
                     ))}
@@ -640,7 +638,7 @@ export default function TrajectoryDashboard({
             <Card>
               <CardHeader>
                 <CardTitle>Data Processing</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Processing level and calibration information
                 </p>
               </CardHeader>
@@ -649,7 +647,7 @@ export default function TrajectoryDashboard({
                   <span className="font-medium text-muted-foreground">
                     Processing Level
                   </span>
-                  <Badge variant="secondary" className="text-xs w-fit">
+                  <Badge className="w-fit text-xs" variant="secondary">
                     {trajectory.dataProcessing.processingLevel}
                   </Badge>
 
@@ -663,7 +661,7 @@ export default function TrajectoryDashboard({
                   <span className="font-medium text-muted-foreground">
                     Calibration Date
                   </span>
-                  <span className="text-xs font-mono">
+                  <span className="font-mono text-xs">
                     {formatDate(trajectory.dataProcessing.calibrationDate)}
                   </span>
 
@@ -678,10 +676,10 @@ export default function TrajectoryDashboard({
                     Data Recovery
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono">
+                    <span className="font-mono text-xs">
                       {trajectory.dataProcessing.dataRecovery}%
                     </span>
-                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 w-16 overflow-hidden rounded-full bg-gray-200">
                       <div
                         className="h-full bg-green-500 transition-all duration-300"
                         style={{
@@ -700,9 +698,9 @@ export default function TrajectoryDashboard({
                   </span>
                   <div className="mt-2 space-y-1">
                     {trajectory.dataProcessing.processingHistory.map((step) => (
-                      <div key={step} className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex items-start gap-2" key={step}>
+                        <div className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500" />
+                        <span className="text-muted-foreground text-xs">
                           {step}
                         </span>
                       </div>
@@ -715,7 +713,7 @@ export default function TrajectoryDashboard({
         </TabsContent>
 
         {/* Trajectory Data Tab */}
-        <TabsContent value="trajectory" className="space-y-6 mt-6">
+        <TabsContent className="mt-6 space-y-6" value="trajectory">
           {/* Recent Measurements */}
           <Card>
             <CardHeader>
@@ -728,13 +726,13 @@ export default function TrajectoryDashboard({
                   .reverse()
                   .map((point) => (
                     <div
+                      className="border-blue-500 border-l-4 py-2 pl-4"
                       key={point.id}
-                      className="border-l-4 border-blue-500 pl-4 py-2"
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex items-start justify-between">
                         <div>
                           <p className="font-medium">Point #{point.id}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             {formatDate(point.timestamp)}
                           </p>
                           <p className="text-sm">
@@ -758,7 +756,7 @@ export default function TrajectoryDashboard({
           <Card>
             <CardHeader>
               <CardTitle>Trajectory Timeline</CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Interactive timeline showing depth changes over time, colored by
                 temperature
               </p>

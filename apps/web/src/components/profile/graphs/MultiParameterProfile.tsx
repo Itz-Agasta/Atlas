@@ -25,7 +25,7 @@ export function MultiParameterProfile({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!svgRef.current || !data.length || !parameters.length) return;
+    if (!(svgRef.current && data.length && parameters.length)) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -79,7 +79,7 @@ export function MultiParameterProfile({
         d3
           .axisLeft(yScale)
           .tickSize(-innerWidth)
-          .tickFormat(() => ""),
+          .tickFormat(() => "")
       )
       .style("stroke-dasharray", "2,2")
       .style("opacity", 0.2);
@@ -154,7 +154,7 @@ export function MultiParameterProfile({
         const parameterInfo = normalizedScales
           .map(
             (param) =>
-              `${param.name}: ${(data[param.key] as number).toFixed(2)} ${param.unit}`,
+              `${param.name}: ${(data[param.key] as number).toFixed(2)} ${param.unit}`
           )
           .join("<br/>");
 
@@ -245,7 +245,7 @@ export function MultiParameterProfile({
         .text(
           `${param.originalExtent[0].toFixed(1)}-${param.originalExtent[1].toFixed(1)}`
         );
-      
+
       // Add unit on another line
       legendItem
         .append("text")
@@ -263,12 +263,12 @@ export function MultiParameterProfile({
   }, [data, parameters, width, height]);
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border">
+    <div className="rounded-lg border bg-white p-4 shadow-sm">
       <svg
+        className="overflow-visible"
+        height={height}
         ref={svgRef}
         width={width}
-        height={height}
-        className="overflow-visible"
       />
     </div>
   );

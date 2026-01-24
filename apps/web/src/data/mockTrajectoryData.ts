@@ -83,7 +83,7 @@ export interface FloatTrajectory {
 
 // Generate realistic trajectory data for different regions
 export const generateMockTrajectoryData = (
-  floatId: string,
+  floatId: string
 ): FloatTrajectory => {
   const regions = [
     { name: "Bay of Bengal", center: [15.0, 90.0], bounds: 8 },
@@ -125,11 +125,11 @@ export const generateMockTrajectoryData = (
     // Keep within bounds
     currentLat = Math.max(
       centerLat - boundRange,
-      Math.min(centerLat + boundRange, currentLat),
+      Math.min(centerLat + boundRange, currentLat)
     );
     currentLon = Math.max(
       centerLon - boundRange,
-      Math.min(centerLon + boundRange, currentLon),
+      Math.min(centerLon + boundRange, currentLon)
     );
 
     // Calculate distance from previous point (simplified)
@@ -149,8 +149,8 @@ export const generateMockTrajectoryData = (
 
     points.push({
       id: i + 1,
-      latitude: parseFloat(currentLat.toFixed(6)),
-      longitude: parseFloat(currentLon.toFixed(6)),
+      latitude: Number.parseFloat(currentLat.toFixed(6)),
+      longitude: Number.parseFloat(currentLon.toFixed(6)),
       timestamp: timestamp.toISOString(),
       depth: Math.random() * 2000 + 500, // 500-2500m depth
       temperature: Math.random() * 15 + 2, // 2-17°C
@@ -160,7 +160,7 @@ export const generateMockTrajectoryData = (
   }
 
   const missionDuration = Math.floor(
-    (Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    (Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24)
   );
 
   return {
@@ -178,7 +178,7 @@ export const generateMockTrajectoryData = (
           ? "lost"
           : "active",
     points,
-    totalDistance: parseFloat(totalDistance.toFixed(2)),
+    totalDistance: Number.parseFloat(totalDistance.toFixed(2)),
     missionDuration,
 
     // About Float Information
@@ -186,11 +186,11 @@ export const generateMockTrajectoryData = (
     platformMaker: ["TWR", "SBE", "NKE", "METOCEAN"][
       Math.floor(Math.random() * 4)
     ],
-    floatSerial: Math.floor(Math.random() * 90000 + 10000).toString(),
+    floatSerial: Math.floor(Math.random() * 90_000 + 10_000).toString(),
     transmissionSystem: "IRIDIUM",
     ptt:
       Math.random() > 0.3
-        ? Math.floor(Math.random() * 90000 + 10000).toString()
+        ? Math.floor(Math.random() * 90_000 + 10_000).toString()
         : "n/a",
     owner: ["STEPHEN RISER", "INDIA METEOROLOGICAL DEPT", "CSIRO", "JAMSTEC"][
       Math.floor(Math.random() * 4)
@@ -207,8 +207,8 @@ export const generateMockTrajectoryData = (
 
     // Deployment Information
     deploymentDate: startDate.toISOString(),
-    deploymentLatitude: parseFloat(currentLat.toFixed(6)),
-    deploymentLongitude: parseFloat(currentLon.toFixed(6)),
+    deploymentLatitude: Number.parseFloat(currentLat.toFixed(6)),
+    deploymentLongitude: Number.parseFloat(currentLon.toFixed(6)),
     ship: [
       "R/V Kaharoa II",
       "ORV Sagar Nidhi",
@@ -232,20 +232,20 @@ export const generateMockTrajectoryData = (
     ][Math.floor(Math.random() * 4)],
 
     // Cycle Activity
-    age: parseFloat((missionDuration / 365).toFixed(2)),
+    age: Number.parseFloat((missionDuration / 365).toFixed(2)),
     lastProfileDate: new Date(
-      Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000,
+      Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
     ).toISOString(),
     cycle: Math.floor(missionDuration / 10) + Math.floor(Math.random() * 5),
     lastSurfaceData: {
-      pressure: parseFloat((Math.random() * 10 + 2).toFixed(1)),
-      temperature: parseFloat((Math.random() * 5 + 25).toFixed(3)),
-      salinity: parseFloat((Math.random() * 2 + 34).toFixed(2)),
+      pressure: Number.parseFloat((Math.random() * 10 + 2).toFixed(1)),
+      temperature: Number.parseFloat((Math.random() * 5 + 25).toFixed(3)),
+      salinity: Number.parseFloat((Math.random() * 2 + 34).toFixed(2)),
     },
     lastBottomData: {
-      pressure: parseFloat((Math.random() * 500 + 1500).toFixed(1)),
-      temperature: parseFloat((Math.random() * 3 + 2).toFixed(3)),
-      salinity: parseFloat((Math.random() * 2 + 34.5).toFixed(2)),
+      pressure: Number.parseFloat((Math.random() * 500 + 1500).toFixed(1)),
+      temperature: Number.parseFloat((Math.random() * 3 + 2).toFixed(3)),
+      salinity: Number.parseFloat((Math.random() * 2 + 34.5).toFixed(2)),
     },
     profilesData: {
       ascii: `/data/${floatId}_profiles.ascii`,
@@ -263,7 +263,7 @@ export const generateMockTrajectoryData = (
       salinityQC: Math.floor(Math.random() * 3) + 1,
       pressureQC: Math.floor(Math.random() * 3) + 1,
       lastQCDate: new Date(
-        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
       ).toISOString(),
       qcPerformed: [
         "Range test",
@@ -280,7 +280,7 @@ export const generateMockTrajectoryData = (
         | "L2"
         | "L3",
       calibrationDate: new Date(
-        Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,
+        Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000
       ).toISOString(),
       softwareVersion: `v${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`,
       processingHistory: [
@@ -377,8 +377,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
     points: [
       {
         id: 1,
-        latitude: 15.123456,
-        longitude: 88.876543,
+        latitude: 15.123_456,
+        longitude: 88.876_543,
         timestamp: "2023-03-15T12:00:00Z",
         depth: 1500.5,
         temperature: 28.2,
@@ -387,8 +387,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
       },
       {
         id: 2,
-        latitude: 14.987654,
-        longitude: 89.123456,
+        latitude: 14.987_654,
+        longitude: 89.123_456,
         timestamp: "2023-03-25T12:00:00Z",
         depth: 1750.2,
         temperature: 27.8,
@@ -397,8 +397,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
       },
       {
         id: 3,
-        latitude: 14.654321,
-        longitude: 90.789012,
+        latitude: 14.654_321,
+        longitude: 90.789_012,
         timestamp: "2023-04-04T12:00:00Z",
         depth: 1920.8,
         temperature: 27.5,
@@ -407,8 +407,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
       },
       {
         id: 4,
-        latitude: 13.321098,
-        longitude: 91.456789,
+        latitude: 13.321_098,
+        longitude: 91.456_789,
         timestamp: "2023-04-14T12:00:00Z",
         depth: 1680.3,
         temperature: 28.1,
@@ -417,8 +417,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
       },
       {
         id: 5,
-        latitude: 12.987654,
-        longitude: 92.123456,
+        latitude: 12.987_654,
+        longitude: 92.123_456,
         timestamp: "2023-04-24T12:00:00Z",
         depth: 1555.7,
         temperature: 28.6,
@@ -499,8 +499,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
     points: [
       {
         id: 1,
-        latitude: 18.456789,
-        longitude: 65.876543,
+        latitude: 18.456_789,
+        longitude: 65.876_543,
         timestamp: "2023-01-10T08:30:00Z",
         depth: 1200.0,
         temperature: 26.5,
@@ -509,8 +509,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
       },
       {
         id: 2,
-        latitude: 17.123456,
-        longitude: 66.654321,
+        latitude: 17.123_456,
+        longitude: 66.654_321,
         timestamp: "2023-01-20T08:30:00Z",
         depth: 1450.5,
         temperature: 25.8,
@@ -519,8 +519,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
       },
       {
         id: 3,
-        latitude: 16.789012,
-        longitude: 67.321098,
+        latitude: 16.789_012,
+        longitude: 67.321_098,
         timestamp: "2023-01-30T08:30:00Z",
         depth: 1680.2,
         temperature: 24.9,
@@ -529,8 +529,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
       },
       {
         id: 4,
-        latitude: 15.456789,
-        longitude: 68.987654,
+        latitude: 15.456_789,
+        longitude: 68.987_654,
         timestamp: "2023-02-09T08:30:00Z",
         depth: 1590.8,
         temperature: 25.2,
@@ -539,8 +539,8 @@ export const mockTrajectories: Record<string, FloatTrajectory> = {
       },
       {
         id: 5,
-        latitude: 14.123456,
-        longitude: 69.654321,
+        latitude: 14.123_456,
+        longitude: 69.654_321,
         timestamp: "2023-02-19T08:30:00Z",
         depth: 1720.1,
         temperature: 24.5,
@@ -557,9 +557,8 @@ export const getTrajectoryData = (floatId: string): FloatTrajectory => {
 };
 
 export const getTrajectoryCoordinates = (
-  trajectory: FloatTrajectory,
-): LatLngTuple[] => {
-  return trajectory.points.map(
-    (point) => [point.latitude, point.longitude] as LatLngTuple,
+  trajectory: FloatTrajectory
+): LatLngTuple[] =>
+  trajectory.points.map(
+    (point) => [point.latitude, point.longitude] as LatLngTuple
   );
-};

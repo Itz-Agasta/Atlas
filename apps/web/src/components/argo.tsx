@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 const Plot = dynamic(() => import("react-plotly.js"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-64 bg-gray-200 animate-pulse rounded"></div>
+    <div className="h-64 w-full animate-pulse rounded bg-gray-200" />
   ),
 });
 
@@ -29,10 +29,10 @@ export default function ArgoVisualizer({ onClose }: ArgoVisualizerProps) {
   // Don't render on server
   if (!isClient) {
     return (
-      <div className="bg-white/95 rounded-xl shadow-lg p-3 min-w-[320px] max-w-[380px] relative">
+      <div className="relative min-w-[320px] max-w-[380px] rounded-xl bg-white/95 p-3 shadow-lg">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="mb-2 h-4 w-3/4 rounded bg-gray-200" />
+          <div className="h-64 rounded bg-gray-200" />
         </div>
       </div>
     );
@@ -68,19 +68,20 @@ export default function ArgoVisualizer({ onClose }: ArgoVisualizerProps) {
   ];
 
   return (
-    <div className="bg-white/95 rounded-xl shadow-lg p-3 min-w-[320px] max-w-[380px] relative">
+    <div className="relative min-w-[320px] max-w-[380px] rounded-xl bg-white/95 p-3 shadow-lg">
       <button
-        type="button"
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-lg font-bold px-2 py-0.5 rounded focus:outline-none"
-        onClick={onClose}
         aria-label="Close"
+        className="absolute top-2 right-2 rounded px-2 py-0.5 font-bold text-gray-500 text-lg hover:text-gray-800 focus:outline-none"
+        onClick={onClose}
+        type="button"
       >
         ×
       </button>
-      <h2 className="text-base font-bold mb-2 text-gray-900">
+      <h2 className="mb-2 font-bold text-base text-gray-900">
         Argo Float Profile
       </h2>
       <Plot
+        config={{ displayModeBar: false }}
         data={profileTraces}
         layout={{
           title: undefined,
@@ -94,7 +95,6 @@ export default function ArgoVisualizer({ onClose }: ArgoVisualizerProps) {
           },
         }}
         style={{ width: "100%", height: "260px" }}
-        config={{ displayModeBar: false }}
       />
     </div>
   );

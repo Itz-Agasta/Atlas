@@ -145,7 +145,7 @@ export default function QualityControlChart({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-8">
+          <div className="py-8 text-center text-muted-foreground">
             No quality control data available
           </div>
         </CardContent>
@@ -161,7 +161,7 @@ export default function QualityControlChart({
       acc[info.category] = (acc[info.category] || 0) + 1;
       return acc;
     },
-    {} as Record<string, number>,
+    {} as Record<string, number>
   );
 
   const goodDataPercentage =
@@ -205,7 +205,7 @@ export default function QualityControlChart({
         questionable: number;
         missing: number;
       }
-    >,
+    >
   );
 
   // QC test performance
@@ -222,7 +222,7 @@ export default function QualityControlChart({
       }
       return acc;
     },
-    {} as Record<string, { passed: number; failed: number; total: number }>,
+    {} as Record<string, { passed: number; failed: number; total: number }>
   );
 
   // Prepare radar chart data - showing quality metrics across different dimensions
@@ -262,7 +262,7 @@ export default function QualityControlChart({
       badPercentage: (stats.bad / stats.total) * 100,
       missingPercentage: (stats.missing / stats.total) * 100,
       total: stats.total,
-    }),
+    })
   );
 
   const qcTestChartData = Object.entries(qcTestStats).map(([test, stats]) => ({
@@ -276,7 +276,7 @@ export default function QualityControlChart({
   const confidenceData = data
     .sort(
       (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     )
     .map((d, index) => ({
       index: index + 1,
@@ -294,7 +294,7 @@ export default function QualityControlChart({
             <Shield className="h-5 w-5" />
             Quality Control Metrics
           </CardTitle>
-          <Badge variant="outline" className="font-mono">
+          <Badge className="font-mono" variant="outline">
             {totalMeasurements} measurements
           </Badge>
         </div>
@@ -302,10 +302,10 @@ export default function QualityControlChart({
 
       <CardContent className="space-y-6">
         {/* Summary Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Data Quality</div>
-            <div className="text-lg font-semibold flex items-center gap-1">
+            <div className="text-muted-foreground text-sm">Data Quality</div>
+            <div className="flex items-center gap-1 font-semibold text-lg">
               {goodDataPercentage.toFixed(1)}%
               {goodDataPercentage >= 95 ? (
                 <CheckCircle className="h-4 w-4 text-green-500" />
@@ -317,20 +317,20 @@ export default function QualityControlChart({
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Avg Confidence</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Avg Confidence</div>
+            <div className="font-semibold text-lg">
               {avgConfidence.toFixed(1)}%
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">QC Tests</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">QC Tests</div>
+            <div className="font-semibold text-lg">
               {Object.keys(qcTestStats).length}
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Parameters</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Parameters</div>
+            <div className="font-semibold text-lg">
               {Object.keys(parameterStats).length}
             </div>
           </div>
@@ -345,27 +345,26 @@ export default function QualityControlChart({
         <Separator />
 
         {/* Quality Control Metrics - 2x2 Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Top Row */}
           {/* Quality Flag Distribution */}
           <Card className="p-6">
             <div className="space-y-4">
-              <h4 className="text-lg font-semibold flex items-center gap-2 justify-center">
+              <h4 className="flex items-center justify-center gap-2 font-semibold text-lg">
                 <CheckCircle className="h-5 w-5 text-green-500" />
                 Quality Metrics Overview
               </h4>
               <ChartContainer
+                className="mx-auto flex h-[350px] w-full max-w-[350px] items-center justify-center"
                 config={chartConfig}
-                className="h-[350px] w-full max-w-[350px] mx-auto flex items-center justify-center"
               >
                 <RadarChart
                   data={radarData}
+                  height={350}
                   margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
                   width={350}
-                  height={350}
                 >
                   <ChartTooltip
-                    cursor={false}
                     content={
                       <ChartTooltipContent
                         formatter={(value) => [
@@ -374,21 +373,22 @@ export default function QualityControlChart({
                         ]}
                       />
                     }
+                    cursor={false}
                   />
                   <PolarAngleAxis dataKey="metric" tick={{ fontSize: 12 }} />
                   <PolarGrid />
                   <Radar
                     dataKey="value"
-                    fill="#22c55e"
-                    fillOpacity={0.4}
-                    stroke="#16a34a"
-                    strokeWidth={3}
                     dot={{
                       r: 5,
                       fill: "#15803d",
                       strokeWidth: 2,
                       stroke: "#ffffff",
                     }}
+                    fill="#22c55e"
+                    fillOpacity={0.4}
+                    stroke="#16a34a"
+                    strokeWidth={3}
                   />
                 </RadarChart>
               </ChartContainer>
@@ -398,28 +398,28 @@ export default function QualityControlChart({
           {/* Quality by Parameter */}
           <Card className="p-6">
             <div className="space-y-4">
-              <h4 className="text-lg font-semibold flex items-center gap-2">
+              <h4 className="flex items-center gap-2 font-semibold text-lg">
                 <Activity className="h-5 w-5 text-blue-500" />
                 Quality by Parameter
               </h4>
 
               {/* Alternative approach: Custom stacked bars with guaranteed colors */}
-              <div className="space-y-4 h-[280px] overflow-y-auto">
+              <div className="h-[280px] space-y-4 overflow-y-auto">
                 {parameterChartData.map((param) => (
-                  <div key={param.parameter} className="space-y-3">
+                  <div className="space-y-3" key={param.parameter}>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
+                      <span className="font-medium text-sm">
                         {param.parameter}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         {param.total} measurements
                       </span>
                     </div>
 
                     {/* Visual stacked bar */}
-                    <div className="relative h-8 bg-muted rounded-lg overflow-hidden border">
+                    <div className="relative h-8 overflow-hidden rounded-lg border bg-muted">
                       <div
-                        className="absolute left-0 top-0 h-full transition-all duration-300"
+                        className="absolute top-0 left-0 h-full transition-all duration-300"
                         style={{
                           width: `${param.goodPercentage}%`,
                           backgroundColor: QUALITY_COLORS.good,
@@ -457,10 +457,10 @@ export default function QualityControlChart({
 
                     {/* Percentage labels */}
                     <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1 flex-wrap">
+                      <div className="flex flex-wrap items-center gap-1">
                         <div className="flex items-center gap-1">
                           <div
-                            className="w-2 h-2 rounded-full"
+                            className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: QUALITY_COLORS.good }}
                           />
                           <span className="font-medium text-xs">
@@ -469,7 +469,7 @@ export default function QualityControlChart({
                         </div>
                         <div className="flex items-center gap-1">
                           <div
-                            className="w-2 h-2 rounded-full"
+                            className="h-2 w-2 rounded-full"
                             style={{
                               backgroundColor: QUALITY_COLORS.questionable,
                             }}
@@ -480,7 +480,7 @@ export default function QualityControlChart({
                         </div>
                         <div className="flex items-center gap-1">
                           <div
-                            className="w-2 h-2 rounded-full"
+                            className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: QUALITY_COLORS.bad }}
                           />
                           <span className="font-medium text-xs">
@@ -489,7 +489,7 @@ export default function QualityControlChart({
                         </div>
                         <div className="flex items-center gap-1">
                           <div
-                            className="w-2 h-2 rounded-full"
+                            className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: QUALITY_COLORS.missing }}
                           />
                           <span className="font-medium text-xs">
@@ -503,44 +503,44 @@ export default function QualityControlChart({
               </div>
 
               {/* Simplified Legend */}
-              <div className="pt-2 border-t">
-                <h5 className="text-sm font-medium mb-2 text-center">
+              <div className="border-t pt-2">
+                <h5 className="mb-2 text-center font-medium text-sm">
                   Quality Categories
                 </h5>
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <div className="flex items-center gap-1">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: "#22c55e" }}
                     />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       Good Quality
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: "#eab308" }}
                     />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       Questionable
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: "#ef4444" }}
                     />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       Bad Quality
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: "#6b7280" }}
                     />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       Missing Data
                     </span>
                   </div>
@@ -552,32 +552,32 @@ export default function QualityControlChart({
           {/* QC Test Performance */}
           <Card className="p-6">
             <div className="space-y-4">
-              <h4 className="text-lg font-semibold flex items-center gap-2">
+              <h4 className="flex items-center gap-2 font-semibold text-lg">
                 <Shield className="h-5 w-5 text-purple-500" />
                 QC Test Performance
               </h4>
-              <ChartContainer config={chartConfig} className="h-[280px]">
+              <ChartContainer className="h-[280px]" config={chartConfig}>
                 <BarChart data={qcTestChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
+                    angle={-45}
+                    axisLine={false}
                     dataKey="test"
                     fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    angle={-45}
-                    textAnchor="end"
                     height={80}
+                    textAnchor="end"
+                    tickLine={false}
                   />
                   <YAxis
-                    fontSize={12}
-                    tickLine={false}
                     axisLine={false}
+                    domain={[0, 100]}
+                    fontSize={12}
                     label={{
                       value: "Pass Rate (%)",
                       angle: -90,
                       position: "insideLeft",
                     }}
-                    domain={[0, 100]}
+                    tickLine={false}
                   />
                   <ChartTooltip
                     content={
@@ -608,30 +608,30 @@ export default function QualityControlChart({
           {/* Confidence Trend */}
           <Card className="p-6">
             <div className="space-y-4">
-              <h4 className="text-lg font-semibold flex items-center gap-2">
+              <h4 className="flex items-center gap-2 font-semibold text-lg">
                 <Eye className="h-5 w-5 text-cyan-500" />
                 Confidence Trend
               </h4>
-              <ChartContainer config={chartConfig} className="h-[280px]">
+              <ChartContainer className="h-[280px]" config={chartConfig}>
                 <ComposedChart data={confidenceData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
+                    axisLine={false}
                     dataKey="index"
                     fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
                     label={{ value: "Measurement #", position: "bottom" }}
+                    tickLine={false}
                   />
                   <YAxis
-                    fontSize={12}
-                    tickLine={false}
                     axisLine={false}
+                    domain={[0, 100]}
+                    fontSize={12}
                     label={{
                       value: "Confidence (%)",
                       angle: -90,
                       position: "insideLeft",
                     }}
-                    domain={[0, 100]}
+                    tickLine={false}
                   />
                   <ChartTooltip
                     content={
@@ -650,20 +650,20 @@ export default function QualityControlChart({
                     }
                   />
                   <Area
-                    type="monotone"
                     dataKey="confidence"
-                    stroke="#0891b2"
                     fill="#0891b2"
                     fillOpacity={0.3}
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="confidence"
                     stroke="#0891b2"
                     strokeWidth={2}
-                    dot={{ r: 2 }}
+                    type="monotone"
+                  />
+                  <Line
                     activeDot={{ r: 4 }}
+                    dataKey="confidence"
+                    dot={{ r: 2 }}
+                    stroke="#0891b2"
+                    strokeWidth={2}
+                    type="monotone"
                   />
                 </ComposedChart>
               </ChartContainer>

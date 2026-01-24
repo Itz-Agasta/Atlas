@@ -105,7 +105,9 @@ export default function InteractiveArgoMap({
   error = null,
 }: InteractiveArgoMapProps) {
   const router = useRouter();
-  const [selectedFloat, setSelectedFloat] = useState<FloatLocation | null>(null);
+  const [selectedFloat, setSelectedFloat] = useState<FloatLocation | null>(
+    null
+  );
   const [hoveredFloat, setHoveredFloat] = useState<FloatLocation | null>(null);
   const [mapStyle, setMapStyle] = useState(MAP_STYLES.satellite);
   const [isGlobe, setIsGlobe] = useState(false);
@@ -187,13 +189,13 @@ export default function InteractiveArgoMap({
       {/* Loading indicator */}
       {isLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="text-white text-lg">Loading float locations...</div>
+          <div className="text-lg text-white">Loading float locations...</div>
         </div>
       )}
 
       {/* Error message */}
       {error && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-4 py-2 rounded-md">
+        <div className="-translate-x-1/2 absolute top-4 left-1/2 z-50 rounded-md bg-red-500 px-4 py-2 text-white">
           {error}
         </div>
       )}

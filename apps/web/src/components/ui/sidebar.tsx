@@ -183,11 +183,17 @@ export const SidebarLink = ({
 // Alias for compatibility
 export const SidebarContent = SidebarBody;
 
-export const SidebarTrigger = ({ className, ...props }: React.ComponentProps<"button">) => {
+export const SidebarTrigger = ({
+  className,
+  ...props
+}: React.ComponentProps<"button">) => {
   const { open, setOpen } = useSidebar();
   return (
     <button
-      className={cn("h-7 w-7 text-neutral-800 dark:text-neutral-200", className)}
+      className={cn(
+        "h-7 w-7 text-neutral-800 dark:text-neutral-200",
+        className
+      )}
       onClick={() => setOpen(!open)}
       type="button"
       {...props}
@@ -198,9 +204,9 @@ export const SidebarTrigger = ({ className, ...props }: React.ComponentProps<"bu
   );
 };
 
-export const SidebarDivider = ({ className, ...props }: React.ComponentProps<"div">) => (
-  <div
-    className={cn("h-4 w-full mb-6 bg-border", className)}
-    {...props}
-  />
+export const SidebarDivider = ({
+  className,
+  ...props
+}: React.ComponentProps<"div">) => (
+  <div className={cn("mb-6 h-4 w-full bg-border", className)} {...props} />
 );

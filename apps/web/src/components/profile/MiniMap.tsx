@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import type { Icon, LatLngExpression } from "leaflet";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import "leaflet/dist/leaflet.css";
 
 const MapContainer = dynamic(
@@ -30,12 +30,12 @@ function CustomMarker() {
       {/* Blur effect */}
       <div className="absolute inset-0 rounded-full bg-yellow-400/50 blur-md" />
       {/* Outer glow ring */}
-      <div className="absolute inset-0 rounded-full bg-yellow-400 opacity-30 animate-ping" />
+      <div className="absolute inset-0 animate-ping rounded-full bg-yellow-400 opacity-30" />
 
       {/* Main marker */}
-      <div className="relative w-6 h-6 rounded-full border-2 bg-yellow-500 border-yellow-700 shadow-lg flex items-center justify-center">
+      <div className="relative flex h-6 w-6 items-center justify-center rounded-full border-2 border-yellow-700 bg-yellow-500 shadow-lg">
         {/* Inner dot */}
-        <div className="w-2 h-2 bg-white rounded-full" />
+        <div className="h-2 w-2 rounded-full bg-white" />
       </div>
     </div>
   );
@@ -48,7 +48,7 @@ export function MiniMap({ latitude, longitude, className = "" }: MiniMapProps) {
   useEffect(() => {
     const L = require("leaflet");
     const icon = L.divIcon({
-      className: 'custom-marker',
+      className: "custom-marker",
       html: `<div class="relative">
               <div class="absolute inset-0 rounded-full bg-yellow-400/50 blur-md"></div>
               <div class="absolute inset-0 rounded-full bg-yellow-400 opacity-30 animate-ping"></div>
@@ -72,24 +72,24 @@ export function MiniMap({ latitude, longitude, className = "" }: MiniMapProps) {
       style={{ height: "160px", width: "100%" }}
     >
       <MapContainer
+        attributionControl={false}
         center={center}
-        zoom={8}
-        style={{ height: "100%", width: "100%" }}
-        zoomControl={true} 
+        doubleClickZoom={true}
         dragging={true}
         scrollWheelZoom={true}
-        doubleClickZoom={true}
-        attributionControl={false}
+        style={{ height: "100%", width: "100%" }}
+        zoom={8}
+        zoomControl={true}
       >
-        <TileLayer 
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        <TileLayer
           attribution="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         />
-        <Marker position={center} icon={markerIcon} />
+        <Marker icon={markerIcon} position={center} />
       </MapContainer>
 
       {/* Overlay with coordinates */}
-      <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm z-[1000]">
+      <div className="absolute right-1 bottom-1 z-[1000] rounded bg-black/60 px-2 py-1 text-white text-xs backdrop-blur-sm">
         {Math.abs(latitude).toFixed(2)}°{latitude >= 0 ? "N" : "S"}{" "}
         {Math.abs(longitude).toFixed(2)}°{longitude >= 0 ? "E" : "W"}
       </div>

@@ -35,7 +35,7 @@ export interface FloatMetadata {
 
 // Generate realistic oceanographic data based on depth profiles
 export function generateMockOceanographicData(
-  depths: number[],
+  depths: number[]
 ): OceanographicData[] {
   return depths.map((depth) => {
     // Temperature decreases with depth (thermocline effect)
@@ -60,7 +60,7 @@ export function generateMockOceanographicData(
     // Chlorophyll decreases exponentially with depth
     const chlorophyll = Math.max(
       0.01,
-      2.5 * Math.exp(-depth / 150) + Math.random() * 0.1,
+      2.5 * Math.exp(-depth / 150) + Math.random() * 0.1
     );
 
     // Nitrate increases with depth
@@ -81,7 +81,7 @@ export function generateMockOceanographicData(
     // Particle backscattering decreases with depth
     const particleBackscattering = Math.max(
       0.0001,
-      0.005 * Math.exp(-depth / 200) + Math.random() * 0.0005,
+      0.005 * Math.exp(-depth / 200) + Math.random() * 0.0005
     );
 
     // Pressure increases linearly with depth
@@ -101,7 +101,7 @@ export function generateMockOceanographicData(
       cdom: Math.round(cdom * 100) / 100,
       chlorophyllFluorescence: Math.round(chlorophyllFluorescence * 100) / 100,
       particleBackscattering:
-        Math.round(particleBackscattering * 1000000) / 1000000,
+        Math.round(particleBackscattering * 1_000_000) / 1_000_000,
       pressure: Math.round(pressure * 10) / 10,
       density: Math.round(density * 100) / 100,
     };

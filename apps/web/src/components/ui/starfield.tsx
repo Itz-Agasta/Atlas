@@ -38,7 +38,7 @@ export default function Starfield({ isVisible }: StarfieldProps) {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+    <div className="-z-10 pointer-events-none fixed inset-0 overflow-hidden">
       {/* Deep space background gradient */}
       <div
         className="absolute inset-0"
@@ -51,8 +51,8 @@ export default function Starfield({ isVisible }: StarfieldProps) {
       {/* Stars */}
       {stars.map((star) => (
         <div
+          className="absolute animate-pulse rounded-full bg-white"
           key={star.id}
-          className="absolute rounded-full bg-white animate-pulse"
           style={{
             left: `${star.x}%`,
             top: `${star.y}%`,

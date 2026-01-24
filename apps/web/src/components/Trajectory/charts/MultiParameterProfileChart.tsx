@@ -50,7 +50,7 @@ function D3ProfileChart({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!svgRef.current || !data.length || !parameters.length) return;
+    if (!(svgRef.current && data.length && parameters.length)) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -136,7 +136,7 @@ function D3ProfileChart({
         d3
           .axisLeft(yScale)
           .tickSize(-innerWidth)
-          .tickFormat(() => ""),
+          .tickFormat(() => "")
       )
       .style("stroke-dasharray", "2,2")
       .style("opacity", 0.3)
@@ -282,14 +282,14 @@ function D3ProfileChart({
         tooltip
           .style("visibility", "visible")
           .html(
-            `<strong>Depth: ${data.depth}m</strong><br/>${parameterInfo}<br/>Quality: ${qualityText}`,
+            `<strong>Depth: ${data.depth}m</strong><br/>${parameterInfo}<br/>Quality: ${qualityText}`
           );
 
         d3.select(this)
           .transition()
           .duration(150)
           .attr("r", function () {
-            const currentR = parseFloat(d3.select(this).attr("r"));
+            const currentR = Number.parseFloat(d3.select(this).attr("r"));
             return currentR + 2;
           })
           .style("opacity", 1)
@@ -410,7 +410,7 @@ function D3ProfileChart({
         .style("font-size", "9px")
         .style("fill", "#6b7280")
         .text(
-          `${param.originalExtent[0].toFixed(1)}-${param.originalExtent[1].toFixed(1)}`,
+          `${param.originalExtent[0].toFixed(1)}-${param.originalExtent[1].toFixed(1)}`
         );
 
       // Add unit on another line
@@ -428,7 +428,7 @@ function D3ProfileChart({
           // Highlight corresponding lines and points
           g.selectAll(`.profile-line-${i}, .profile-area-${i}`).style(
             "opacity",
-            1,
+            1
           );
           g.selectAll(`.data-point-${i}`).style("opacity", 1);
 
@@ -437,7 +437,7 @@ function D3ProfileChart({
             if (j !== i) {
               g.selectAll(`.profile-line-${j}, .profile-area-${j}`).style(
                 "opacity",
-                0.2,
+                0.2
               );
               g.selectAll(`.data-point-${j}`).style("opacity", 0.2);
             }
@@ -466,12 +466,12 @@ function D3ProfileChart({
   }, [data, parameters, width, height, title]);
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border">
+    <div className="rounded-lg border bg-white p-4 shadow-sm">
       <svg
+        className="overflow-visible"
+        height={height}
         ref={svgRef}
         width={width}
-        height={height}
-        className="overflow-visible"
       />
     </div>
   );
@@ -492,7 +492,7 @@ export default function MultiParameterProfileChart({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-8">
+          <div className="py-8 text-center text-muted-foreground">
             No profile data available
           </div>
         </CardContent>
@@ -522,7 +522,7 @@ export default function MultiParameterProfileChart({
       else acc.bad++;
       return acc;
     },
-    { good: 0, questionable: 0, bad: 0 },
+    { good: 0, questionable: 0, bad: 0 }
   );
 
   // Define parameter configurations
@@ -576,7 +576,7 @@ export default function MultiParameterProfileChart({
             <Layers className="h-5 w-5" />
             {title}
           </CardTitle>
-          <Badge variant="outline" className="font-mono">
+          <Badge className="font-mono" variant="outline">
             {sortedData.length} measurements
           </Badge>
         </div>
@@ -584,26 +584,26 @@ export default function MultiParameterProfileChart({
 
       <CardContent className="space-y-6">
         {/* Summary Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Max Depth</div>
-            <div className="text-lg font-semibold">{maxDepth.toFixed(1)} m</div>
+            <div className="text-muted-foreground text-sm">Max Depth</div>
+            <div className="font-semibold text-lg">{maxDepth.toFixed(1)} m</div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Temp Range</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Temp Range</div>
+            <div className="font-semibold text-lg">
               {tempRange.min.toFixed(1)} - {tempRange.max.toFixed(1)}°C
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Sal Range</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Sal Range</div>
+            <div className="font-semibold text-lg">
               {salRange.min.toFixed(1)} - {salRange.max.toFixed(1)} PSU
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Data Quality</div>
-            <div className="text-lg font-semibold text-green-600">
+            <div className="text-muted-foreground text-sm">Data Quality</div>
+            <div className="font-semibold text-green-600 text-lg">
               {((qualityStats.good / sortedData.length) * 100).toFixed(0)}% Good
             </div>
           </div>
@@ -611,21 +611,21 @@ export default function MultiParameterProfileChart({
 
         {/* Quality Distribution */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium">Data Quality Distribution</h4>
+          <h4 className="font-medium text-sm">Data Quality Distribution</h4>
           <div className="flex gap-3">
             <Badge
+              className="border-green-200 text-green-600"
               variant="outline"
-              className="text-green-600 border-green-200"
             >
               Good: {qualityStats.good}
             </Badge>
             <Badge
+              className="border-yellow-200 text-yellow-600"
               variant="outline"
-              className="text-yellow-600 border-yellow-200"
             >
               Questionable: {qualityStats.questionable}
             </Badge>
-            <Badge variant="outline" className="text-red-600 border-red-200">
+            <Badge className="border-red-200 text-red-600" variant="outline">
               Bad: {qualityStats.bad}
             </Badge>
           </div>
@@ -634,111 +634,111 @@ export default function MultiParameterProfileChart({
         <Separator />
 
         {/* Tabbed D3.js Charts */}
-        <Tabs defaultValue="temp-sal" className="w-full">
+        <Tabs className="w-full" defaultValue="temp-sal">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="temp-sal" className="text-xs">
-              <Thermometer className="h-3 w-3 mr-1" />
+            <TabsTrigger className="text-xs" value="temp-sal">
+              <Thermometer className="mr-1 h-3 w-3" />
               T-S
             </TabsTrigger>
             <TabsTrigger
-              value="oxygen"
               className="text-xs"
               disabled={!sortedData.some((d) => d.oxygen)}
+              value="oxygen"
             >
-              <Activity className="h-3 w-3 mr-1" />
+              <Activity className="mr-1 h-3 w-3" />
               O₂
             </TabsTrigger>
             <TabsTrigger
-              value="bio"
               className="text-xs"
               disabled={!sortedData.some((d) => d.chlorophyll)}
+              value="bio"
             >
-              <Droplets className="h-3 w-3 mr-1" />
+              <Droplets className="mr-1 h-3 w-3" />
               Bio
             </TabsTrigger>
-            <TabsTrigger value="density" className="text-xs">
-              <Gauge className="h-3 w-3 mr-1" />
+            <TabsTrigger className="text-xs" value="density">
+              <Gauge className="mr-1 h-3 w-3" />
               Density
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="temp-sal" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TabsContent className="space-y-4" value="temp-sal">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div className="space-y-3">
-                <h4 className="text-sm font-medium">Temperature Profile</h4>
+                <h4 className="font-medium text-sm">Temperature Profile</h4>
                 <D3ProfileChart
                   data={sortedData}
-                  parameters={[tempSalParameters[0]]}
-                  width={400}
                   height={400}
+                  parameters={[tempSalParameters[0]]}
                   title="Temperature vs Depth"
+                  width={400}
                 />
               </div>
               <div className="space-y-3">
-                <h4 className="text-sm font-medium">Salinity Profile</h4>
+                <h4 className="font-medium text-sm">Salinity Profile</h4>
                 <D3ProfileChart
                   data={sortedData}
-                  parameters={[tempSalParameters[1]]}
-                  width={400}
                   height={400}
+                  parameters={[tempSalParameters[1]]}
                   title="Salinity vs Depth"
+                  width={400}
                 />
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="oxygen" className="space-y-4">
+          <TabsContent className="space-y-4" value="oxygen">
             <div className="space-y-3">
-              <h4 className="text-sm font-medium">Dissolved Oxygen Profile</h4>
+              <h4 className="font-medium text-sm">Dissolved Oxygen Profile</h4>
               {sortedData.some((d) => d.oxygen) ? (
                 <div className="flex justify-center">
                   <D3ProfileChart
                     data={sortedData.filter((d) => d.oxygen)}
-                    parameters={oxygenParameters}
-                    width={500}
                     height={400}
+                    parameters={oxygenParameters}
                     title="Dissolved Oxygen vs Depth"
+                    width={500}
                   />
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground py-12">
+                <div className="py-12 text-center text-muted-foreground">
                   No oxygen data available
                 </div>
               )}
             </div>
           </TabsContent>
 
-          <TabsContent value="bio" className="space-y-4">
+          <TabsContent className="space-y-4" value="bio">
             <div className="space-y-3">
-              <h4 className="text-sm font-medium">Chlorophyll Profile</h4>
+              <h4 className="font-medium text-sm">Chlorophyll Profile</h4>
               {sortedData.some((d) => d.chlorophyll) ? (
                 <div className="flex justify-center">
                   <D3ProfileChart
                     data={sortedData.filter((d) => d.chlorophyll)}
-                    parameters={bioParameters}
-                    width={500}
                     height={400}
+                    parameters={bioParameters}
                     title="Chlorophyll vs Depth"
+                    width={500}
                   />
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground py-12">
+                <div className="py-12 text-center text-muted-foreground">
                   No chlorophyll data available
                 </div>
               )}
             </div>
           </TabsContent>
 
-          <TabsContent value="density" className="space-y-4">
+          <TabsContent className="space-y-4" value="density">
             <div className="space-y-3">
-              <h4 className="text-sm font-medium">Density Profile</h4>
+              <h4 className="font-medium text-sm">Density Profile</h4>
               <div className="flex justify-center">
                 <D3ProfileChart
                   data={sortedData}
-                  parameters={densityParameters}
-                  width={500}
                   height={400}
+                  parameters={densityParameters}
                   title="Density vs Depth"
+                  width={500}
                 />
               </div>
             </div>

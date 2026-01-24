@@ -56,7 +56,7 @@ export function DataDownload({ data, metadata }: DataDownloadProps) {
           d.particleBackscattering,
           d.pressure,
           d.density,
-        ].join(","),
+        ].join(",")
       ),
     ].join("\n");
 
@@ -70,7 +70,7 @@ export function DataDownload({ data, metadata }: DataDownloadProps) {
     const netcdfContent = [
       "netcdf argo_float_data {",
       "dimensions:",
-      `    N_PROF = 1 ;`,
+      "    N_PROF = 1 ;",
       `    N_LEVELS = ${data.length} ;`,
       "",
       "variables:",
@@ -181,7 +181,7 @@ export function DataDownload({ data, metadata }: DataDownloadProps) {
     });
     saveAs(
       blob,
-      `argo_float_${metadata.id}_cycle_${metadata.cycleNumber}.json`,
+      `argo_float_${metadata.id}_cycle_${metadata.cycleNumber}.json`
     );
   };
 
@@ -194,55 +194,55 @@ export function DataDownload({ data, metadata }: DataDownloadProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Button
+            className="flex h-auto flex-col items-center gap-3 p-4 text-left hover:bg-muted/50"
             onClick={downloadCSV}
             variant="outline"
-            className="flex items-center gap-3 h-auto p-4 text-left flex-col hover:bg-muted/50"
           >
             <FileText className="h-8 w-8 text-emerald-600" />
             <div className="text-center">
               <div className="font-semibold text-sm">CSV Format</div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="mt-1 text-muted-foreground text-xs">
                 Excel-compatible spreadsheet format
               </div>
             </div>
           </Button>
 
           <Button
+            className="flex h-auto flex-col items-center gap-3 p-4 text-left hover:bg-muted/50"
             onClick={downloadNetCDF}
             variant="outline"
-            className="flex items-center gap-3 h-auto p-4 text-left flex-col hover:bg-muted/50"
           >
             <Database className="h-8 w-8 text-blue-600" />
             <div className="text-center">
               <div className="font-semibold text-sm">NetCDF Format</div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="mt-1 text-muted-foreground text-xs">
                 Scientific data standard with metadata
               </div>
             </div>
           </Button>
 
           <Button
+            className="flex h-auto flex-col items-center gap-3 p-4 text-left hover:bg-muted/50"
             onClick={downloadJSON}
             variant="outline"
-            className="flex items-center gap-3 h-auto p-4 text-left flex-col hover:bg-muted/50"
           >
             <Braces className="h-8 w-8 text-purple-600" />
             <div className="text-center">
               <div className="font-semibold text-sm">JSON Format</div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="mt-1 text-muted-foreground text-xs">
                 Structured data for web applications
               </div>
             </div>
           </Button>
         </div>
 
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg border">
-          <h4 className="font-semibold text-foreground mb-3">
+        <div className="mt-6 rounded-lg border bg-muted/50 p-4">
+          <h4 className="mb-3 font-semibold text-foreground">
             Dataset Information
           </h4>
-          <div className="text-sm text-muted-foreground space-y-2">
+          <div className="space-y-2 text-muted-foreground text-sm">
             <div className="flex justify-between">
               <span>Total data points:</span>
               <span className="font-medium text-foreground">{data.length}</span>
@@ -269,7 +269,7 @@ export function DataDownload({ data, metadata }: DataDownloadProps) {
           </div>
         </div>
 
-        <div className="mt-4 text-xs text-muted-foreground">
+        <div className="mt-4 text-muted-foreground text-xs">
           <p>
             Data follows Argo project standards and includes quality control
             flags. Please cite the appropriate data sources when using this data

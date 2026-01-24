@@ -1,7 +1,12 @@
 "use client";
-// map libre gl component for alternative options
-import { Map, MapControls, MapMarker, MarkerContent } from "@/components/ui/map";
 import type { StyleSpecification } from "maplibre-gl";
+// map libre gl component for alternative options
+import {
+  Map,
+  MapControls,
+  MapMarker,
+  MarkerContent,
+} from "@/components/ui/map";
 
 const satelliteStyle: StyleSpecification = {
   version: 8,
@@ -56,15 +61,15 @@ export default function SatelliteMap({
     <div style={{ width: "100%", height: "100%", ...style }}>
       <Map
         center={center}
-        zoom={zoom}
         styles={{ light: satelliteStyle, dark: satelliteStyle }}
+        zoom={zoom}
       >
         <MapControls position="top-right" showZoom={true} />
         {randomMarkers.map((marker) => (
           <MapMarker
             key={marker.id}
-            longitude={marker.longitude}
             latitude={marker.latitude}
+            longitude={marker.longitude}
           >
             <MarkerContent />
           </MapMarker>

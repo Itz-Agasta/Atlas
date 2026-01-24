@@ -75,7 +75,7 @@ export interface QualityData {
 }
 
 export function generateMockDriftData(
-  trajectoryPoints: TrajectoryPoint[],
+  trajectoryPoints: TrajectoryPoint[]
 ): DriftData[] {
   return trajectoryPoints.slice(1).map((point, index) => {
     const prevPoint = trajectoryPoints[index];
@@ -156,7 +156,7 @@ export function generateMockDriftData(
 }
 
 export function generateMockPositioningData(
-  trajectoryPoints: TrajectoryPoint[],
+  trajectoryPoints: TrajectoryPoint[]
 ): PositioningData[] {
   return trajectoryPoints.map((point) => ({
     timestamp: point.timestamp,
@@ -194,7 +194,7 @@ export function generateMockProfileData(): ProfileData[] {
         : Math.random() < 0.7
           ? 3
           : 4,
-    timestamp: new Date(Date.now() - depth * 60000).toISOString(), // Simulate time progression
+    timestamp: new Date(Date.now() - depth * 60_000).toISOString(), // Simulate time progression
   }));
 }
 
@@ -241,7 +241,7 @@ export function generateMockCyclePhases(): CyclePhase[] {
 }
 
 export function generateMockBatteryData(
-  trajectoryPoints: TrajectoryPoint[],
+  trajectoryPoints: TrajectoryPoint[]
 ): BatteryData[] {
   return trajectoryPoints.map((point, index) => ({
     timestamp: point.timestamp,
@@ -259,7 +259,7 @@ export function generateMockBatteryData(
     ],
     estimatedRemaining: Math.max(
       0,
-      100 - (index / trajectoryPoints.length) * 100 + Math.random() * 5,
+      100 - (index / trajectoryPoints.length) * 100 + Math.random() * 5
     ),
   }));
 }

@@ -1,11 +1,13 @@
 "use client";
 // maplibre gl component for alternative options
-import MapLibreGL, { type PopupOptions, type MarkerOptions } from "maplibre-gl";
+import MapLibreGL, { type MarkerOptions, type PopupOptions } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Loader2, Locate, Maximize, Minus, Plus, X } from "lucide-react";
 import { useTheme } from "next-themes";
-import {
+import React, {
   createContext,
   forwardRef,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -14,13 +16,9 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { X, Minus, Plus, Locate, Maximize, Loader2 } from "lucide-react";
-
 import { cn } from "@/lib/utils";
-import React from "react";
 
 type MapContextValue = {
   map: MapLibreGL.Map | null;
@@ -59,9 +57,9 @@ type MapRef = MapLibreGL.Map;
 const DefaultLoader = () => (
   <div className="absolute inset-0 flex items-center justify-center">
     <div className="flex gap-1">
-      <span className="size-1.5 rounded-full bg-muted-foreground/60 animate-pulse" />
-      <span className="size-1.5 rounded-full bg-muted-foreground/60 animate-pulse [animation-delay:150ms]" />
-      <span className="size-1.5 rounded-full bg-muted-foreground/60 animate-pulse [animation-delay:300ms]" />
+      <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
+      <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground/60 [animation-delay:150ms]" />
+      <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground/60 [animation-delay:300ms]" />
     </div>
   </div>
 );
@@ -107,10 +105,14 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     const styleDataHandler = () => {
       setIsStyleLoaded(true);
       // Set font for text layers
-      map.getStyle().layers.forEach(layer => {
-        if (layer.type === 'symbol' && layer.layout && 'text-font' in layer.layout) {
-          map.setLayoutProperty(layer.id, 'text-font', ['TASA Orbiter Bold']);
-          map.setPaintProperty(layer.id, 'text-color', '#ffffff');
+      map.getStyle().layers.forEach((layer) => {
+        if (
+          layer.type === "symbol" &&
+          layer.layout &&
+          "text-font" in layer.layout
+        ) {
+          map.setLayoutProperty(layer.id, "text-font", ["TASA Orbiter Bold"]);
+          map.setPaintProperty(layer.id, "text-color", "#ffffff");
         }
       });
     };
@@ -132,7 +134,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   }, []);
 
   useEffect(() => {
-    if (!mapInstance || !resolvedTheme) return;
+    if (!(mapInstance && resolvedTheme)) return;
 
     const newStyle =
       resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
@@ -149,7 +151,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     return () => cancelAnimationFrame(frameId);
   }, [mapInstance, resolvedTheme, mapStyles]);
 
-  const isLoading = !isLoaded || !isStyleLoaded;
+  const isLoading = !(isLoaded && isStyleLoaded);
 
   const contextValue = useMemo(
     () => ({
@@ -161,7 +163,10 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
   return (
     <MapContext.Provider value={contextValue}>
-      <div ref={containerRef} className={cn("relative w-full h-full", className)}>
+      <div
+        className={cn("relative h-full w-full", className)}
+        ref={containerRef}
+      >
         {isLoading && <DefaultLoader />}
         {/* SSR-safe: children render only when map is loaded on client */}
         {mapInstance && children}
@@ -396,16 +401,16 @@ function MarkerPopup({
   return createPortal(
     <div
       className={cn(
-        "relative rounded-md border bg-popover p-3 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95",
+        "fade-in-0 zoom-in-95 relative animate-in rounded-md border bg-popover p-3 text-popover-foreground shadow-md",
         className
       )}
     >
       {closeButton && (
         <button
-          type="button"
-          onClick={handleClose}
-          className="absolute top-1 right-1 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           aria-label="Close popup"
+          className="absolute top-1 right-1 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          onClick={handleClose}
+          type="button"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
@@ -482,7 +487,7 @@ function MarkerTooltip({
   return createPortal(
     <div
       className={cn(
-        "rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-md animate-in fade-in-0 zoom-in-95",
+        "fade-in-0 zoom-in-95 animate-in rounded-md bg-foreground px-2 py-1 text-background text-xs shadow-md",
         className
       )}
     >
@@ -514,8 +519,8 @@ function MarkerLabel({
   return (
     <div
       className={cn(
-        "absolute left-1/2 -translate-x-1/2 whitespace-nowrap",
-        "text-[10px] font-medium text-foreground",
+        "-translate-x-1/2 absolute left-1/2 whitespace-nowrap",
+        "font-medium text-[10px] text-foreground",
         positionClasses[position],
         className
       )}
@@ -551,7 +556,7 @@ const positionClasses = {
 
 function ControlGroup({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col rounded-md border border-border bg-background shadow-sm overflow-hidden [&>button:not(:last-child)]:border-b [&>button:not(:last-child)]:border-border">
+    <div className="flex flex-col overflow-hidden rounded-md border border-border bg-background shadow-sm [&>button:not(:last-child)]:border-border [&>button:not(:last-child)]:border-b">
       {children}
     </div>
   );
@@ -570,14 +575,14 @@ function ControlButton({
 }) {
   return (
     <button
-      onClick={onClick}
       aria-label={label}
-      type="button"
       className={cn(
-        "flex items-center justify-center size-8 hover:bg-accent dark:hover:bg-accent/40 transition-colors",
-        disabled && "opacity-50 pointer-events-none cursor-not-allowed"
+        "flex size-8 items-center justify-center transition-colors hover:bg-accent dark:hover:bg-accent/40",
+        disabled && "pointer-events-none cursor-not-allowed opacity-50"
       )}
       disabled={disabled}
+      onClick={onClick}
+      type="button"
     >
       {children}
     </button>
@@ -655,10 +660,10 @@ function MapControls({
     >
       {showZoom && (
         <ControlGroup>
-          <ControlButton onClick={handleZoomIn} label="Zoom in">
+          <ControlButton label="Zoom in" onClick={handleZoomIn}>
             <Plus className="size-4" />
           </ControlButton>
-          <ControlButton onClick={handleZoomOut} label="Zoom out">
+          <ControlButton label="Zoom out" onClick={handleZoomOut}>
             <Minus className="size-4" />
           </ControlButton>
         </ControlGroup>
@@ -671,9 +676,9 @@ function MapControls({
       {showLocate && (
         <ControlGroup>
           <ControlButton
-            onClick={handleLocate}
-            label="Find my location"
             disabled={waitingForLocation}
+            label="Find my location"
+            onClick={handleLocate}
           >
             {waitingForLocation ? (
               <Loader2 className="size-4 animate-spin" />
@@ -685,7 +690,7 @@ function MapControls({
       )}
       {showFullscreen && (
         <ControlGroup>
-          <ControlButton onClick={handleFullscreen} label="Toggle fullscreen">
+          <ControlButton label="Toggle fullscreen" onClick={handleFullscreen}>
             <Maximize className="size-4" />
           </ControlButton>
         </ControlGroup>
@@ -699,7 +704,7 @@ function CompassButton({ onClick }: { onClick: () => void }) {
   const compassRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (!isLoaded || !map || !compassRef.current) return;
+    if (!(isLoaded && map && compassRef.current)) return;
 
     const compass = compassRef.current;
 
@@ -720,17 +725,17 @@ function CompassButton({ onClick }: { onClick: () => void }) {
   }, [isLoaded, map]);
 
   return (
-    <ControlButton onClick={onClick} label="Reset bearing to north">
+    <ControlButton label="Reset bearing to north" onClick={onClick}>
       <svg
-        ref={compassRef}
-        viewBox="0 0 24 24"
         className="size-5 transition-transform duration-200"
+        ref={compassRef}
         style={{ transformStyle: "preserve-3d" }}
+        viewBox="0 0 24 24"
       >
-        <path d="M12 2L16 12H12V2Z" className="fill-red-500" />
-        <path d="M12 2L8 12H12V2Z" className="fill-red-300" />
-        <path d="M12 22L16 12H12V22Z" className="fill-muted-foreground/60" />
-        <path d="M12 22L8 12H12V22Z" className="fill-muted-foreground/30" />
+        <path className="fill-red-500" d="M12 2L16 12H12V2Z" />
+        <path className="fill-red-300" d="M12 2L8 12H12V2Z" />
+        <path className="fill-muted-foreground/60" d="M12 22L16 12H12V22Z" />
+        <path className="fill-muted-foreground/30" d="M12 22L8 12H12V22Z" />
       </svg>
     </ControlButton>
   );
@@ -822,16 +827,16 @@ function MapPopup({
   return createPortal(
     <div
       className={cn(
-        "relative rounded-md border bg-popover p-3 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95",
+        "fade-in-0 zoom-in-95 relative animate-in rounded-md border bg-popover p-3 text-popover-foreground shadow-md",
         className
       )}
     >
       {closeButton && (
         <button
-          type="button"
-          onClick={handleClose}
-          className="absolute top-1 right-1 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           aria-label="Close popup"
+          className="absolute top-1 right-1 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          onClick={handleClose}
+          type="button"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
@@ -886,7 +891,7 @@ function MapRoute({
 
   // Add source and layer on mount
   useEffect(() => {
-    if (!isLoaded || !map) return;
+    if (!(isLoaded && map)) return;
 
     map.addSource(sourceId, {
       type: "geojson",
@@ -923,7 +928,7 @@ function MapRoute({
 
   // When coordinates change, update the source data
   useEffect(() => {
-    if (!isLoaded || !map || coordinates.length < 2) return;
+    if (!(isLoaded && map) || coordinates.length < 2) return;
 
     const source = map.getSource(sourceId) as MapLibreGL.GeoJSONSource;
     if (source) {
@@ -936,7 +941,7 @@ function MapRoute({
   }, [isLoaded, map, coordinates, sourceId]);
 
   useEffect(() => {
-    if (!isLoaded || !map || !map.getLayer(layerId)) return;
+    if (!(isLoaded && map && map.getLayer(layerId))) return;
 
     map.setPaintProperty(layerId, "line-color", color);
     map.setPaintProperty(layerId, "line-width", width);
@@ -948,7 +953,7 @@ function MapRoute({
 
   // Handle click and hover events
   useEffect(() => {
-    if (!isLoaded || !map || !interactive) return;
+    if (!(isLoaded && map && interactive)) return;
 
     const handleClick = () => {
       onClick?.();
@@ -985,7 +990,7 @@ function MapRoute({
 }
 
 type MapClusterLayerProps<
-  P extends GeoJSON.GeoJsonProperties = GeoJSON.GeoJsonProperties
+  P extends GeoJSON.GeoJsonProperties = GeoJSON.GeoJsonProperties,
 > = {
   /** GeoJSON FeatureCollection data or URL to fetch GeoJSON from */
   data: string | GeoJSON.FeatureCollection<GeoJSON.Point, P>;
@@ -1013,7 +1018,7 @@ type MapClusterLayerProps<
 };
 
 function MapClusterLayer<
-  P extends GeoJSON.GeoJsonProperties = GeoJSON.GeoJsonProperties
+  P extends GeoJSON.GeoJsonProperties = GeoJSON.GeoJsonProperties,
 >({
   data,
   clusterMaxZoom = 14,
@@ -1039,7 +1044,7 @@ function MapClusterLayer<
 
   // Add source and layers on mount
   useEffect(() => {
-    if (!isLoaded || !map) return;
+    if (!(isLoaded && map)) return;
 
     // Add clustered GeoJSON source
     map.addSource(sourceId, {
@@ -1122,7 +1127,7 @@ function MapClusterLayer<
 
   // Update source data when data prop changes (only for non-URL data)
   useEffect(() => {
-    if (!isLoaded || !map || typeof data === "string") return;
+    if (!(isLoaded && map) || typeof data === "string") return;
 
     const source = map.getSource(sourceId) as MapLibreGL.GeoJSONSource;
     if (source) {
@@ -1132,7 +1137,7 @@ function MapClusterLayer<
 
   // Update layer styles when props change
   useEffect(() => {
-    if (!isLoaded || !map) return;
+    if (!(isLoaded && map)) return;
 
     const prev = stylePropsRef.current;
     const colorsChanged =
@@ -1179,7 +1184,7 @@ function MapClusterLayer<
 
   // Handle click events
   useEffect(() => {
-    if (!isLoaded || !map) return;
+    if (!(isLoaded && map)) return;
 
     // Cluster click handler - zoom into cluster
     const handleClusterClick = async (
@@ -1197,7 +1202,7 @@ function MapClusterLayer<
       const pointCount = feature.properties?.point_count as number;
       const coordinates = (feature.geometry as GeoJSON.Point).coordinates as [
         number,
-        number
+        number,
       ];
 
       if (onClusterClick) {
@@ -1219,7 +1224,7 @@ function MapClusterLayer<
         features?: MapLibreGL.MapGeoJSONFeature[];
       }
     ) => {
-      if (!onPointClick || !e.features?.length) return;
+      if (!(onPointClick && e.features?.length)) return;
 
       const feature = e.features[0];
       const coordinates = (
@@ -1300,7 +1305,7 @@ export type { MapRef };
 function StyleModifier() {
   const { map, isLoaded } = useMap();
   useEffect(() => {
-    if (!isLoaded || !map) return;
+    if (!(isLoaded && map)) return;
     // Modify water to black
     if (map.getLayer("water")) {
       map.setPaintProperty("water", "fill-color", "#000000");
@@ -1316,7 +1321,11 @@ function StyleModifier() {
   return null;
 }
 
-export default function WorldMapWithFloats({ setIs3D }: { setIs3D: (is3D: boolean) => void }) {
+export default function WorldMapWithFloats({
+  setIs3D,
+}: {
+  setIs3D: (is3D: boolean) => void;
+}) {
   const floats = useMemo(() => {
     const numFloats = 10;
     return Array.from({ length: numFloats }, () => ({
@@ -1327,13 +1336,13 @@ export default function WorldMapWithFloats({ setIs3D }: { setIs3D: (is3D: boolea
   }, []);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative h-full w-full">
       <Map className="h-full w-full">
         <MapControls position="top-right" />
         {floats.map((float) => (
           <MapMarker key={float.id} latitude={float.lat} longitude={float.lng}>
             <MarkerContent>
-              <div className="w-4 h-4 bg-blue-500 rounded-full" />
+              <div className="h-4 w-4 rounded-full bg-blue-500" />
             </MarkerContent>
             <MarkerPopup>
               <div>Float ID: {float.id}</div>

@@ -113,7 +113,7 @@ function FloatProfileContent({
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
+    <div className="flex min-h-screen w-full bg-background">
       {/* Left Sidebar */}
       <Sidebar>
         <SidebarContent>
@@ -123,18 +123,18 @@ function FloatProfileContent({
 
       {/* Main Content */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${isAiSidebarOpen ? "mr-96" : ""}`}
+        className={`flex flex-1 flex-col transition-all duration-300 ${isAiSidebarOpen ? "mr-96" : ""}`}
       >
         {/* Header */}
-        <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="border-border border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-16 items-center justify-between px-6">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div>
-                <h1 className="text-xl font-semibold text-foreground">
+                <h1 className="font-semibold text-foreground text-xl">
                   Oceanographic Data Analysis
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Real-time data visualization and analysis platform
                 </p>
               </div>
@@ -144,10 +144,10 @@ function FloatProfileContent({
             <div className="flex items-center gap-3">
               <ThemeToggle />
               <Button
-                variant="outline"
-                size="sm"
                 className="gap-2"
                 onClick={handleAiSidebarToggle}
+                size="sm"
+                variant="outline"
               >
                 <MessageSquare className="h-4 w-4" />
                 {isAiSidebarOpen ? "Hide" : "Ask"} AI Assistant
@@ -157,90 +157,90 @@ function FloatProfileContent({
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-6 space-y-6">
+        <main className="flex-1 space-y-6 overflow-auto p-6">
           {/* Data Download Section */}
-          <div className="max-w-7xl mx-auto">
+          <div className="mx-auto max-w-7xl">
             <DataDownload data={data} metadata={metadata} />
           </div>
 
           {/* Graphs Section */}
-          <div className="max-w-7xl mx-auto">
-            <Tabs defaultValue="profiles" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 h-11">
-                <TabsTrigger value="profiles" className="text-sm">
+          <div className="mx-auto max-w-7xl">
+            <Tabs className="w-full" defaultValue="profiles">
+              <TabsList className="grid h-11 w-full grid-cols-4">
+                <TabsTrigger className="text-sm" value="profiles">
                   Individual Profiles
                 </TabsTrigger>
-                <TabsTrigger value="ts-diagram" className="text-sm">
+                <TabsTrigger className="text-sm" value="ts-diagram">
                   T-S Diagram
                 </TabsTrigger>
-                <TabsTrigger value="multi-param" className="text-sm">
+                <TabsTrigger className="text-sm" value="multi-param">
                   Multi-Parameter
                 </TabsTrigger>
-                <TabsTrigger value="biogeochemical" className="text-sm">
+                <TabsTrigger className="text-sm" value="biogeochemical">
                   Biogeochemical
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="profiles" className="mt-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <TabsContent className="mt-6" value="profiles">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                   <OceanographicProfile
+                    color="#dc2626"
                     data={data}
+                    height={400}
                     parameter="temperature"
                     title="Sea Temperature"
                     unit="°C"
-                    color="#dc2626"
                     width={350}
-                    height={400}
                   />
                   <OceanographicProfile
+                    color="#2563eb"
                     data={data}
+                    height={400}
                     parameter="salinity"
                     title="Practical Salinity"
                     unit="PSU"
-                    color="#2563eb"
                     width={350}
-                    height={400}
                   />
                   <OceanographicProfile
+                    color="#059669"
                     data={data}
+                    height={400}
                     parameter="dissolvedOxygen"
                     title="Dissolved Oxygen"
                     unit="μmol/kg"
-                    color="#059669"
                     width={350}
-                    height={400}
                   />
                   <OceanographicProfile
+                    color="#7c3aed"
                     data={data}
+                    height={400}
                     parameter="ph"
                     title="pH Profile"
                     unit="pH"
-                    color="#7c3aed"
                     width={350}
-                    height={400}
                   />
                   <OceanographicProfile
+                    color="#ea580c"
                     data={data}
+                    height={400}
                     parameter="nitrate"
                     title="Nitrate Profile"
                     unit="μmol/kg"
-                    color="#ea580c"
                     width={350}
-                    height={400}
                   />
                   <OceanographicProfile
+                    color="#16a34a"
                     data={data}
+                    height={400}
                     parameter="chlorophyll"
                     title="Chlorophyll-a"
                     unit="mg/m³"
-                    color="#16a34a"
                     width={350}
-                    height={400}
                   />
                 </div>
               </TabsContent>
 
-              <TabsContent value="ts-diagram" className="mt-6">
+              <TabsContent className="mt-6" value="ts-diagram">
                 <div className="space-y-6">
                   <Card className="w-full">
                     <CardHeader>
@@ -255,8 +255,8 @@ function FloatProfileContent({
                     <CardContent className="flex justify-center">
                       <TemperatureSalinityDiagram
                         data={data}
-                        width={800}
                         height={600}
+                        width={800}
                       />
                     </CardContent>
                   </Card>
@@ -265,7 +265,7 @@ function FloatProfileContent({
                 </div>
               </TabsContent>
 
-              <TabsContent value="multi-param" className="mt-6">
+              <TabsContent className="mt-6" value="multi-param">
                 <div className="space-y-6">
                   <Card className="w-full">
                     <CardHeader>
@@ -280,9 +280,9 @@ function FloatProfileContent({
                     <CardContent className="flex justify-center">
                       <MultiParameterProfile
                         data={data}
+                        height={600}
                         parameters={multiParameterConfig}
                         width={1000}
-                        height={600}
                       />
                     </CardContent>
                   </Card>
@@ -291,34 +291,34 @@ function FloatProfileContent({
                 </div>
               </TabsContent>
 
-              <TabsContent value="biogeochemical" className="mt-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <TabsContent className="mt-6" value="biogeochemical">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
                   <OceanographicProfile
+                    color="#16a34a"
                     data={data}
+                    height={450}
                     parameter="chlorophyll"
                     title="Chlorophyll-a"
                     unit="mg/m³"
-                    color="#16a34a"
                     width={400}
-                    height={450}
                   />
                   <OceanographicProfile
+                    color="#dc2626"
                     data={data}
+                    height={450}
                     parameter="particleBackscattering"
                     title="Particle Backscattering"
                     unit="m⁻¹"
-                    color="#dc2626"
                     width={400}
-                    height={450}
                   />
                   <OceanographicProfile
+                    color="#7c3aed"
                     data={data}
+                    height={450}
                     parameter="cdom"
                     title="CDOM"
                     unit="ppb"
-                    color="#7c3aed"
                     width={400}
-                    height={450}
                   />
                 </div>
               </TabsContent>
@@ -329,17 +329,17 @@ function FloatProfileContent({
 
       {/* AI Assistant Sidebar */}
       {isAiSidebarOpen && (
-        <div className="fixed right-0 top-0 h-screen w-96 bg-background border-l border-border shadow-lg z-50 flex flex-col">
+        <div className="fixed top-0 right-0 z-50 flex h-screen w-96 flex-col border-border border-l bg-background shadow-lg">
           {/* AI Sidebar Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground">
+          <div className="flex items-center justify-between border-border border-b p-4">
+            <h2 className="font-semibold text-foreground text-lg">
               AI Assistant
             </h2>
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsAiSidebarOpen(false)}
               className="h-8 w-8 p-0"
+              onClick={() => setIsAiSidebarOpen(false)}
+              size="sm"
+              variant="ghost"
             >
               <X className="h-4 w-4" />
             </Button>

@@ -35,7 +35,7 @@ export default function TrajectoryPage() {
         setTrajectory(trajectoryData);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to load trajectory",
+          err instanceof Error ? err.message : "Failed to load trajectory"
         );
       } finally {
         setLoading(false);
@@ -49,37 +49,37 @@ export default function TrajectoryPage() {
     return (
       <div className="absolute inset-0 flex bg-background">
         {/* Dashboard Skeleton - 70% */}
-        <div className="w-[70%] p-6 overflow-y-auto border-r space-y-6">
+        <div className="w-[70%] space-y-6 overflow-y-auto border-r p-6">
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-4 w-1/2" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardContent className="p-6">
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-8 w-2/3 mb-2" />
+                <Skeleton className="mb-2 h-4 w-full" />
+                <Skeleton className="mb-2 h-8 w-2/3" />
                 <Skeleton className="h-3 w-full" />
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6">
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-8 w-2/3 mb-2" />
+                <Skeleton className="mb-2 h-4 w-full" />
+                <Skeleton className="mb-2 h-8 w-2/3" />
                 <Skeleton className="h-3 w-full" />
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6">
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-8 w-2/3 mb-2" />
+                <Skeleton className="mb-2 h-4 w-full" />
+                <Skeleton className="mb-2 h-8 w-2/3" />
                 <Skeleton className="h-3 w-full" />
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6">
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-8 w-2/3 mb-2" />
+                <Skeleton className="mb-2 h-4 w-full" />
+                <Skeleton className="mb-2 h-8 w-2/3" />
                 <Skeleton className="h-3 w-full" />
               </CardContent>
             </Card>
@@ -88,7 +88,7 @@ export default function TrajectoryPage() {
         </div>
 
         {/* Map Skeleton - 30% */}
-        <div className="w-[30%] relative">
+        <div className="relative w-[30%]">
           <Skeleton className="h-full w-full" />
         </div>
       </div>
@@ -97,11 +97,11 @@ export default function TrajectoryPage() {
 
   if (error) {
     return (
-      <div className="absolute inset-0 flex bg-background items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center bg-background">
         <Card className="w-96">
           <CardContent className="p-6 text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">
+            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+            <h2 className="mb-2 font-semibold text-xl">
               Error Loading Trajectory
             </h2>
             <p className="text-muted-foreground">{error}</p>
@@ -113,11 +113,11 @@ export default function TrajectoryPage() {
 
   if (!trajectory) {
     return (
-      <div className="absolute inset-0 flex bg-background items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center bg-background">
         <Card className="w-96">
           <CardContent className="p-6 text-center">
-            <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Trajectory Not Found</h2>
+            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-yellow-500" />
+            <h2 className="mb-2 font-semibold text-xl">Trajectory Not Found</h2>
             <p className="text-muted-foreground">
               The requested trajectory could not be found.
             </p>
@@ -132,12 +132,12 @@ export default function TrajectoryPage() {
       {/* Use absolute positioning to override the SidebarProvider flex layout */}
       <div className="absolute inset-0 flex bg-background">
         {/* Dashboard - 70% */}
-        <div className="w-[70%] p-6 overflow-y-auto border-r">
+        <div className="w-[70%] overflow-y-auto border-r p-6">
           <TrajectoryDashboard trajectory={trajectory} />
         </div>
 
         {/* Map - 30% */}
-        <div className="w-[30%] relative">
+        <div className="relative w-[30%]">
           <TrajectoryMap trajectory={trajectory} />
         </div>
       </div>

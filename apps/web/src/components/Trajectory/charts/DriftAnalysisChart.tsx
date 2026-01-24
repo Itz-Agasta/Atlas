@@ -80,7 +80,7 @@ const DirectionDot = (props: {
   payload?: { direction?: number };
 }) => {
   const { cx, cy, payload } = props;
-  if (!payload?.direction || !cx || !cy) return <Dot {...props} />;
+  if (!(payload?.direction && cx && cy)) return <Dot {...props} />;
 
   const direction = payload.direction;
   const radians = (direction - 90) * (Math.PI / 180); // Convert to radians, adjust for math coords
@@ -88,12 +88,12 @@ const DirectionDot = (props: {
 
   return (
     <g>
-      <circle cx={cx} cy={cy} r="3" fill="#60a5fa" />
+      <circle cx={cx} cy={cy} fill="#60a5fa" r="3" />
       <path
         d={`M ${cx} ${cy} L ${cx + arrowSize * Math.cos(radians)} ${cy + arrowSize * Math.sin(radians)}`}
+        markerEnd="url(#arrowhead)"
         stroke="#60a5fa"
         strokeWidth="2"
-        markerEnd="url(#arrowhead)"
       />
     </g>
   );
@@ -113,7 +113,7 @@ export default function DriftAnalysisChart({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-8">
+          <div className="py-8 text-center text-muted-foreground">
             No drift data available
           </div>
         </CardContent>
@@ -147,7 +147,7 @@ export default function DriftAnalysisChart({
             <Wind className="h-5 w-5" />
             Drift Analysis
           </CardTitle>
-          <Badge variant="outline" className="font-mono">
+          <Badge className="font-mono" variant="outline">
             {data.length} points
           </Badge>
         </div>
@@ -155,30 +155,30 @@ export default function DriftAnalysisChart({
 
       <CardContent className="space-y-6">
         {/* Summary Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Avg Speed</div>
-            <div className="text-lg font-semibold flex items-center gap-1">
+            <div className="text-muted-foreground text-sm">Avg Speed</div>
+            <div className="flex items-center gap-1 font-semibold text-lg">
               {avgSpeed.toFixed(2)} km/h
               <Navigation className="h-4 w-4 text-blue-500" />
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Max Speed</div>
-            <div className="text-lg font-semibold flex items-center gap-1">
+            <div className="text-muted-foreground text-sm">Max Speed</div>
+            <div className="flex items-center gap-1 font-semibold text-lg">
               {maxSpeed.toFixed(2)} km/h
               <TrendingUp className="h-4 w-4 text-green-500" />
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Distance</div>
-            <div className="text-lg font-semibold">
+            <div className="text-muted-foreground text-sm">Distance</div>
+            <div className="font-semibold text-lg">
               {totalDistance.toFixed(1)} km
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">Efficiency</div>
-            <div className="text-lg font-semibold flex items-center gap-1">
+            <div className="text-muted-foreground text-sm">Efficiency</div>
+            <div className="flex items-center gap-1 font-semibold text-lg">
               {efficiency.toFixed(1)}%
               {efficiency > 70 ? (
                 <TrendingUp className="h-4 w-4 text-green-500" />
@@ -192,43 +192,43 @@ export default function DriftAnalysisChart({
         <Separator />
 
         {/* Side-by-side Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Speed Chart */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Speed Profile</h4>
-            <ChartContainer config={chartConfig} className="h-[280px]">
+            <h4 className="font-medium text-sm">Speed Profile</h4>
+            <ChartContainer className="h-[280px]" config={chartConfig}>
               <LineChart data={chartData}>
                 <defs>
                   <marker
                     id="arrowhead"
-                    markerWidth="10"
                     markerHeight="7"
+                    markerWidth="10"
+                    orient="auto"
                     refX="10"
                     refY="3.5"
-                    orient="auto"
                   >
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#60a5fa" />
+                    <polygon fill="#60a5fa" points="0 0, 10 3.5, 0 7" />
                   </marker>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
+                  angle={-45}
+                  axisLine={false}
                   dataKey="time"
                   fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  angle={-45}
-                  textAnchor="end"
                   height={60}
+                  textAnchor="end"
+                  tickLine={false}
                 />
                 <YAxis
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   label={{
                     value: "Speed (km/h)",
                     angle: -90,
                     position: "insideLeft",
                   }}
+                  tickLine={false}
                 />
                 <ChartTooltip
                   content={
@@ -248,18 +248,18 @@ export default function DriftAnalysisChart({
                   }
                 />
                 <ReferenceLine
-                  y={avgSpeed}
+                  label={{ value: "Avg", position: "top" }}
                   stroke="hsl(var(--muted-foreground))"
                   strokeDasharray="5 5"
-                  label={{ value: "Avg", position: "top" }}
+                  y={avgSpeed}
                 />
                 <Line
-                  type="monotone"
+                  activeDot={{ r: 5 }}
                   dataKey="speed"
+                  dot={{ r: 3 }}
                   stroke="var(--color-speed)"
                   strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
+                  type="monotone"
                 />
               </LineChart>
             </ChartContainer>
@@ -267,43 +267,43 @@ export default function DriftAnalysisChart({
 
           {/* Direction & Displacement Chart */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium">Direction & Displacement</h4>
-            <ChartContainer config={chartConfig} className="h-[280px]">
+            <h4 className="font-medium text-sm">Direction & Displacement</h4>
+            <ChartContainer className="h-[280px]" config={chartConfig}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
+                  angle={-45}
+                  axisLine={false}
                   dataKey="time"
                   fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  angle={-45}
-                  textAnchor="end"
                   height={60}
+                  textAnchor="end"
+                  tickLine={false}
                 />
                 <YAxis
-                  yAxisId="direction"
-                  orientation="left"
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  domain={[0, 360]}
+                  fontSize={11}
                   label={{
                     value: "Direction (°)",
                     angle: -90,
                     position: "insideLeft",
                   }}
-                  domain={[0, 360]}
+                  orientation="left"
+                  tickLine={false}
+                  yAxisId="direction"
                 />
                 <YAxis
-                  yAxisId="displacement"
-                  orientation="right"
-                  fontSize={11}
-                  tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   label={{
                     value: "Displacement (km)",
                     angle: 90,
                     position: "insideRight",
                   }}
+                  orientation="right"
+                  tickLine={false}
+                  yAxisId="displacement"
                 />
                 <ChartTooltip
                   content={
@@ -330,22 +330,22 @@ export default function DriftAnalysisChart({
                   }
                 />
                 <Line
-                  yAxisId="direction"
-                  type="monotone"
+                  activeDot={{ r: 5 }}
                   dataKey="direction"
+                  dot={<DirectionDot />}
                   stroke="var(--color-direction)"
                   strokeWidth={2}
-                  dot={<DirectionDot />}
-                  activeDot={{ r: 5 }}
+                  type="monotone"
+                  yAxisId="direction"
                 />
                 <Line
-                  yAxisId="displacement"
-                  type="monotone"
+                  activeDot={{ r: 4 }}
                   dataKey="displacement"
+                  dot={{ r: 2 }}
                   stroke="var(--color-displacement)"
                   strokeWidth={2}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  type="monotone"
+                  yAxisId="displacement"
                 />
               </LineChart>
             </ChartContainer>

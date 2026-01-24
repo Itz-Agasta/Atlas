@@ -205,11 +205,11 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
         <CardTitle className="flex items-center gap-2">
           <Brain className="h-5 w-5" />
           AI-Generated Insights
-          <Badge variant="secondary" className="ml-2">
+          <Badge className="ml-2" variant="secondary">
             Powered by Float-Chat
           </Badge>
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Get instant analysis of{" "}
           {variant === "ts-diagram"
             ? "water mass characteristics and T-S relationships"
@@ -218,14 +218,14 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {!isAnalyzing && !analysisComplete && (
-          <div className="text-center py-8">
-            <Lightbulb className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Ready to Analyze</h3>
-            <p className="text-muted-foreground mb-4">
+        {!(isAnalyzing || analysisComplete) && (
+          <div className="py-8 text-center">
+            <Lightbulb className="mx-auto mb-4 h-12 w-12 text-yellow-500" />
+            <h3 className="mb-2 font-semibold text-lg">Ready to Analyze</h3>
+            <p className="mb-4 text-muted-foreground">
               Click below to start AI-powered analysis of the oceanographic data
             </p>
-            <Button onClick={startAnalysis} className="gap-2">
+            <Button className="gap-2" onClick={startAnalysis}>
               <Brain className="h-4 w-4" />
               Start Analysis
               <ArrowRight className="h-4 w-4" />
@@ -237,12 +237,12 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Analyzing Data...</h3>
-                <span className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-lg">Analyzing Data...</h3>
+                <span className="text-muted-foreground text-sm">
                   {Math.round(progress)}%
                 </span>
               </div>
-              <Progress value={progress} className="w-full" />
+              <Progress className="w-full" value={progress} />
             </div>
 
             <div className="space-y-3">
@@ -253,17 +253,17 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
 
                 return (
                   <div
-                    key={step.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                    className={`flex items-center gap-3 rounded-lg p-3 transition-all ${
                       isActive
-                        ? "bg-blue-50 border border-blue-200"
+                        ? "border border-blue-200 bg-blue-50"
                         : isCompleted
-                          ? "bg-green-50 border border-green-200"
-                          : "bg-gray-50 border border-gray-200"
+                          ? "border border-green-200 bg-green-50"
+                          : "border border-gray-200 bg-gray-50"
                     }`}
+                    key={step.id}
                   >
                     <div
-                      className={`p-2 rounded-full ${
+                      className={`rounded-full p-2 ${
                         isActive
                           ? "bg-blue-100"
                           : isCompleted
@@ -274,7 +274,7 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
                       {isCompleted ? (
                         <CheckCircle className="h-4 w-4 text-green-600" />
                       ) : isActive ? (
-                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                       ) : (
                         <Icon className="h-4 w-4 text-gray-600" />
                       )}
@@ -323,24 +323,24 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
             <div className="grid gap-6">
               {/* Water Mass Analysis */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h3 className="flex items-center gap-2 font-semibold text-lg">
                   <Waves className="h-5 w-5 text-blue-600" />
                   Water Mass Analysis
                 </h3>
                 <div className="grid gap-2">
                   {results.waterMasses.map((mass) => (
                     <div
+                      className="flex items-center justify-between rounded-lg border p-3"
                       key={`${mass.name}-${mass.depthRange}`}
-                      className="flex items-center justify-between p-3 rounded-lg border"
                     >
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="mb-1 flex items-center gap-2">
                           <Badge className={mass.color}>{mass.name}</Badge>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-muted-foreground text-sm">
                             {mass.depthRange}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-gray-600 text-sm">
                           {mass.characteristics}
                         </p>
                       </div>
@@ -351,22 +351,22 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
 
               {/* Parameter Correlations */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h3 className="flex items-center gap-2 font-semibold text-lg">
                   <TrendingUp className="h-5 w-5 text-green-600" />
                   Parameter Correlations
                 </h3>
                 <div className="grid gap-2">
                   {results.correlations.map((corr) => (
                     <div
+                      className="flex items-center justify-between rounded-lg border p-3"
                       key={corr.parameters}
-                      className="flex items-center justify-between p-3 rounded-lg border"
                     >
-                      <span className="text-sm font-medium">
+                      <span className="font-medium text-sm">
                         {corr.parameters}
                       </span>
                       <div className="flex items-center gap-2">
                         <Badge className={corr.color}>{corr.strength}</Badge>
-                        <span className="text-sm font-mono">
+                        <span className="font-mono text-sm">
                           r = {corr.correlation.toFixed(2)}
                         </span>
                       </div>
@@ -377,17 +377,17 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
 
               {/* Biogeochemical Insights */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h3 className="flex items-center gap-2 font-semibold text-lg">
                   <BarChart3 className="h-5 w-5 text-purple-600" />
                   Biogeochemical Insights
                 </h3>
                 <ul className="space-y-2">
                   {results.biogeochemicalInsights.map((insight) => (
                     <li
-                      key={insight}
                       className="flex items-start gap-2 text-sm"
+                      key={insight}
                     >
-                      <span className="text-purple-500 mt-1">•</span>
+                      <span className="mt-1 text-purple-500">•</span>
                       <span>{insight}</span>
                     </li>
                   ))}
@@ -396,17 +396,17 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
 
               {/* Key Findings */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h3 className="flex items-center gap-2 font-semibold text-lg">
                   <Lightbulb className="h-5 w-5 text-yellow-600" />
                   Key Findings
                 </h3>
                 <ul className="space-y-2">
                   {results.keyFindings.map((finding) => (
                     <li
-                      key={finding}
                       className="flex items-start gap-2 text-sm"
+                      key={finding}
                     >
-                      <span className="text-yellow-500 mt-1">•</span>
+                      <span className="mt-1 text-yellow-500">•</span>
                       <span>{finding}</span>
                     </li>
                   ))}
@@ -416,9 +416,9 @@ export function AIInsights({ data, variant = "ts-diagram" }: AIInsightsProps) {
 
             <div className="flex justify-center pt-4">
               <Button
-                variant="outline"
-                onClick={resetAnalysis}
                 className="gap-2"
+                onClick={resetAnalysis}
+                variant="outline"
               >
                 <Brain className="h-4 w-4" />
                 Run New Analysis

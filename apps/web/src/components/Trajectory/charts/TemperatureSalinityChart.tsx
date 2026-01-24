@@ -26,7 +26,7 @@ export default function TemperatureSalinityChart({
 
     // Filter points with valid temperature and salinity data
     const validPoints = trajectory.points.filter(
-      (point) => point.temperature != null && point.salinity != null,
+      (point) => point.temperature != null && point.salinity != null
     );
 
     if (validPoints.length === 0) return;
@@ -38,7 +38,7 @@ export default function TemperatureSalinityChart({
     ];
     const temperatureExtent = d3.extent(
       validPoints,
-      (d) => d.temperature || 0,
+      (d) => d.temperature || 0
     ) as [number, number];
 
     const xScale = d3.scaleLinear().domain(salinityExtent).range([0, width]);
@@ -117,7 +117,7 @@ export default function TemperatureSalinityChart({
             Salinity: ${d.salinity?.toFixed(2)} PSU<br/>
             Depth: ${d.depth?.toFixed(1)}m<br/>
             Date: ${new Date(d.timestamp).toLocaleDateString()}
-          `,
+          `
           )
           .style("left", event.pageX + 10 + "px")
           .style("top", event.pageY - 10 + "px");
@@ -136,7 +136,7 @@ export default function TemperatureSalinityChart({
 
       g.append("path")
         .datum(
-          validPoints.sort((a, b) => (a.salinity || 0) - (b.salinity || 0)),
+          validPoints.sort((a, b) => (a.salinity || 0) - (b.salinity || 0))
         )
         .attr("fill", "none")
         .attr("stroke", "#3b82f6")
@@ -160,7 +160,7 @@ export default function TemperatureSalinityChart({
       .append("g")
       .attr(
         "transform",
-        `translate(${margin.left + width - legendWidth}, ${height + margin.top + 40})`,
+        `translate(${margin.left + width - legendWidth}, ${height + margin.top + 40})`
       );
 
     // Create gradient for legend
@@ -180,8 +180,8 @@ export default function TemperatureSalinityChart({
           "stop-color",
           colorScale(
             colorScale.domain()[0] +
-              (i / steps) * (colorScale.domain()[1] - colorScale.domain()[0]),
-          ),
+              (i / steps) * (colorScale.domain()[1] - colorScale.domain()[0])
+          )
         );
     }
 
@@ -207,12 +207,12 @@ export default function TemperatureSalinityChart({
   }, [trajectory]);
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="flex h-full w-full items-center justify-center">
       <svg
-        ref={svgRef}
-        width="400"
         height="300"
+        ref={svgRef}
         style={{ maxWidth: "100%", height: "auto" }}
+        width="400"
       />
     </div>
   );

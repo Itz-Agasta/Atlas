@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaClock } from "react-icons/fa";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const TIME_PERIODS = [
@@ -47,17 +46,17 @@ export function TimePeriodSelector({
       {/* </CardHeader> */}
       <CardContent>
         <ToggleGroup
+          className="grid w-full grid-cols-5 gap-1"
+          onValueChange={handleValueChange}
           type="single"
           value={selectedPeriod}
-          onValueChange={handleValueChange}
-          className="grid grid-cols-5 gap-1 w-full"
         >
           {TIME_PERIODS.map((period) => (
             <ToggleGroupItem
+              aria-label={`Select ${period.label} time period`}
+              className="h-9 px-3 py-2 font-medium text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
               key={period.value}
               value={period.value}
-              className="text-sm font-medium px-3 py-2 h-9 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-              aria-label={`Select ${period.label} time period`}
             >
               {period.label}
             </ToggleGroupItem>
