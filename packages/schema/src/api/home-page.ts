@@ -8,6 +8,8 @@ export const floatLocationSchema = z.object({
   floatId: z.number(),
   latitude: z.number(),
   longitude: z.number(),
+  status: z.enum(["ACTIVE", "INACTIVE", "UNKNOWN", "DEAD"]), // No unknown in our db
+  floatType: z.enum(["core", "oxygen", "biogeochemical", "deep", "unknown"]), // currently db has no deep & unknown floats
   lastUpdate: z.string().optional(), // ISO string
   cycleNumber: z.number().optional(),
 });
@@ -35,9 +37,7 @@ export const floatDetailSchema = z.object({
   wmoNumber: z.string(),
   status: z.enum(["ACTIVE", "INACTIVE", "UNKNOWN", "DEAD"]),
 
-  floatType: z
-    .enum(["core", "oxygen", "biogeochemical", "deep", "unknown"])
-    .optional(),
+  floatType: z.enum(["core", "oxygen", "biogeochemical", "deep", "unknown"]),
   platform_type: z.string().optional(),
 
   operatingInstitution: z.string().optional(),
