@@ -8,10 +8,9 @@ import {
   Satellite,
   Settings,
 } from "lucide-react";
-import { argoFloatsData } from "@/data/argo-floats";
 
 // Map style options
-const MAP_STYLES = {
+export const MAP_STYLES = {
   satellite: "mapbox://styles/mapbox/satellite-streets-v12",
   dark: "mapbox://styles/mapbox/dark-v11",
   outdoors: "mapbox://styles/mapbox/outdoors-v11",
@@ -180,7 +179,7 @@ export default function MapControlPanel({
               }}
             >
               <p className="mb-2 font-medium">
-                {argoFloatsData.length} Argo floats in the Indian Ocean
+                Argo floats in the Indian Ocean
               </p>
               <div className="mb-1 flex items-center">
                 <div

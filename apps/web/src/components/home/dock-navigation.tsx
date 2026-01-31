@@ -46,9 +46,9 @@ const navItems = [
   },
 ];
 
-export function HomeNavbar() {
+export default function DockNavigation() {
   return (
-    <div className="-translate-x-1/2 fixed bottom-8 left-1/2 z-[100]">
+    <div className="-translate-x-1/2 fixed bottom-8 left-1/2 z-100">
       <FloatingDock items={navItems} />
     </div>
   );

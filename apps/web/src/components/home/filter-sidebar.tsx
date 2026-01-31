@@ -263,7 +263,7 @@ function FilterItemRenderer({
   );
 }
 
-export function NavigationSidebar({
+export default function FilterSidebar({
   className,
   onFiltersChange,
 }: NavigationSidebarProps) {
