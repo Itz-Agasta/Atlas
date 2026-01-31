@@ -21,7 +21,8 @@
       "!**/.svelte-kit",
       "!**/wrangler.jsonc",
       "!**/.source",
-      "!data"
+      "!data",
+      "!apps/web/src/components/ui"
     ]
   },
   "extends": ["ultracite/core", "ultracite/next"]

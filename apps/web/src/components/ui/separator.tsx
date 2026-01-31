@@ -1,6 +1,3 @@
-"use client";
-
-// biome-ignore lint/performance/noNamespaceImport: Radix UI requires namespace imports
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import type * as React from "react";
 
