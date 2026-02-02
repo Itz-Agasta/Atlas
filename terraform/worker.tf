@@ -32,6 +32,15 @@ module "lambda_function" {
     S3_BUCKET_NAME = var.s3_bucket_name
     ARGO_DAC       = var.argo_dac
   }
+
+  # Allow EventBridge to invoke this Lambda
+  create_current_version_allowed_triggers = false
+  allowed_triggers = {
+    EventBridgeRule = {
+      principal  = "events.amazonaws.com"
+      source_arn = module.eventbridge.eventbridge_rule_arns["weekly_sync"]
+    }
+  }
 }
 
 module "docker_image" {
@@ -74,8 +83,8 @@ module "eventbridge" {
   }
 
   # IAM permissions for EventBridge to invoke Lambda
-  attach_lambda_policy = true
-  lambda_target_arns   = [module.lambda_function.lambda_function_arn]
+  # attach_lambda_policy = true
+  # lambda_target_arns   = [module.lambda_function.lambda_function_arn]
 
   tags = {
     Name = "atlas-worker-scheduler"
