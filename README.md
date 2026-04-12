@@ -92,32 +92,3 @@ infisical run --env=dev bun run dev
 
 Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
 The API is running at [http://localhost:3000](http://localhost:3000).
-
-## Project Structure
-
-```
-atlas/
-├── apps/
-│   ├── web/         # Frontend application (Next.js)
-│   └── server/      # Backend API (Hono, TRPC)
-├── packages/
-│   ├── api/         # API layer / business logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run dev:server`: Start only the server
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run db:push`: Push schema changes to database
-- `bun run db:studio`: Open database studio UI
-
-## Acknowledgments
-
-- Argo Program for providing ocean data
-- Ministry of Earth Sciences, Government of India
-- Open source community for the amazing tools and libraries
-- Smart India Hackathon for the opportunity
